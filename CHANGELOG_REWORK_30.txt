@@ -1,0 +1,9 @@
+REWORK 30 — Correctifs de géométrie des toitures à deux pans
+
+- Calcul des normales des deux versants à partir de leur géométrie inclinée, afin que l'éclairage ne traite plus les pans comme des surfaces horizontales.
+- Suppression de l'argument de couleur erroné transmis aux triangles de pignon : leurs normales restent calculées par le bucket géométrique et aucune fausse couleur de sommet n'est injectée.
+- Désactivation du placement aléatoire des cheminées sur les toitures à deux pans tant qu'un ancrage fiable sur le versant n'est pas calculé. Les cheminées des toitures en croupe restent inchangées.
+
+Périmètre : js/world.js uniquement pour le code du jeu. Aucun changement du relief, des données géographiques, des collisions, des déplacements, des missions ou des systèmes de population. Aucun nouveau mesh, matériau ou draw call dédié.
+
+Validation : analyse syntaxique JavaScript réussie. Le rendu WebGL et GitHub Pages n'ont pas pu être vérifiés visuellement dans cet environnement.
