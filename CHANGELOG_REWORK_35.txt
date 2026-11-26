@@ -1,0 +1,21 @@
+# Rework 35 — Géométrie lissée des personnages et véhicules
+
+## Objectif
+Réduire l'aspect facetté des modèles 3D mobiles sans modifier leurs dimensions, leurs points d'ancrage, leurs animations, leurs collisions ou leurs comportements.
+
+## Modifications
+- Personnages : densité des cylindres de membres portée de 9 à 12 segments par défaut ; sphères de volumes organiques portées de 12×9 à 16×12.
+- Finitions des personnages : col et écharpe avec davantage de segments.
+- Voitures : roues, jantes et volant plus circulaires ; carrosseries extrudées avec biseaux plus progressifs (5 segments au lieu de 3).
+- Vélos, motos, scooters et trottinettes : tubes de cadres, fourches, guidons, rétroviseurs, optiques et échappements moins facettés.
+- Les dimensions et les silhouettes de référence restent identiques ; aucune animation ni logique de conduite n'est modifiée.
+
+## Performance et compatibilité
+- Pas de nouvel objet de scène, matériau, texture ou draw call ajouté par cette étape.
+- Les géométries restent statiques et réutilisées selon les mécanismes existants.
+- Augmentation ciblée du nombre de sommets sur les primitives arrondies ; impact réel sur les performances à mesurer par le contrôle automatique.
+- Aucun changement aux routes, trottoirs, relief, collisions, missions ou gameplay.
+
+## Vérifications
+- Analyse syntaxique JavaScript à effectuer avant publication.
+- Contrôle automatique GitHub Actions après le push ; le verdict et les mesures de performances détermineront la suite.

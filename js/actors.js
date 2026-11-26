@@ -7,11 +7,11 @@ const BI = Object.fromEntries(BONES.map((b, i) => [b, i]));
 
 function limb(a, b, r0, r1, seg) { // cylinder from a to b
   const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), L = d.length();
-  const g = new THREE.CylinderGeometry(r1, r0, L, seg || 9, 1);
+  const g = new THREE.CylinderGeometry(r1, r0, L, seg || 12, 1);
   g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize())));
   g.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); return g;
 }
-function ball(r, c, s, ws, hs) { const g = new THREE.SphereGeometry(r, ws || 12, hs || 9); if (s) g.scale(...s); g.translate(...c); return g; }
+function ball(r, c, s, ws, hs) { const g = new THREE.SphereGeometry(r, ws || 16, hs || 12); if (s) g.scale(...s); g.translate(...c); return g; }
 function boxg(w, h, d, c, rx) { const g = new THREE.BoxGeometry(w, h, d); if (rx) g.rotateX(rx); g.translate(...c); return g; }
 function skinnedGeo(parts) { // parts: [geo, boneName, color]
   const pos = [], nor = [], col = [], si = [], sw = [];
@@ -85,7 +85,7 @@ function personGeo(L) {
   }
   if (L.mohawk) P.push([boxg(0.035, 0.12, 0.22, [0, 1.85, -0.01]), 'head', L.mohawk]);
   if (L.hood) P.push([ball(0.11, [0, 1.55, -0.085], [1.1, 0.55, 0.65]), 'chest', top]);
-  if (L.scarf) P.push([new THREE.TorusGeometry(0.073,0.022,7,16).rotateX(Math.PI/2).translate(0,1.525,0),'chest','#77716a'],
+  if (L.scarf) P.push([new THREE.TorusGeometry(0.073,0.022,9,24).rotateX(Math.PI/2).translate(0,1.525,0),'chest','#77716a'],
                       [boxg(0.045,0.19,0.025,[0.035,1.39,0.13]),'chest','#77716a']);
   if (L.longCoat) {
     P.push([boxg(0.29,0.42,0.035,[-0.105,1.12,-0.005]),'chest',L.jacket||L.top],
@@ -158,7 +158,7 @@ function personGeo(L) {
     if(L.shoeStyle==='boot') P.push([limb([lx,0.12,0.005],[lx,0.22,0.005],0.052,0.048,8),shin,L.shoes]);
   }
   // A small collar roll and belt line make the waist/neck transitions less abrupt.
-  P.push([new THREE.TorusGeometry(0.052,0.012,6,14).rotateX(Math.PI/2).translate(0,1.475,0),'neck',L.top],
+  P.push([new THREE.TorusGeometry(0.052,0.012,8,22).rotateX(Math.PI/2).translate(0,1.475,0),'neck',L.top],
          [boxg(0.29,0.025,0.018,[0,0.99,0.105]),'hips',L.jacket?'#26282a':L.pants]);
   if (L.skirt) P.push([limb([0, 1.0, 0], [0, 0.6, 0], 0.17, 0.25).scale(1, 1, 0.8), 'hips', L.top === '#e8e4dc' ? '#2a2a3a' : L.top]);
   return skinnedGeo(P);
@@ -350,13 +350,13 @@ function buildCarAssets() {
     g.fillStyle = '#111'; g.font = '700 32px Arial Narrow, Arial'; g.fillText(`${L()}${L()}-${(100 + Math.random() * 899) | 0}-${L()}${L()}`, 128, 40);
     plateMats.push(M({ map: canvasTex(c, true), roughness: 0.4 }));
   }
-  const tw = new THREE.CylinderGeometry(0.33, 0.33, 0.21, 28); tw.rotateZ(Math.PI / 2);
-  const rim = new THREE.CylinderGeometry(0.22, 0.22, 0.215, 24); rim.rotateZ(Math.PI / 2);
+  const tw = new THREE.CylinderGeometry(0.33, 0.33, 0.21, 36); tw.rotateZ(Math.PI / 2);
+  const rim = new THREE.CylinderGeometry(0.22, 0.22, 0.215, 32); rim.rotateZ(Math.PI / 2);
   CARMAT.wheelGeo = tw; CARMAT.rimGeo = rim;
   for (const k in CAR_TYPES) {
     const T = CAR_TYPES[k], bev = 0.07;
     const sh = new THREE.Shape(T.prof.map(p => new THREE.Vector2(p[0], p[1])));
-    const g = new THREE.ExtrudeGeometry(sh, { depth: T.W - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 4 });
+    const g = new THREE.ExtrudeGeometry(sh, { depth: T.W - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 5, curveSegments: 8 });
     g.rotateY(-Math.PI / 2); g.translate(T.W / 2 - bev, 0, 0); g.computeVertexNormals();
     T.body = g;
     const win = new THREE.ShapeGeometry(new THREE.Shape(T.win.map(p => new THREE.Vector2(p[0], p[1]))));
@@ -385,9 +385,9 @@ function makeCarMesh(type, color, kind) {
   g.add(new THREE.Mesh(T.glass, CARMAT.glass), trimM, new THREE.Mesh(T.heads, CARMAT.head), new THREE.Mesh(T.tails, CARMAT.tail), plateM);
   const cabin = new THREE.Mesh(T.cabin, CARMAT.interior); cabin.castShadow = false; cabin.receiveShadow = false; g.add(cabin);
   // Steering wheel is a single low-poly ring, oriented toward the driver.
-  const steering = new THREE.Mesh(new THREE.TorusGeometry(0.145,0.014,6,20), CARMAT.trim);
+  const steering = new THREE.Mesh(new THREE.TorusGeometry(0.145,0.014,9,28), CARMAT.trim);
   steering.position.set(-T.W*0.235,1.005,T.front*0.28); steering.rotation.x=0.28; g.add(steering);
-  const steeringHub = new THREE.Mesh(new THREE.CylinderGeometry(0.027,0.027,0.035,10), CARMAT.chrome);
+  const steeringHub = new THREE.Mesh(new THREE.CylinderGeometry(0.027,0.027,0.035,14), CARMAT.chrome);
   steeringHub.position.copy(steering.position); steeringHub.rotation.x=Math.PI/2; g.add(steeringHub);
   const wheels = [];
   for (const z of [T.wz, -T.wz]) for (const s of [1, -1]) {
@@ -485,7 +485,7 @@ function makeCarMesh(type, color, kind) {
 }
 function makeBike(color) {
   const g = new THREE.Group(), pm = paintMat(color);
-  const bar = (a, b, r, m) => { const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), L = d.length(); const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 6), m); me.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); me.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(me); return me; };
+  const bar = (a, b, r, m) => { const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), L = d.length(); const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 10), m); me.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); me.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(me); return me; };
   const rearW = [0, 0.34, -0.52], frontW = [0, 0.34, 0.52], bb = [0, 0.32, -0.05], seat = [0, 0.86, -0.25], head = [0, 0.92, 0.38];
   bar(rearW, bb, 0.02, pm); bar(bb, seat, 0.022, pm); bar(seat, head, 0.022, pm); bar(head, bb, 0.024, pm); bar(rearW, seat, 0.016, pm); bar(head, frontW, 0.018, CARMAT.rim);
   bar([-0.24, 1.02, 0.34], [0.24, 1.02, 0.34], 0.015, CARMAT.trim); bar(head, [0, 1.02, 0.34], 0.018, CARMAT.trim);
@@ -545,23 +545,23 @@ function poseCyclist(r, ph) {
 function makeScooter(color) {
   const g = new THREE.Group();
   const pm = paintMat(color);
-  const parts = [[new THREE.BoxGeometry(0.39, 0.28, 1.05), pm, [0, 0.49, -0.1]], [new THREE.BoxGeometry(0.32, 0.13, 0.58), CARMAT.trim, [0, 0.69, -0.25]], [new THREE.CylinderGeometry(0.04, 0.04, 0.9, 10), CARMAT.chrome, [0, 0.9, 0.55]], [new THREE.BoxGeometry(0.62, 0.05, 0.05), CARMAT.trim, [0, 1.3, 0.62]], [new THREE.BoxGeometry(0.36, 0.52, 0.27), pm, [0, 0.76, 0.55]], [new THREE.BoxGeometry(0.32,0.09,0.62),CARMAT.rubber,[0,0.36,-0.08]]];
+  const parts = [[new THREE.BoxGeometry(0.39, 0.28, 1.05), pm, [0, 0.49, -0.1]], [new THREE.BoxGeometry(0.32, 0.13, 0.58), CARMAT.trim, [0, 0.69, -0.25]], [new THREE.CylinderGeometry(0.04, 0.04, 0.9, 12), CARMAT.chrome, [0, 0.9, 0.55]], [new THREE.BoxGeometry(0.62, 0.05, 0.05), CARMAT.trim, [0, 1.3, 0.62]], [new THREE.BoxGeometry(0.36, 0.52, 0.27), pm, [0, 0.76, 0.55]], [new THREE.BoxGeometry(0.32,0.09,0.62),CARMAT.rubber,[0,0.36,-0.08]]];
   for (const [geo, m, p] of parts) { const me = new THREE.Mesh(geo, m); me.position.set(...p); me.castShadow = true; g.add(me); }
   const wheels = [];
   for (const z of [0.62, -0.6]) { const w = new THREE.Group(); w.position.set(0, 0.25, z); const t = new THREE.Mesh(CARMAT.wheelGeo, CARMAT.tyre); t.scale.set(0.5, 0.75, 0.75); w.add(t); g.add(w); wheels.push(w); }
   // Moulded seat, headlight, indicators, exhaust canister and rear lamp.
   const seat = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.12,0.58),CARMAT.interior); seat.position.set(0,0.89,-0.24); g.add(seat);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.105,14,10),CARMAT.lens); head.position.set(0,1.02,0.69); g.add(head);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.105,18,12),CARMAT.lens); head.position.set(0,1.02,0.69); g.add(head);
   const rear = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.09,0.04),CARMAT.tail); rear.position.set(0,0.72,-0.68); g.add(rear);
   for (const side of [-1,1]) {
-    const mirrorStem = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.016,0.28,6),CARMAT.chrome); mirrorStem.position.set(side*0.24,1.42,0.53); mirrorStem.rotation.z=side*0.35; g.add(mirrorStem);
-    const mirror = new THREE.Mesh(new THREE.SphereGeometry(0.065,10,8),CARMAT.trim); mirror.scale.set(1,0.55,0.75); mirror.position.set(side*0.29,1.55,0.53); g.add(mirror);
+    const mirrorStem = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.016,0.28,10),CARMAT.chrome); mirrorStem.position.set(side*0.24,1.42,0.53); mirrorStem.rotation.z=side*0.35; g.add(mirrorStem);
+    const mirror = new THREE.Mesh(new THREE.SphereGeometry(0.065,16,12),CARMAT.trim); mirror.scale.set(1,0.55,0.75); mirror.position.set(side*0.29,1.55,0.53); g.add(mirror);
     const ind = new THREE.Mesh(new THREE.BoxGeometry(0.07,0.045,0.035),CARMAT.indicator); ind.position.set(side*0.22,0.87,0.68); g.add(ind);
   }
-  const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.07,0.52,10),CARMAT.chrome); exhaust.rotation.x=Math.PI/2; exhaust.position.set(-0.23,0.35,-0.42); g.add(exhaust);
+  const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.07,0.52,14),CARMAT.chrome); exhaust.rotation.x=Math.PI/2; exhaust.position.set(-0.23,0.35,-0.42); g.add(exhaust);
   const rider = makeChar({ ...randomLook(), female: false, cap: false, beanie: false, hood: true, top: '#111111', pants: '#2a2a6a', helmet: true, helmetColor: '#f0f0f0' });
   scene.remove(rider); rider.position.set(0, 0.25, -0.2); g.add(rider); poseChar(rider, 'drive', 0, 0, 0);
-  const helm = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), paintMat(0xf0f0f0)); helm.position.set(0, 1.97, -0.2); g.add(helm);
+  const helm = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 12), paintMat(0xf0f0f0)); helm.position.set(0, 1.97, -0.2); g.add(helm);
   g.userData.wheels = wheels; g.userData.T = { L: 1.8, W: 0.6 };
   scene.add(g); return g;
 }
@@ -572,7 +572,7 @@ function makeMotorcycle(color) {
   const g = new THREE.Group(), pm = paintMat(color), wheels = [];
   const bar = (a,b,r,m) => {
     const d=new THREE.Vector3(b[0]-a[0],b[1]-a[1],b[2]-a[2]), L=d.length();
-    const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,8),m);
+    const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,12),m);
     o.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2);
     o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); g.add(o); return o;
   };
@@ -601,11 +601,11 @@ function makeMotorcycle(color) {
   // More legible motorcycle mechanics: twin fork legs, rear suspension,
   // chain run, brake rotors and foot pegs. Geometry is static and shared-material.
   for (const side of [-1,1]) {
-    const fork=new THREE.Mesh(new THREE.CylinderGeometry(0.026,0.032,0.58,9),CARMAT.chrome);
+    const fork=new THREE.Mesh(new THREE.CylinderGeometry(0.026,0.032,0.58,12),CARMAT.chrome);
     fork.position.set(side*0.075,0.62,0.48); fork.rotation.x=-0.22; g.add(fork);
-    const shock=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.024,0.43,8),CARMAT.disc);
+    const shock=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.024,0.43,12),CARMAT.disc);
     shock.position.set(side*0.19,0.66,-0.43); shock.rotation.x=-0.28; g.add(shock);
-    const peg=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.2,8),CARMAT.rubber);
+    const peg=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.2,12),CARMAT.rubber);
     peg.rotation.z=Math.PI/2; peg.position.set(side*0.17,0.43,-0.08); g.add(peg);
     const rotor=new THREE.Mesh(new THREE.TorusGeometry(0.19,0.012,5,28),CARMAT.disc);
     rotor.position.set(side*0.12,0.34,0.68); rotor.rotation.y=Math.PI/2; g.add(rotor);
@@ -620,10 +620,10 @@ function makeMotorcycle(color) {
 function makeEScooter(color) {
   const g=new THREE.Group(), pm=paintMat(color), wheels=[];
   const deck=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.09,0.78),CARMAT.rubber);deck.position.set(0,0.22,-0.04);g.add(deck);
-  const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.035,0.92,8),CARMAT.chrome);stem.position.set(0,0.69,0.34);stem.rotation.x=-0.12;g.add(stem);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.035,0.92,12),CARMAT.chrome);stem.position.set(0,0.69,0.34);stem.rotation.x=-0.12;g.add(stem);
   const fork=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.48,0.08),pm);fork.position.set(0,0.45,0.34);g.add(fork);
-  const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.48,8),CARMAT.trim);handle.rotation.z=Math.PI/2;handle.position.set(0,1.17,0.39);g.add(handle);
-  const tire=new THREE.TorusGeometry(0.105,0.027,7,20).rotateY(Math.PI/2);
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.48,12),CARMAT.trim);handle.rotation.z=Math.PI/2;handle.position.set(0,1.17,0.39);g.add(handle);
+  const tire=new THREE.TorusGeometry(0.105,0.027,9,28).rotateY(Math.PI/2);
   for(const z of [-0.38,0.42]){const wh=new THREE.Group();wh.position.set(0,0.12,z);wh.add(new THREE.Mesh(tire,CARMAT.tyre));wh.add(new THREE.Mesh(new THREE.TorusGeometry(0.075,0.009,5,16).rotateY(Math.PI/2),CARMAT.rim));g.add(wh);wheels.push(wh);}
   const lamp=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.045,0.025),CARMAT.lens);lamp.position.set(0,0.88,0.42);g.add(lamp);
   const rear=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.035,0.025),CARMAT.tail);rear.position.set(0,0.29,-0.43);g.add(rear);
