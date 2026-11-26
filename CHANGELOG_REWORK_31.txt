@@ -1,0 +1,14 @@
+REWORK 31 — Recalibrage global du rendu de jour
+
+Objectif : traiter le défaut prioritaire signalé sur les vues de jour : image trop délavée, contraste insuffisant, sols trop clairs et brume qui blanchit l'horizon.
+
+Modifications dans js/render.js :
+- Réduction de l'exposition finale de jour à 0,90 (contre 1,04 auparavant), afin de mieux préserver les hautes lumières et les valeurs des sols.
+- Renforcement du contraste des tons moyens avant la courbe filmique (1,18 en journée claire ; 1,10 sous la pluie), pour rétablir la séparation entre façades, chaussées et ombres.
+- Saturation modérément renforcée (1,12 en journée claire ; 1,08 sous la pluie), sans appliquer une teinte globale artificielle.
+- Réduction de la densité de brume exponentielle de jour de 0,0026 à 0,00145 ; sous la pluie, de 0,0052 à 0,0025. La teinte de brume diurne est également moins blanchâtre et plus neutre.
+- Les réglages de nuit restent distincts et ne reçoivent pas le même contraste/exposition que le jour.
+
+Aucun changement au relief IGN, aux données OSM, à la géométrie des bâtiments, aux collisions, aux déplacements, aux missions ou aux systèmes de jeu. Aucun nouveau mesh, matériau ou draw call.
+
+Validation technique : analyse syntaxique JavaScript réussie. La vérification visuelle est laissée au joueur, conformément au mode de travail convenu. Les valeurs sont un premier étalonnage global à confirmer en jeu et pourront être affinées à partir du retour visuel.
