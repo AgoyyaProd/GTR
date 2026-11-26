@@ -1,0 +1,15 @@
+# Rework 29 — fidélité photographique des façades historiques
+
+## Objectif
+Rapprocher les façades historiques de Rennes d'un rendu de photographie de rue, en préservant les matériaux et variations visibles dans les textures photographiques du jeu.
+
+## Modification
+- Dans `js/render.js`, suppression de la désaturation systématique et du voile blanc (`screen`) appliqués aux textures de façades, sauf la brique qui était déjà conservée en couleur.
+- Les textures tuffeau, enduit, pierre et colombage conservent désormais leurs nuances chromatiques, variations minérales et irrégularités d'origine.
+- La teinte de quartier reste appliquée par vertex dans `js/world.js`; aucune géométrie, donnée OSM, collision, navigation ou logique de jeu n'est modifiée.
+- Aucun mesh, matériau ou draw call supplémentaire.
+
+## Limites et validation
+- Les textures existantes sont des textures photographiques de matériaux, pas des photographies complètes de façades réelles.
+- Aucun contenu Google Street View n'est copié ou intégré.
+- Modification ciblée du pipeline de texture. Le rendu final doit encore être contrôlé dans le navigateur; l'accès de validation visuelle à GitHub Pages n'est pas disponible dans cet environnement.
