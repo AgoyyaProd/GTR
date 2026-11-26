@@ -206,9 +206,10 @@ async def run_missions(pg, J, settle, names):
     async def m3():
         await tp('m3'); await settle(6); await go("", 0.4); await enters(2); await go("", 0.2)
         if await J("() => typeof reachable === 'function'"):
-            bags = await J("() => window.__game.markersList().filter(m=>m.c==='#39ff6a').map(m=>[m.x,m.y])")
-            ok = await J(f"() => {json.dumps(bags)}.every(([x,y]) => reachable(-327,392,x,y,2.2))")
-            report['access'][f'Mission 3 : les {len(bags)} sacs tirés sont accessibles à pied'] = ok
+            bags = await J("() => window.__game.markersList().filter(m=>m.c==='#39ff6a').map(m=>({x:m.x,y:m.y,ok:reachable(-327,392,m.x,m.y,2.2)}))")
+            ok = len(bags) == 3 and all(b['ok'] for b in bags)
+            detail = ', '.join(f"({b['x']:.1f},{b['y']:.1f})={'OK' if b['ok'] else 'KO'}" for b in bags)
+            report['access'][f"Mission 3 : les 3 sacs tirés sont accessibles à pied [{detail}]"] = ok
         await go("for (const m of g.markersList()) if (m.c==='#39ff6a') { g.player.x=m.x; g.player.y=m.y; g.sim(0.15); }", 0.2)
         await go("g.setWanted(0);", 0.1); await tpGoal(); await settle(4); done(3, await go("", 0.4))
 
