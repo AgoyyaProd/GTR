@@ -1,9 +1,9 @@
 {
- "date": "2026-11-26 15:12 UTC",
- "commit": "433db0b",
+ "date": "2026-11-26 15:39 UTC",
+ "commit": "adea255",
  "load": {
   "ok": true,
-  "secondes": 145,
+  "secondes": 189,
   "bouton": "Jouer"
  },
  "errors": [],
@@ -24,15 +24,15 @@
   "Thabor (à pied, depuis la rue de Paris)": true,
   "Thabor (en voiture, depuis le bd de la Duchesse-Anne)": true
  },
- "fps": 0.196,
+ "fps": 0.146,
  "views": {
   "joffre": {
    "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.516,
-   "contraste": 0.233,
-   "saturation": 0.275,
+   "luminosite": 0.527,
+   "contraste": 0.228,
+   "saturation": 0.267,
    "part_quasi_blanc": 0.044,
-   "changement": 0.139
+   "changement": 0.145
   },
   "saint_michel": {
    "desc": "Rue Saint-Michel, jour",
@@ -62,23 +62,24 @@
    "desc": "Place des Lices, nuit sous la pluie",
    "luminosite": 0.274,
    "contraste": 0.156,
-   "saturation": 0.377,
+   "saturation": 0.376,
    "part_quasi_blanc": 0.002,
-   "changement": 0.204
+   "changement": 0.002
   },
   "toits": {
    "desc": "Toits du centre vus d’en haut",
    "luminosite": 0.666,
    "contraste": 0.149,
    "saturation": 0.151,
-   "part_quasi_blanc": 0.042,
+   "part_quasi_blanc": 0.043,
    "changement": 0.0
   }
  },
  "fps_hist": [
   0.353,
   0.144,
-  0.196
+  0.196,
+  0.146
  ],
  "verdict": "KO"
 }
