@@ -139,7 +139,9 @@ async def views_fps_access(pg, J, settle):
 
     # --- images par seconde (place des Lices) ---
     await J("() => { const g=window.__game; g.player.x=-582; g.player.y=22.1; g.sim(0.5); g.setcam(0.4,0.15); }"); await settle()
-    report['fps'] = await J("() => new Promise(r => { let n=0; const t0=performance.now(); (function f(){ n++; if (performance.now()-t0<8000) requestAnimationFrame(f); else r(+(n/8).toFixed(2)); })(); })")
+    # en rendu logiciel il n'y a que 3 à 5 images en 8 s : compter les images donnait 0,38 ou 0,5 au hasard.
+    # On mesure donc la durée exacte entre la 1re et la dernière image (au moins 8 images et 12 s).
+    report['fps'] = await J("() => new Promise(r => { const ts=[]; (function f(now){ ts.push(now); if (ts.length<9 || now-ts[0]<12000) requestAnimationFrame(f); else r(+((ts.length-2)/((ts[ts.length-1]-ts[1])/1000)).toFixed(3)); })(performance.now()); })")
 
     # --- accès aux éléments de mission ---
     if await J("() => typeof reachable === 'function'"):
@@ -303,9 +305,13 @@ def compare_and_write():
         warn.append("Contrôle incomplet : le script de test n'a pas pu jouer " + ', '.join(x.split(' :')[0] for x in report['scenario']) + " (problème du banc de test, pas forcément du jeu). Ces missions sont marquées « non vérifiée ».")
     for k, v in report['access'].items():
         if not v: ko.append(f"Accès bloqué : {k}.")
-    fps, pfps = report.get('fps'), prev.get('fps')
-    if fps and pfps and fps < pfps * 0.85: ko.append(f"Images par seconde en baisse de {round(100 * (1 - fps / pfps))} % ({pfps} → {fps}).")
-    elif fps and pfps and fps < pfps * 0.93: warn.append(f"Images par seconde en légère baisse ({pfps} → {fps}).")
+    # référence = médiane des derniers contrôles (les machines de GitHub varient d'un contrôle à l'autre)
+    fps = report.get('fps')
+    hist = [h for h in (prev.get('fps_hist') or []) if h][-4:]
+    report['fps_hist'] = hist + ([fps] if fps else [])
+    pfps = sorted(hist)[len(hist) // 2] if len(hist) >= 2 else None
+    if fps and pfps and fps < pfps * 0.75: ko.append(f"Images par seconde en baisse de {round(100 * (1 - fps / pfps))} % ({pfps} → {fps}, référence = médiane des derniers contrôles).")
+    elif fps and pfps and fps < pfps * 0.88: warn.append(f"Images par seconde en baisse ({pfps} → {fps}, référence = médiane des derniers contrôles).")
 
     rows, visible = [], 0
     for name, v in report['views'].items():
@@ -336,7 +342,7 @@ def compare_and_write():
     report['verdict'] = verdict
 
     L = [f"# Contrôle automatique — {verdict}", '',
-         f"Commit `{report['commit']}` · {report['date']} · chargement {ld.get('secondes', '?')} s · {fps} images/s en rendu logiciel" + (f" (précédent : {pfps})" if pfps else ''), '']
+         f"Commit `{report['commit']}` · {report['date']} · chargement {ld.get('secondes', '?')} s · {fps} images/s en rendu logiciel" + (f" (référence : {pfps})" if pfps else ''), '']
     if ko: L += ['## Bloquant (à corriger avant tout autre changement)'] + [f"- {x}" for x in ko] + ['']
     if warn: L += ['## Réserves'] + [f"- {x}" for x in warn] + ['']
     if notes: L += ['## Rendu'] + notes + ['']
