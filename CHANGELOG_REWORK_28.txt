@@ -1,0 +1,17 @@
+# Rework 28 — silhouettes de toitures rennaises
+
+## Objectif
+Renforcer la lecture des maisons et petits immeubles du tissu urbain rennais, en particulier les volumes étroits à toiture ardoisée.
+
+## Modification
+- Les empreintes quadrangulaires allongées des styles architecturaux classiques (styles 0 à 3 et maisons style 7) reçoivent désormais une toiture à deux pans, avec faîtage longitudinal et pignons fermés.
+- Les empreintes non quadrangulaires, trop larges ou irrégulières conservent le traitement de toiture en croupe existant.
+- Les toitures plates des bâtiments qui en ont déjà le code restent inchangées.
+- Les cheminées existantes sont conservées ; aucun nouveau système de matériaux ou de rendu n'est ajouté.
+
+## Préservation
+Aucune modification aux données de bâtiments, empreintes OSM, relief IGN, routes, collisions, navigation, missions 1–9 ou fight club. La modification concerne uniquement la géométrie visuelle des toitures générées.
+
+## Vérifications
+- Analyse syntaxique V8 de js/world.js après le correctif d'appariement des arêtes : réussie.
+- Pas de lancement WebGL ni de capture en jeu dans cet environnement ; le résultat visuel, la couverture réelle des bâtiments concernés et les FPS restent à vérifier dans le navigateur.
