@@ -1,0 +1,58 @@
+name: Contrôle automatique
+
+# À chaque push sur main : le jeu est lancé dans un vrai navigateur, testé, photographié,
+# et le rapport controle/RAPPORT.md est mis à jour dans le dépôt.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'controle/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: controle
+  cancel-in-progress: false
+
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer le navigateur de test
+        run: |
+          pip install playwright==1.47.0 pillow numpy
+          python -m playwright install --with-deps chromium
+
+      - name: Lancer le contrôle
+        id: run
+        continue-on-error: true
+        run: python tests/ci.py
+
+      - name: Publier le rapport dans le dépôt
+        if: always()
+        run: |
+          git config user.name "controle-automatique"
+          git config user.email "controle-automatique@users.noreply.github.com"
+          git add controle
+          git commit -m "Contrôle automatique de ${GITHUB_SHA::7} : $(head -1 controle/RAPPORT.md | sed 's/# Contrôle automatique — //') [skip ci]" || exit 0
+          for i in 1 2 3; do git pull --rebase -X theirs origin main && git push && exit 0; sleep 5; done
+          exit 1
+
+      - name: Résumé
+        if: always()
+        run: cat controle/RAPPORT.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Verdict
+        if: steps.run.outcome == 'failure'
+        run: |
+          echo "::error::Verdict KO — voir controle/RAPPORT.md"
+          exit 1
