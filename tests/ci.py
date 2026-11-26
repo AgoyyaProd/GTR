@@ -229,15 +229,21 @@ async def run_missions(pg, J, settle, names):
         await go("for (const n of g.INT.npcs.slice()) if (n.tough && !n.staff) g.hitPed(n, 999, g.INT.me);", 0.4)
         await enters(1); await go("", 0.2); await go("g.leaveInterior();", 0); await asyncio.sleep(0.8); done(7, await go("", 0.4))
 
+    async def wait_mission(n=40):
+        # sur une machine lente, la mission met du temps à se déclencher : on laisse le jeu tourner et le dialogue défiler
+        for _ in range(n):
+            if await J("() => !!window.__game.mission"): return
+            await enters(1); await J("() => window.__game.sim(0.4)"); await asyncio.sleep(0.8)
+
     async def m8():
-        await go("g.setWanted(0);", 0); await tp('yann8'); await settle(6); await go("", 0.4); await enters(2); await go("", 0.3)
+        await go("g.setWanted(0);", 0); await tp('yann8'); await settle(6); await go("", 0.4); await enters(2); await go("", 0.3); await wait_mission()
         await go("const c=g.cars.find(c=>c.keep && c.type==='sedan' && !c.ai && !c.driver); g.player.x=c.x+2.5; g.player.y=c.y;", 0.05)
         await pg.keyboard.press('KeyE'); await go("", 0.3)
         await go("g.setWanted(0);", 0.1); await tpGoal(); await go("g.setWanted(0);", 0.5); await enters(2); done(8, await go("", 0.3))
 
     async def m9():
         await go("g.setWanted(0); if (g.player.car) { g.player.car.v=0; }", 0); await go("g.player.car=null; g.player.mesh.visible=true;", 0)
-        await tp('lices9'); await settle(6); await go("", 0.4); await enters(3); await go("", 0.3)
+        await tp('lices9'); await settle(6); await go("", 0.4); await enters(3); await go("", 0.3); await wait_mission()
         await go("const b=g.peds.find(p=>p.name==='Le Baron'); g.player.x=b.x+5; g.player.y=b.y;", 0.4); await enters(2); await go("", 0.3)
         await go("for (const p of g.peds.slice()) if (p.tough && p.name!=='Le Baron' && p.keep) g.hitPed(p, 999, g.player);", 0.5)
         await go("const b=g.peds.find(p=>p.name==='Le Baron'); g.hitPed(b, 999, g.player);", 0.5)

@@ -47,7 +47,7 @@ jobs:
 
   rapport:
     needs: partie
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,9 +66,17 @@ jobs:
         run: |
           git config user.name "controle-automatique"
           git config user.email "controle-automatique@users.noreply.github.com"
-          git add controle
-          git commit -m "Contrôle automatique de ${GITHUB_SHA::7} : $(head -1 controle/RAPPORT.md | sed 's/# Contrôle automatique — //') [skip ci]" || exit 0
-          for i in 1 2 3; do git pull --rebase -X theirs origin main && git push && exit 0; sleep 5; done
+          verdict=$(head -1 controle/RAPPORT.md | sed 's/# Contrôle automatique — //')
+          cp -r controle /tmp/controle-nouveau
+          for i in 1 2 3 4 5; do
+            # toujours repartir du dernier main (un autre push a pu arriver pendant le contrôle)
+            git fetch origin main && git checkout -B publication origin/main
+            rm -rf controle && cp -r /tmp/controle-nouveau controle
+            git add -A controle
+            git commit -m "Contrôle automatique de ${GITHUB_SHA::7} : ${verdict} [skip ci]" || exit 0
+            git push origin publication:main && exit 0
+            sleep 5
+          done
           exit 1
       - name: Résumé
         if: always()
