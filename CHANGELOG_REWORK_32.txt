@@ -1,0 +1,21 @@
+# Rework 32 — Albedo des sols et façades claires
+
+## Objectif
+Réduire le voile clair observé dans les vues piétonnes de jour en agissant sur les matériaux et l'éclairage ambiant, sans abaisser l'exposition globale ni modifier le brouillard.
+
+## Modifications
+- Sols : baisse des teintes de base des pavés, cobbles, places, chemins, bordures et éléments de voirie clairs.
+- Place des Lices : baisse de l'albedo du matériau de sol global et de sa grille fine, sans toucher au relief, aux niveaux ni aux géométries.
+- Escaliers et murs bas : teintes de pierre plus minérales et moins proches du blanc.
+- Façades : assombrissement à la source des textures des styles enduits/pierre claire (styles 0, 1, 2, 6 et 7), avant le dessin des vitrages et menuiseries. Les briques et façades modernes ne sont pas concernées.
+- Lumière ambiante : intensité de l'HemisphereLight réduite de 0,6 à 0,36 en journée et de 0,9 à 0,52 en journée pluvieuse. La valeur nocturne reste inchangée.
+
+## Préservé
+- Exposition et courbe de contraste finales inchangées.
+- Soleil, brouillard, météo, transitions d'humidité et réglages nocturnes inchangés.
+- Relief IGN, géométrie, collisions, déplacements et missions inchangés.
+- Aucun mesh, matériau, texture ou draw call supplémentaire.
+
+## Vérifications techniques
+- Analyse syntaxique de js/render.js et js/world.js avec new Function : OK.
+- Contrôle visuel et mesures automatisées : en attente du workflow GitHub.
