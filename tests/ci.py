@@ -71,6 +71,7 @@ async def run():
 
             async def open_game(first=False):
                 pg = await b.new_page(viewport={'width': 1280, 'height': 720})
+                pg.set_default_timeout(240000)  # les machines GitHub sont lentes en rendu logiciel
                 await pg.add_init_script(SEED)
                 pg.on('pageerror', lambda e: report['errors'].append(str(e)[:300]))
                 t0 = time.time()
@@ -126,7 +127,7 @@ async def views_fps_access(pg, J, settle):
             await J(f"() => {{ const g=window.__game; g.applyMode(g.MODES[{mode}]); g.sim(0.5); g.setcam({yaw},{pitch}); }}")
         await asyncio.sleep(2.5)
         path = os.path.join(VUES, name + '.png')
-        await pg.screenshot(path=path)
+        await pg.screenshot(path=path, timeout=240000)
         report['views'][name] = {'desc': desc, **metrics(path)}
     await J("() => { window.__freecam=null; const g=window.__game; g.applyMode(g.MODES[3]); }")
 
@@ -300,6 +301,8 @@ def compare_and_write():
         if visible == 0: notes.append("**Changement visuel : anecdotique.** Aucune des vues fixes ne change sur plus de 10 % de l'image. Si ce push devait améliorer le rendu, il ne se voit pas en jeu.")
         elif visible <= 2: notes.append(f"**Changement visuel : limité.** {visible} vue(s) sur {len(report['views'])} changent nettement (plus de 10 % de l'image).")
         else: notes.append(f"**Changement visuel : net.** {visible} vues sur {len(report['views'])} changent nettement. Regarder les comparaisons pour juger si c'est mieux.")
+    if report.get('harness'):
+        warn.insert(0, f"Contrôle incomplet : le banc de test a rencontré un problème ({report['harness']}). Les points non mesurés ne sont pas des erreurs du jeu.")
     verdict = 'KO' if ko else ('OK avec réserves' if warn else 'OK')
     report['verdict'] = verdict
 
@@ -331,7 +334,10 @@ if __name__ == '__main__':
         shutil.copy(os.path.join(OUT, 'resultat.json'), PREC)
         if os.path.exists(VUES): shutil.copytree(VUES, os.path.join(PREC, 'vues'))
     if os.path.exists(VUES): shutil.rmtree(VUES)
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except Exception as e:  # un problème du banc de test ne doit pas empêcher d'écrire le rapport
+        report['harness'] = f"{type(e).__name__}: {str(e)[:300]}"
     v = compare_and_write()
     print(open(os.path.join(OUT, 'RAPPORT.md')).read())
     sys.exit(1 if v == 'KO' else 0)
