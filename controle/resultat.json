@@ -1,15 +1,12 @@
 {
- "date": "2026-11-26 10:48 UTC",
- "commit": "a69cfb2",
+ "date": "2026-11-26 11:18 UTC",
+ "commit": "7697830",
  "load": {
   "ok": true,
-  "secondes": 191,
+  "secondes": 144,
   "bouton": "Jouer"
  },
- "errors": [
-  "scénario m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')\n    at eval (eval at evaluate (:234:30), <anonymous>:1:119)\n    at UtilityScript.evaluate (<anonymous>:241:19)\n    at Utilit",
-  "scénario m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')\n    at eval (eval at evaluate (:234:30), <anonymous>:1:90)\n    at UtilityScript.evaluate (<anonymous>:241:19)\n    at Utility"
- ],
+ "errors": [],
  "missions": {
   "Mission 1": true,
   "Mission 2": true,
@@ -18,8 +15,8 @@
   "Mission 5": true,
   "Mission 6": true,
   "Mission 7": true,
-  "Mission 8": false,
-  "Mission 9": false,
+  "Mission 8": null,
+  "Mission 9": null,
   "Fight club": true
  },
  "access": {
@@ -27,50 +24,60 @@
   "Thabor (en voiture, depuis le bd de la Duchesse-Anne)": true,
   "Mission 3 : les 3 sacs tirés sont accessibles à pied": true
  },
- "fps": 0.38,
+ "fps": 0.5,
  "views": {
   "joffre": {
    "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.599,
-   "contraste": 0.263,
-   "saturation": 0.26,
-   "part_quasi_blanc": 0.054
+   "luminosite": 0.611,
+   "contraste": 0.243,
+   "saturation": 0.236,
+   "part_quasi_blanc": 0.031,
+   "changement": 0.5
   },
   "saint_michel": {
    "desc": "Rue Saint-Michel, jour",
    "luminosite": 0.599,
    "contraste": 0.221,
-   "saturation": 0.126,
-   "part_quasi_blanc": 0.049
+   "saturation": 0.127,
+   "part_quasi_blanc": 0.048,
+   "changement": 0.009
   },
   "lices": {
    "desc": "Place des Lices, escalier, jour",
-   "luminosite": 0.713,
-   "contraste": 0.155,
-   "saturation": 0.123,
-   "part_quasi_blanc": 0.105
+   "luminosite": 0.72,
+   "contraste": 0.151,
+   "saturation": 0.142,
+   "part_quasi_blanc": 0.058,
+   "changement": 0.547
   },
   "halles": {
    "desc": "Halles des Lices, jour",
-   "luminosite": 0.696,
-   "contraste": 0.183,
-   "saturation": 0.157,
-   "part_quasi_blanc": 0.152
+   "luminosite": 0.684,
+   "contraste": 0.19,
+   "saturation": 0.168,
+   "part_quasi_blanc": 0.131,
+   "changement": 0.329
   },
   "lices_nuit": {
    "desc": "Place des Lices, nuit sous la pluie",
    "luminosite": 0.234,
    "contraste": 0.15,
-   "saturation": 0.348,
-   "part_quasi_blanc": 0.002
+   "saturation": 0.342,
+   "part_quasi_blanc": 0.002,
+   "changement": 0.272
   },
   "toits": {
    "desc": "Toits du centre vus d’en haut",
    "luminosite": 0.701,
    "contraste": 0.134,
    "saturation": 0.127,
-   "part_quasi_blanc": 0.078
+   "part_quasi_blanc": 0.079,
+   "changement": 0.0
   }
  },
- "verdict": "KO"
+ "scenario": [
+  "m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')",
+  "m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')"
+ ],
+ "verdict": "OK avec réserves"
 }

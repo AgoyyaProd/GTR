@@ -1,17 +1,16 @@
-# Contrôle automatique — KO
+# Contrôle automatique — OK avec réserves
 
-Commit `a69cfb2` · 2026-11-26 10:48 UTC · chargement 191 s · 0.38 images/s en rendu logiciel
-
-## Bloquant (à corriger avant tout autre changement)
-- 2 erreur(s) JavaScript pendant la partie (détail plus bas).
-- Mission 8 ne se termine plus.
-- Mission 9 ne se termine plus.
+Commit `7697830` · 2026-11-26 11:18 UTC · chargement 144 s · 0.5 images/s en rendu logiciel (précédent : 0.38)
 
 ## Réserves
-- Rue Maréchal Joffre, jour : image délavée (luminosité moyenne 0.599, saturation 0.26 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
-- Rue Saint-Michel, jour : image délavée (luminosité moyenne 0.599, saturation 0.126 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
-- Place des Lices, escalier, jour : image délavée (luminosité moyenne 0.713, saturation 0.123 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
-- Halles des Lices, jour : image délavée (luminosité moyenne 0.696, saturation 0.157 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Contrôle incomplet : le script de test n'a pas pu jouer m8, m9 (problème du banc de test, pas forcément du jeu). Ces missions sont marquées « non vérifiée ».
+- Rue Maréchal Joffre, jour : image délavée (luminosité moyenne 0.611, saturation 0.236 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Rue Saint-Michel, jour : image délavée (luminosité moyenne 0.599, saturation 0.127 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Place des Lices, escalier, jour : image délavée (luminosité moyenne 0.72, saturation 0.142 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Halles des Lices, jour : image délavée (luminosité moyenne 0.684, saturation 0.168 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+
+## Rendu
+**Changement visuel : net.** 4 vues sur 6 changent nettement. Regarder les comparaisons pour juger si c'est mieux.
 
 ## Missions
 | Mission | Résultat |
@@ -23,8 +22,8 @@ Commit `a69cfb2` · 2026-11-26 10:48 UTC · chargement 191 s · 0.38 images/s en
 | Mission 5 | OK |
 | Mission 6 | OK |
 | Mission 7 | OK |
-| Mission 8 | **KO** |
-| Mission 9 | **KO** |
+| Mission 8 | non vérifiée |
+| Mission 9 | non vérifiée |
 | Fight club | OK |
 
 ## Accès aux éléments de mission
@@ -37,12 +36,21 @@ Changement = part de l’image qui change nettement par rapport au contrôle pr�
 
 | Vue | Changement | Luminosité | Contraste | Saturation | Quasi blanc |
 |---|---|---|---|---|---|
-| Rue Maréchal Joffre, jour | — | 0.599 | 0.263 | 0.26 | 5 % |
-| Rue Saint-Michel, jour | — | 0.599 | 0.221 | 0.126 | 5 % |
-| Place des Lices, escalier, jour | — | 0.713 | 0.155 | 0.123 | 10 % |
-| Halles des Lices, jour | — | 0.696 | 0.183 | 0.157 | 15 % |
-| Place des Lices, nuit sous la pluie | — | 0.234 | 0.15 | 0.348 | 0 % |
-| Toits du centre vus d’en haut | — | 0.701 | 0.134 | 0.127 | 8 % |
+| Rue Maréchal Joffre, jour | 50 % | 0.611 (+0.012) | 0.243 (-0.02) | 0.236 (-0.024) | 3 % |
+| Rue Saint-Michel, jour | 1 % | 0.599 (+0.0) | 0.221 (+0.0) | 0.127 (+0.001) | 5 % |
+| Place des Lices, escalier, jour | 55 % | 0.72 (+0.007) | 0.151 (-0.004) | 0.142 (+0.019) | 6 % |
+| Halles des Lices, jour | 33 % | 0.684 (-0.012) | 0.19 (+0.007) | 0.168 (+0.011) | 13 % |
+| Place des Lices, nuit sous la pluie | 27 % | 0.234 (+0.0) | 0.15 (+0.0) | 0.342 (-0.006) | 0 % |
+| Toits du centre vus d’en haut | 0 % | 0.701 (+0.0) | 0.134 (+0.0) | 0.127 (+0.0) | 8 % |
+
+Comparaisons avant (en haut) / après (en bas) :
+
+![halles.jpg](comparaison/halles.jpg)
+![joffre.jpg](comparaison/joffre.jpg)
+![lices.jpg](comparaison/lices.jpg)
+![lices_nuit.jpg](comparaison/lices_nuit.jpg)
+![saint_michel.jpg](comparaison/saint_michel.jpg)
+![toits.jpg](comparaison/toits.jpg)
 
 Captures actuelles :
 
@@ -53,16 +61,10 @@ Captures actuelles :
 ![lices_nuit](vues/lices_nuit.png)
 ![toits](vues/toits.png)
 
-## Erreurs JavaScript
+## Problèmes du script de test (pas du jeu)
 ```
-scénario m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')
-    at eval (eval at evaluate (:234:30), <anonymous>:1:119)
-    at UtilityScript.evaluate (<anonymous>:241:19)
-    at Utilit
-scénario m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')
-    at eval (eval at evaluate (:234:30), <anonymous>:1:90)
-    at UtilityScript.evaluate (<anonymous>:241:19)
-    at Utility
+m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')
+m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')
 ```
 
 ---
