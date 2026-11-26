@@ -542,6 +542,27 @@ let MODE = MODES[1];
 const WX = { auto: true, state: 'crachin', t: 240, k: 0.75, target: 0.75, wetT: 0, applied: null };
 const WXS = { clair: { rain: 0, next: [['nuageux', 5], ['clair', 2], ['crachin', 2]] }, nuageux: { rain: 0, next: [['crachin', 5], ['clair', 3], ['averse', 1]] }, crachin: { rain: 0.55, next: [['nuageux', 4], ['averse', 2], ['crachin', 2], ['clair', 1]] }, averse: { rain: 1, next: [['crachin', 4], ['nuageux', 3]] } };
 const WXMSG = { clair: 'Le ciel se dégage', nuageux: 'Les nuages s\'installent', crachin: 'Le crachin breton est de retour', averse: 'Grosse averse sur Rennes' };
+/* Wetness is a continuous material response, not a binary weather preset.
+   The residual term keeps streets damp briefly after the rain particles stop. */
+function updateWetSurfaceBlend(amount, night) {
+  const k = clamp(amount, 0, 1);
+  const wetColors = {
+    asphalt: 0x6e6e6e, road: 0x6e6e6e, highway: 0x5e5e5e,
+    ground: 0x9a9690, groundF: 0x9a9690
+  };
+  const keys = ['asphalt', 'highway', 'road', 'pave', 'cobble', 'square', 'path', 'mark', 'curb', 'gutter', 'ground', 'groundF'];
+  for (const key of keys) {
+    const mt = MAT[key]; if (!mt || !mt.userData.wetDryRoughness) continue;
+    const u = mt.userData;
+    mt.roughness = THREE.MathUtils.lerp(u.wetDryRoughness, u.wetRoughness, k);
+    mt.envMapIntensity = THREE.MathUtils.lerp(u.wetDryEnv, u.wetEnv, k);
+    if (wetColors[key] !== undefined) {
+      if (!u.wetDryColor) u.wetDryColor = mt.color.clone();
+      if (!u.wetColor) u.wetColor = new THREE.Color(wetColors[key]);
+      mt.color.copy(u.wetDryColor).lerp(u.wetColor, k);
+    }
+  }
+}
 function wxNight() { const h = (typeof gameMin !== 'undefined' ? gameMin : 23 * 60) / 60; return h < 8 || h >= 17.5; }
 function wxMode() { const wet = WX.k > 0.08 || WX.wetT > 0, n = wxNight(); return { id: (n ? 'nuit' : 'jour') + (wet ? '-pluie' : ''), label: '', night: n, rain: wet, wx: true }; }
 function weatherStep(dt) {
@@ -557,6 +578,8 @@ function weatherStep(dt) {
   if (WX.k > 0.05) WX.wetT = 90; else if (WX.wetT > 0) WX.wetT -= dt; /* puddles dry slowly */
   const m = wxMode(); if (m.id !== WX.applied) { WX.applied = m.id; applyMode(m); }
   const k = Math.max(0, WX.k);
+  const residualWet = WX.wetT > 0 ? 0.28 * (WX.wetT / 90) : 0;
+  updateWetSurfaceBlend(Math.max(k, residualWet), MODE.night);
   rain.visible = k > 0.03 && !underRoof(player.x, player.y); rainGeo.setDrawRange(0, Math.round(RAIN * Math.min(1, 0.15 + k)) * 2); rain.material.opacity = 0.12 + 0.3 * k;
   if (scene.fog) scene.fog.density = (MODE.night ? 0.0042 : 0.0026) + k * (MODE.night ? 0.0026 : 0.0028) + (WX.state === 'nuageux' ? 0.0006 : 0);
 }
@@ -582,8 +605,18 @@ function applyMode(m) {
   }
   if (MAT.dormer) MAT.dormer[1].emissiveIntensity = night ? 1 : 0;
   const ground = ['asphalt', 'highway', 'road', 'pave', 'cobble', 'square', 'path', 'mark', 'curb', 'gutter', 'ground', 'groundF'];
-  for (const k of ground) { const mt = MAT[k]; if (!mt) continue; mt.roughness = wet ? (k === 'mark' ? 0.22 : 0.43) : 1; mt.envMapIntensity = wet ? (night ? 0.75 : 0.9) : (night ? 0.35 : 0.7); mt.color.multiplyScalar(1); }
-  MAT.asphalt.color.set(wet ? 0x6e6e6e : 0x9a9a9a); MAT.road.color.set(wet ? 0x6e6e6e : 0x9a9a9a); MAT.highway.color.set(wet ? 0x5e5e5e : 0x7c7c7c); for (const gm of [MAT.ground, MAT.groundF]) if (gm) gm.color.set(wet ? 0x9a9690 : 0xd0ccc4);
+  for (const k of ground) {
+    const mt = MAT[k]; if (!mt) continue;
+    mt.userData.wetDryRoughness = 1;
+    mt.userData.wetRoughness = k === 'mark' ? 0.2 : (k === 'asphalt' || k === 'road' || k === 'highway' ? 0.34 : 0.48);
+    mt.userData.wetDryEnv = night ? 0.35 : 0.7;
+    mt.userData.wetEnv = night ? 0.82 : 1.05;
+    mt.roughness = mt.userData.wetDryRoughness;
+    mt.envMapIntensity = mt.userData.wetDryEnv;
+  }
+  MAT.asphalt.color.set(0x9a9a9a); MAT.road.color.set(0x9a9a9a); MAT.highway.color.set(0x7c7c7c);
+  for (const gm of [MAT.ground, MAT.groundF]) if (gm) gm.color.set(0xd0ccc4);
+  updateWetSurfaceBlend(WX.auto ? WX.k : (wet ? 1 : 0), night);
   if (typeof ROOMLIT !== 'undefined') ROOMLIT.value = night ? 1.1 : 0.55;
   poolMat.opacity = night ? 1 : 0; poolMat.visible = night;
   streakMesh.visible = night && wet; rain.visible = wet && (!WX.auto || WX.k > 0.03) && !underRoof(player.x, player.y);
