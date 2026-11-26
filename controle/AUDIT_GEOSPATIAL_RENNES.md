@@ -3,91 +3,113 @@
 ## État du dépôt au 26 novembre 2026
 
 - Dépôt : https://github.com/AgoyyaProd/GTR
-- Branche de travail : `refonte-01`
-- Commit de départ observé : `be26c930fe821bc1e513854432902af5858879b5`
-- Base : `main` au commit `0c2f5b9837af0c49f1cf6507bfc402e514145641`
-- Aucun changement sur `main`.
-- Une première correction de l'extracteur de détails OSM a été poussée sur `refonte-01` : `a431c9a03fc275f5d642ee5ffe29625bf54c7840`.
+- Branche de travail : `refonte-01`, issue de `main` au commit `0c2f5b9837af0c49f1cf6507bfc402e514145641`.
+- Aucun changement direct sur `main`.
+- Les corrections et contrôles ci-dessous sont publiés sur `refonte-01` uniquement.
 
-## Données jointes
+## Analyse intégrale du fichier OSM fourni
 
-Le fichier `map` est un export OSM XML de 212 028 433 octets. Son en-tête annonce une emprise de 48.0780800–48.1443300 N et -1.7214200–-1.6137900 E, avec une date de base OSM 2026-11-24T14:33:49Z. En parcourant toutes les entités, les coordonnées réelles observées vont de 48.0165562 à 48.1644587 N et -1.7570454 à -1.5594194 E : elles dépassent donc nettement les bounds déclarés dans le XML. Le fichier contient 764 471 nœuds, 115 334 voies et 3 212 relations. Ces totaux sont issus d'un parcours XML intégral.
+Fichier `map` : 212 028 433 octets, XML OSM 0.6, base OSM `2026-11-24T14:33:49Z`.
 
-À contrôler avant toute intégration :
-- Pourquoi des nœuds se trouvent-ils hors de l'élément `bounds` ?
-- Vérifier l'intégrité de toutes les références `nd ref` et `member ref`, y compris le sens d'ordre des entités XML.
-- Filtrer explicitement Rennes et les zones réellement visées par la map finale. L'extraction régionale ne doit pas décaler l'origine métrique du jeu ni gonfler l'emprise de jeu.
-- Les relations d'administration et de quartiers sont une source différente des limites de rendu. Ne pas inventer de frontières de quartiers à partir de couleurs de façades.
+Parcours intégral du XML :
+- 764 471 nœuds ;
+- 115 334 ways ;
+- 3 212 relations ;
+- 0 référence `nd ref` manquante dans les ways ;
+- 2 211 noms distincts de voies portant `highway` et `name` ;
+- 958 relations `associatedStreet` ;
+- 618 relations `restriction` ;
+- 619 multipolygones ;
+- 139 relations taguées `boundary`.
 
-## Architecture existante observée
+L'en-tête `bounds` décrit la fenêtre demandée à Overpass. Des nœuds situés hors de cette fenêtre peuvent être des dépendances géométriques de ways qui traversent l'emprise ; cette différence d'emprise ne prouve donc pas une corruption du fichier. Le contrôle déterminant est la complétude des références et des géométries utiles à la zone de jeu.
 
-- `js/core.js` contient un graphe routier global (`GD.g.xy/off/nb/fl`), une recherche A* et un index spatial des nœuds. `nearestNode` cherche dans un rayon progressif et retourne actuellement `0` même si aucun nœud valable n'a été trouvé : vérifier et remplacer par un échec explicite / null, puis protéger les appelants.
-- `js/core.js` indexe les tuiles de 200 m et leurs segments pour collisions et noms de rues.
-- `js/world.js` construit les bâtiments, les chaussées, trottoirs, escaliers, murs et géométries à partir de `tiles/t*.json`.
-- `outils/street_osm.py` extrait aujourd'hui escaliers, barrières, bollards et trottoirs. Il ne produit pas les rues ni les quartiers : ceux-ci sont dans les données préconstruites / d'autres étapes du pipeline.
-- `outils/streets.py` recalcule largeur des chaussées et trottoirs à partir des voies routières déjà présentes dans les tuiles, des empreintes bâties et de lignes de trottoirs OSM.
-- `global.json` contient le réseau global et la transformation des coordonnées, mais l'API de récupération du connecteur n'a pas rendu son contenu (fichier volumineux). Il faut l'inspecter depuis un clone Git ou un téléchargement de contenu dédié.
-- Le contrôle courant `controle/RAPPORT.md` du 26 novembre indique « OK avec réserves », missions 1–9 et fight club OK, mais une réserve sévère de performance en rendu logiciel (0.286 FPS) ainsi que des vues de jour délavées. Ce rapport ne teste pas la complétude OSM ou la topologie du réseau de rues.
+### Quartiers : constat critique
 
-## Correction déjà appliquée
+Le fichier contient bien les relations de hiérarchie des quartiers rennais :
+- relation OSM `5833095`, « Rennes - quartiers » : 12 relations administratives de niveau 10 ;
+- relation OSM `6796360`, « Rennes - sous-quartiers » : 45 relations administratives de niveau 11.
 
-Dans `outils/street_osm.py` :
-- chemin OSM configurable via `GTR_OSM_FILE` ;
-- chemin de sortie configurable via `GTR_STREET_OSM_PICKLE` ;
-- une voie n'est retenue que si tous les nœuds référencés sont résolus, plutôt que d'accepter silencieusement une voie amputée ;
-- aucun changement du référentiel métrique historique du jeu.
+Mais l'extrait est incomplet pour une partie de ces frontières :
+- quartiers niveau 10 : 7 relations complètes sur 12 ; 5 incomplètes ; 28 ways membres référencés mais absents de l'extrait ;
+- sous-quartiers niveau 11 : 38 relations complètes sur 45 ; 7 incomplètes ; 28 ways membres référencés mais absents de l'extrait.
 
-Cette correction n'est pas encore exécutée sur le fichier joint ni couverte par un contrôle réel. Elle ne constitue pas une validation fonctionnelle.
+Quartiers niveau 10 incomplets : Bourg l'Évesque - La Touche - Moulin du Comte, Bréquigny, Cleunay - Arsenal-Redon, Maurepas - Patton, Villejean - Beauregard.
 
-## Contrôles géospatiaux à automatiser
+Conséquence : il ne faut surtout pas publier ces cinq polygones incomplets ni combler leurs trous par des limites inventées. Il faut récupérer les ways manquants depuis la source OSM correspondante, puis contrôler la fermeture et la validité des multipolygones avant de les utiliser dans le jeu.
 
-### A. Import OSM et référentiel
-- Parser streaming sans perte de références ; mesurer le taux de références manquantes par type d'objet.
-- Vérifier bornes, origine, conversion WGS84 vers plan métrique local ; quantifier erreur d'aller-retour en mètres.
-- Détecter lat/lon invalides, doublons d'identifiants, géométries dégénérées et voies tronquées.
-- Produire un rapport par familles : voies, bâtiments, adresses, points d'intérêt, espaces verts, hydrographie, ferroviaire, arrêts, limites administratives et quartiers.
-- Respecter les mentions ODbL et conserver attribution/provenance/date de base.
+Le script reproductible `tests/geospatial_osm.py` mesure ces éléments. Commandes :
+```bash
+python tests/geospatial_osm.py --input map --output controle/osm-audit.json
+python tests/geospatial_osm.py --input map --strict
+```
+Le mode strict doit échouer sur le fichier fourni tant que les membres de frontières manquants ne sont pas récupérés.
 
-### B. Rues et réseau routier
-- Construire un graphe par nœuds OSM réels et voies, sans raccorder deux segments simplement parce qu'ils se croisent géométriquement à des niveaux différents.
-- Respecter `oneway`, `oneway:bicycle`, `access`, `vehicle`, `motor_vehicle`, `foot`, `bicycle`, `service`, `junction=roundabout`, `bridge`, `tunnel`, `layer`, `ford`, restrictions OSM `type=restriction` et relations via/from/to.
-- Distinguer carrefour réel, pont, passage souterrain, voie privée, chemin, escalier, piste cyclable, rue piétonne et voie de service.
-- Vérifier que les noms de rues utilisent `name`, `name:fr`, `ref` et références de route de façon déterministe, avec gestion des voies sans nom.
-- Vérifier toutes les connexions de tuiles aux bords (aucun segment coupé entre tuiles de 200 m).
-- A* : départ/arrivée invalides, nœuds isolés, composantes, chemins impossibles, restrictions de virage, impasses et accès piéton.
-- Tests de trajets ancrés sur plusieurs secteurs : centre historique, gare, Villejean, Le Blosne, Cleunay, Beauregard, Thabor, campus, rocade. Les points doivent être pris dans les données effectives, pas estimés au hasard.
+## Architecture du jeu observée
 
-### C. Quartiers
-- Identifier la source officielle/OSM des quartiers et la nature de chaque relation (administrative, subarea, boundary, neighbourhood, quarter).
-- Ne pas confondre communes de Rennes Métropole, quartiers administratifs, lieux-dits et quartiers d'usage.
-- Reconstituer les multipolygones avec outer/inner, anneaux fermés et rôles valides.
-- Contrôler validité géométrique, intersections, trous, chevauchements, zones non couvertes et doublons de nom.
-- Définir une règle de rattachement déterministe d'une adresse / d'un bâtiment / d'un point au quartier (point intérieur ou plus grande intersection), et garder les cas ambigus.
-- Afficher / interroger le quartier réel dans le jeu ; les teintes de façade heuristiques du rendu ne sont pas un système de quartiers.
+- `js/core.js` contient le graphe global `GD.g.xy/off/nb/fl`, l'index spatial des nœuds et A*.
+- Les tuiles de 200 m contiennent le réseau de rues et ses segments pour collisions, circulation et noms de rues.
+- `js/world.js` construit les bâtiments, chaussées, trottoirs, escaliers, murs et géométries depuis `tiles/t*.json`.
+- `outils/street_osm.py` ajoute escaliers, barrières, bollards et trottoirs ; il ne construit pas le graphe routier principal ni les quartiers.
+- `outils/streets.py` dimensionne chaussées et trottoirs à partir des routes déjà préconstruites, des bâtiments et des lignes de trottoir OSM.
+- `global.json` contient le graphe global et la transformation métrique ; son contenu volumineux n'a pas été exposé par l'API de lecture de fichier utilisée ici.
+- `controle/RAPPORT.md` du 26 novembre signale un chargement de 83 s, 0.286 FPS en rendu logiciel et des vues diurnes délavées. Le contrôle existant valide les missions, pas la complétude du graphe OSM ni les frontières des quartiers.
 
-### D. Bâtiments, adresses et objets de ville
-- Bâtiments : empreinte et multipolygone, trous, niveaux `building:levels`, `height`, `roof:*`, `min_height`, `building:part`; pas de double extrusion des parties.
-- Adresses : `addr:housenumber`, `addr:street`, `addr:place`, `addr:postcode`, `addr:city`, nœuds/voies/relations `associatedStreet`; détection des orphelins.
-- Équipements : commerces, services, écoles, hôpitaux, transports, parcs, mobilier et patrimoine, avec catégories OSM sans inventer des attributs absents.
+## Corrections de robustesse déjà poussées sur refonte-01
 
-### E. Jeu et simulation
-- Positions du joueur, PNJ, véhicules, missions, commerces et objectifs alignées sur le référentiel carte.
-- Circulation véhicule et piéton avec masques d'accès distincts ; voiture interdite sur escalier, trottoir ou voie piétonne sauf exception taguée.
-- Passants sur surfaces piétonnes réellement accessibles ; spawn sans bâtiments, eau ou barrières.
-- Détection du nom de rue et du quartier cohérente avec la position et sans sauts entre segments proches.
-- Collision et cheminement cohérents aux frontières de tuiles, ponts, tunnels, clôtures et passages.
-- Validation missions 1–9 et fight club conservée ; tester les points d'accès et leurs reachability.
-- Rendu distant et proche, chargement/déchargement de tuiles, mémoire, appels draw, FPS sur matériel comparable et navigateur.
+1. `outils/street_osm.py` :
+   - source et sortie configurables par `GTR_OSM_FILE` et `GTR_STREET_OSM_PICKLE` ;
+   - une way n'est pas utilisée si un seul de ses nœuds référencés manque ;
+   - gestion du répertoire de sortie courant.
+2. `js/core.js` :
+   - `nearestNode` renvoie maintenant `-1` si aucun nœud compatible n'est trouvé, au lieu de renvoyer silencieusement le nœud `0` ;
+   - `outEdges` et A* protègent leurs indices.
+3. `js/game.js`, `js/actors.js`, `js/life.js`, `js/police.js` :
+   - les appelants traitent explicitement l'absence d'ancrage routier ;
+   - les points de spawn et de navigation n'utilisent plus le nœud zéro comme faux substitut.
 
-## Critères d'acceptation « simulation de Rennes »
-1. Couverture intra-Rennes explicitement cartographiée et quantifiée.
-2. Zéro voie routière tronquée silencieusement dans la zone de jeu.
-3. Graphe topologiquement cohérent avec les règles d'accès et restrictions OSM.
-4. Quartiers issus de polygones de référence identifiés, sans partition inventée.
-5. Aucun décalage systématique entre carte, bâtiments, routes, joueurs et objectifs.
-6. Rapport de tests automatisés, fixtures de cas OSM difficiles et parcours navigateur.
-7. Pas de fusion dans `main` tant que toutes les validations cartographiques et de jeu ne sont pas vertes.
+Ces corrections ont été relues depuis GitHub. Elles doivent encore passer la suite navigateur complète avant d'être considérées comme validées.
 
-## Limites de cette passe
+## Contrôles géospatiaux requis avant la simulation complète
 
-L'environnement courant permet de lire le dépôt et le fichier source, mais pas de lancer le projet complet dans un navigateur ni d'exécuter le pipeline générateur de tuiles dépendant de ses chemins et environnements de build historiques. Le contenu de certains fichiers binaires/JSON volumineux, dont `global.json`, n'est pas servi en texte par l'API de fichier du connecteur. Il manque donc encore une inspection locale du clone et une exécution du contrôle navigateur. Ne pas déclarer la simulation géographique validée avant ces étapes.
+### Réseau routier
+- Construire le graphe depuis les nœuds et ways OSM réels ; conserver les identifiants source.
+- Respecter `oneway`, `access`, `vehicle`, `motor_vehicle`, `foot`, `bicycle`, `bridge`, `tunnel`, `layer`, `junction=roundabout`, `ford` et relations `restriction` via/from/to.
+- Ne pas connecter automatiquement les croisements à niveaux différents.
+- Vérifier les composantes connexes, nœuds isolés, voies coupées aux bords des tuiles, impasses et chemins interdits.
+- Vérifier les masques piéton / voiture / vélo indépendamment.
+- Tester A* avec départ/arrivée hors carte, sans nœud, sur pont, tunnel, escalier, rue à sens unique et composantes déconnectées.
+
+### Quartiers
+- Récupérer les 28 ways absents des relations de niveau 10 et les 28 absents du niveau 11 ; dédupliquer les IDs communs.
+- Reconstituer outer/inner et multipolygones, vérifier anneaux fermés, validité géométrique, chevauchements et couverture.
+- Conserver relation OSM, niveau administratif, nom et hiérarchie parent/enfant.
+- Ne rattacher une adresse, un bâtiment ou le joueur à un quartier que par géométrie validée ; les cas ambigus restent signalés.
+- Ne pas confondre quartiers administratifs (niveau 10), sous-quartiers (niveau 11), communes et secteurs d'usage.
+
+### Bâtiments et adresses
+- Vérifier multipolygones, trous, `building:levels`, `height`, `roof:*`, `min_height`, `building:part` et éviter les doubles extrusions.
+- Vérifier `addr:housenumber`, `addr:street`, `addr:place`, `addr:postcode`, `addr:city` et relations `associatedStreet`.
+- Contrôler les équipements, parcs, transports, commerces et services à partir des tags présents, sans inventer de données.
+
+### Simulation et rendu
+- Positions du joueur, PNJ, véhicules, missions et objectifs dans un référentiel métrique unique.
+- Circulation distincte pour piétons, voitures et vélos ; pas de voiture sur escaliers, trottoirs ou voies piétonnes sans règle explicite.
+- Spawn et cheminements hors bâtiments, eau et barrières ; passages de clôtures et accès mission conservés.
+- Nom de rue et quartier cohérents avec la position.
+- Continuité aux frontières de tuiles, ponts, tunnels, murs et passages.
+- Tests navigateur : chargement, missions 1–9, fight club, accessibilité, erreurs JS, performances et vues fixes.
+
+## Critères d'acceptation
+
+1. Tous les quartiers utilisés ont des multipolygones complets et valides.
+2. Zéro way tronquée silencieusement dans la zone de jeu.
+3. Graphe cohérent avec la topologie et les règles d'accès OSM.
+4. Les noms de rues, quartiers et positions d'objets sont géographiquement cohérents.
+5. Aucune régression sur missions, circulation, collisions, chargement et performances.
+6. Rapport automatique attaché au commit de la PR et tests navigateur verts.
+7. Aucune fusion dans `main` avant validation.
+
+## Limites restantes
+
+Le fichier OSM joint a été parcouru intégralement et le script d'audit a été exécuté localement. En revanche, le pipeline de génération des tuiles n'a pas été relancé et le navigateur de test du dépôt n'a pas encore été exécuté sur la branche. Les frontières des quartiers ne sont pas encore intégrées au jeu. La PR reste en brouillon jusqu'à validation réelle.
