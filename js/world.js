@@ -2236,7 +2236,7 @@ function buildGlobal(maskImg, lcImg) {
      cut out (stencil) above carriageways; a fine grid follows the player so the relief is smooth */
   const g = MAT.groundTex;
   buildCobbleMask();
-  const mkMat = fine => { const mat = new THREE.MeshStandardMaterial({ map: g.slab.map, normalMap: g.slab.normalMap, roughnessMap: g.slab.roughnessMap, color: 0x969189, roughness: 1 });
+  const mkMat = fine => { const mat = new THREE.MeshStandardMaterial({ map: g.slab.map, normalMap: g.slab.normalMap, roughnessMap: g.slab.roughnessMap, color: MAT.groundAlbedo, roughness: 1 });
   Object.assign(mat, { stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc });
   allMats.push(mat);
   mat.customProgramCacheKey = () => fine ? 'groundFine' : 'groundCoarse'; /* the two variants must not share one compiled program */
