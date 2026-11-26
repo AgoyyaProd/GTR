@@ -271,16 +271,25 @@ function addBuilding(gb, t, h, code, p, R) {
       const C = [p[e1.q * 2], h, -p[e1.q * 2 + 1]], D = [p[e1.j * 2], h, -p[e1.j * 2 + 1]];
       const R0 = [m0[0], rid, -m0[1]], R1 = [m1[0], rid, -m1[1]];
       const roofMat = MAT.slate;
-      gb.quad(roofMat, A, B, R1, R0, [0,0], [e0.L/3,0], [e0.L/3,rise/3], [0,rise/3], [0,1,0]);
-      gb.quad(roofMat, D, C, R0, R1, [0,0], [e1.L/3,0], [e1.L/3,rise/3], [0,rise/3], [0,1,0]);
-      // Pignons triangulaires fermant proprement les deux extrémités du faîtage.
+      // Normales inclinées calculées depuis les triangles réels : le toit ne doit pas
+      // être éclairé comme un plateau horizontal.
+      const faceNormal = (a, b, c) => {
+        const ux = b[0]-a[0], uy = b[1]-a[1], uz = b[2]-a[2];
+        const vx = c[0]-a[0], vy = c[1]-a[1], vz = c[2]-a[2];
+        let nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
+        const ll = Math.hypot(nx,ny,nz) || 1; nx/=ll; ny/=ll; nz/=ll;
+        if (ny < 0) { nx=-nx; ny=-ny; nz=-nz; }
+        return [nx,ny,nz];
+      };
+      gb.quad(roofMat, A, B, R1, R0, [0,0], [e0.L/3,0], [e0.L/3,rise/3], [0,rise/3], faceNormal(A,B,R1));
+      gb.quad(roofMat, D, C, R0, R1, [0,0], [e1.L/3,0], [e1.L/3,rise/3], [0,rise/3], faceNormal(D,C,R0));
+      // Pignons triangulaires : GB.tri calcule lui-même leur normale plane.
       const endA = [p[short0.q * 2], h, -p[short0.q * 2 + 1]];
       const endB = [p[short0.j * 2], h, -p[short0.j * 2 + 1]];
       const endC = [p[short1.q * 2], h, -p[short1.q * 2 + 1]];
       const endD = [p[short1.j * 2], h, -p[short1.j * 2 + 1]];
-      const n0 = [m0[0] - cx, 0, -(m0[1] - cy)], n1 = [m1[0] - cx, 0, -(m1[1] - cy)];
-      gb.tri(mat, endA, R0, endB, [0,0], [0.5,1], [1,0], n0);
-      gb.tri(mat, endC, R1, endD, [0,0], [0.5,1], [1,0], n1);
+      gb.tri(mat, endA, R0, endB, [0,0], [0.5,1], [1,0]);
+      gb.tri(mat, endC, R1, endD, [0,0], [0.5,1], [1,0]);
       // Faîtage en ardoise légèrement surélevé.
       const dx = m1[0] - m0[0], dy = m1[1] - m0[1], rl = Math.hypot(dx, dy) || 1, rw = 0.10;
       const nx = -dy / rl * rw, ny = dx / rl * rw;
@@ -326,8 +335,9 @@ function addBuilding(gb, t, h, code, p, R) {
     }
   }
   if (!gableBuilt && okInner) gb.poly(style === 7 || style === 2 || roof === 2 ? MAT.slate : MAT.zinc, inn, top, 3);
-  /* cheminées conservées sur les toitures à deux pans et en croupe */
-  if (style !== 6 && R() < 0.75 && (okInner || gableBuilt)) {
+  /* Les cheminées aléatoires restent sur les toitures en croupe : sur un toit
+     à deux pans, leur placement doit être calculé sur le pan réel, pas sur l'ancien faîtage inset. */
+  if (!gableBuilt && style !== 6 && R() < 0.75 && okInner) {
     for (let k = 0, K = 1 + (R() * 2 | 0); k < K; k++) {
       const vi = (R() * n) | 0, qx = lerp(inn[vi * 2], cx, 0.25), qy = lerp(inn[vi * 2 + 1], cy, 0.25);
       const cw = 0.6 + R() * 0.5, cd = 0.9 + R() * 0.8, ch = 1.8, rot = R() * 3;
