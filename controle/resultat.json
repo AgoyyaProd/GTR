@@ -1,9 +1,9 @@
 {
- "date": "2026-11-26 14:34 UTC",
- "commit": "3328673",
+ "date": "2026-11-26 14:55 UTC",
+ "commit": "93c9dab",
  "load": {
   "ok": true,
-  "secondes": 87,
+  "secondes": 181,
   "bouton": "Jouer"
  },
  "errors": [],
@@ -24,15 +24,15 @@
   "Thabor (à pied, depuis la rue de Paris)": true,
   "Thabor (en voiture, depuis le bd de la Duchesse-Anne)": true
  },
- "fps": 0.353,
+ "fps": 0.144,
  "views": {
   "joffre": {
    "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.514,
-   "contraste": 0.236,
-   "saturation": 0.277,
-   "part_quasi_blanc": 0.044,
-   "changement": 0.143
+   "luminosite": 0.52,
+   "contraste": 0.227,
+   "saturation": 0.265,
+   "part_quasi_blanc": 0.037,
+   "changement": 0.137
   },
   "saint_michel": {
    "desc": "Rue Saint-Michel, jour",
@@ -40,7 +40,7 @@
    "contraste": 0.193,
    "saturation": 0.184,
    "part_quasi_blanc": 0.096,
-   "changement": 0.0
+   "changement": 0.001
   },
   "lices": {
    "desc": "Place des Lices, escalier, jour",
@@ -48,35 +48,36 @@
    "contraste": 0.155,
    "saturation": 0.172,
    "part_quasi_blanc": 0.083,
-   "changement": 0.002
+   "changement": 0.042
   },
   "halles": {
    "desc": "Halles des Lices, jour",
-   "luminosite": 0.648,
-   "contraste": 0.182,
+   "luminosite": 0.649,
+   "contraste": 0.181,
    "saturation": 0.159,
-   "part_quasi_blanc": 0.171,
-   "changement": 0.001
+   "part_quasi_blanc": 0.172,
+   "changement": 0.023
   },
   "lices_nuit": {
    "desc": "Place des Lices, nuit sous la pluie",
-   "luminosite": 0.272,
-   "contraste": 0.156,
-   "saturation": 0.379,
+   "luminosite": 0.217,
+   "contraste": 0.141,
+   "saturation": 0.355,
    "part_quasi_blanc": 0.002,
-   "changement": 0.204
+   "changement": 0.226
   },
   "toits": {
    "desc": "Toits du centre vus d’en haut",
    "luminosite": 0.666,
-   "contraste": 0.148,
+   "contraste": 0.149,
    "saturation": 0.151,
    "part_quasi_blanc": 0.042,
-   "changement": 0.0
+   "changement": 0.007
   }
  },
  "fps_hist": [
-  0.353
+  0.353,
+  0.144
  ],
  "verdict": "OK avec réserves"
 }

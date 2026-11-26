@@ -1,9 +1,9 @@
 {
- "date": "2026-11-26 14:20 UTC",
- "commit": "18edf3a",
+ "date": "2026-11-26 14:34 UTC",
+ "commit": "3328673",
  "load": {
   "ok": true,
-  "secondes": 153,
+  "secondes": 87,
   "bouton": "Jouer"
  },
  "errors": [],
@@ -24,15 +24,15 @@
   "Thabor (à pied, depuis la rue de Paris)": true,
   "Thabor (en voiture, depuis le bd de la Duchesse-Anne)": true
  },
- "fps": 0.38,
+ "fps": 0.353,
  "views": {
   "joffre": {
    "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.528,
-   "contraste": 0.226,
-   "saturation": 0.248,
-   "part_quasi_blanc": 0.04,
-   "changement": 0.255
+   "luminosite": 0.514,
+   "contraste": 0.236,
+   "saturation": 0.277,
+   "part_quasi_blanc": 0.044,
+   "changement": 0.143
   },
   "saint_michel": {
    "desc": "Rue Saint-Michel, jour",
@@ -40,7 +40,7 @@
    "contraste": 0.193,
    "saturation": 0.184,
    "part_quasi_blanc": 0.096,
-   "changement": 0.539
+   "changement": 0.0
   },
   "lices": {
    "desc": "Place des Lices, escalier, jour",
@@ -48,23 +48,23 @@
    "contraste": 0.155,
    "saturation": 0.172,
    "part_quasi_blanc": 0.083,
-   "changement": 0.629
+   "changement": 0.002
   },
   "halles": {
    "desc": "Halles des Lices, jour",
    "luminosite": 0.648,
    "contraste": 0.182,
-   "saturation": 0.158,
+   "saturation": 0.159,
    "part_quasi_blanc": 0.171,
-   "changement": 0.225
+   "changement": 0.001
   },
   "lices_nuit": {
    "desc": "Place des Lices, nuit sous la pluie",
-   "luminosite": 0.215,
-   "contraste": 0.14,
-   "saturation": 0.356,
+   "luminosite": 0.272,
+   "contraste": 0.156,
+   "saturation": 0.379,
    "part_quasi_blanc": 0.002,
-   "changement": 0.46
+   "changement": 0.204
   },
   "toits": {
    "desc": "Toits du centre vus d’en haut",
@@ -72,8 +72,11 @@
    "contraste": 0.148,
    "saturation": 0.151,
    "part_quasi_blanc": 0.042,
-   "changement": 0.018
+   "changement": 0.0
   }
  },
- "verdict": "KO"
+ "fps_hist": [
+  0.353
+ ],
+ "verdict": "OK avec réserves"
 }
