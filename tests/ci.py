@@ -127,7 +127,10 @@ async def views_fps_access(pg, J, settle):
             await J(f"() => {{ const g=window.__game; g.applyMode(g.MODES[{mode}]); g.sim(0.3); window.__freecam={FREECAM_TOITS}; }}")
         else:
             await J(f"() => {{ window.__freecam=null; const g=window.__game; g.player.car=null; g.player.x={pos[0]}; g.player.y={pos[1]}; g.sim(1); }}"); await settle()
-            await J(f"() => {{ const g=window.__game; g.applyMode(g.MODES[{mode}]); g.sim(0.5); g.setcam({yaw},{pitch}); }}")
+            # caméra fixe calculée comme la caméra de jeu (4,3 m derrière, 1,55 m) : la vue ne dépend plus de l'état du joueur
+            await J(f"""() => {{ const g=window.__game; g.applyMode(g.MODES[{mode}]); const x={pos[0]}, y={pos[1]}, yw={yaw}, p={pitch}, d=4.3, hb=1.55;
+                const cx=x-Math.sin(yw)*d*Math.cos(p), cy=y-Math.cos(yw)*d*Math.cos(p), tg=th(x,y);
+                window.__freecam=[cx, Math.max(Math.max(0.4, hb+Math.sin(p)*d+0.5)+tg, th(cx,cy)+0.6), -cy, x, hb+0.15+tg, -y]; g.sim(0.5); }}""")
         await asyncio.sleep(2.5)
         path = os.path.join(VUES, name + '.png')
         await pg.screenshot(path=path, timeout=240000)
