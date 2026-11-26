@@ -1,0 +1,20 @@
+# Rework 34 — Neutraliser les reflets spéculaires des sols minéraux secs
+
+## Diagnostic
+Les cartes `*_r.jpg` fournissaient une rugosité locale très variable. Malgré une rugosité nominale élevée, certaines zones de trottoirs et de places se comportaient comme des surfaces brillantes et renvoyaient le soleil vers la caméra en vue rasante. Les tests locaux de Claude (sol noir, roughnessMap retirée, roughness 1) ont isolé ce reflet spéculaire comme cause principale des sols visuellement trop clairs.
+
+## Modifications
+- Suppression de `roughnessMap` sur les matériaux minéraux : asphalte, réparations, routes, pavés, cobbles, places, chemins, bordures, escaliers, murets, gouttières et ballast.
+- `MAT.ground` et `MAT.groundF` (grilles globale et fine) n'utilisent plus la carte de rugosité des dalles.
+- Textures d'albedo et de normales conservées ; aucune façade modifiée.
+- Le système existant `updateWetSurfaceBlend()` garde la transition de rugosité pilotée par l'humidité : surfaces mates à sec, plus brillantes lorsque pluie et humidité résiduelle montent.
+
+## Préservé
+- Albedo, textures diffuses, normales, éclairage, exposition, contraste, saturation et brouillard inchangés.
+- Textures et matériaux de façades/toitures non modifiés.
+- Relief, géométrie, collisions, déplacements, missions et gameplay inchangés.
+- Aucun nouveau mesh, matériau, texture, draw call ou traitement runtime ajouté.
+
+## Vérifications techniques
+- Analyse syntaxique de `js/render.js` et `js/world.js` avec `new Function` : OK.
+- Contrôle automatique : déclenché par le push ; verdict à venir.

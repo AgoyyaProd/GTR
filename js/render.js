@@ -173,28 +173,28 @@ async function loadGroundMaterials() {
   await Promise.all(names.map(async n => {
     g[n] = { map: await loadTex(`tex/${n}_d.jpg`, true), normalMap: await loadTex(`tex/${n}_n.jpg`), roughnessMap: await loadTex(`tex/${n}_r.jpg`) };
   }));
-  MAT.asphalt = M({ ...g.asphalt, color: 0x9a9a9a, roughness: 1 });
+  MAT.asphalt = M({ ...g.asphalt, roughnessMap: null, color: 0x9a9a9a, roughness: 1 });
   /* Reprises d'enrobé : même famille de texture, teinte et rugosité légèrement différentes. */
-  MAT.asphaltRepair = M({ ...g.asphalt, color: 0x777875, roughness: 0.96 });
-  MAT.highway = M({ ...g.asphalt, color: 0x7c7c7c, roughness: 1 });
-  MAT.pave = M({ ...g.pave, color: 0x807b73, roughness: 1 });
-  MAT.cobble = M({ ...g.cobble, color: 0x807b73, roughness: 1 });
-  MAT.square = M({ ...g.square, color: 0x807b73, roughness: 1 });
+  MAT.asphaltRepair = M({ ...g.asphalt, roughnessMap: null, color: 0x777875, roughness: 0.96 });
+  MAT.highway = M({ ...g.asphalt, roughnessMap: null, color: 0x7c7c7c, roughness: 1 });
+  MAT.pave = M({ ...g.pave, roughnessMap: null, color: 0x807b73, roughness: 1 });
+  MAT.cobble = M({ ...g.cobble, roughnessMap: null, color: 0x807b73, roughness: 1 });
+  MAT.square = M({ ...g.square, roughnessMap: null, color: 0x807b73, roughness: 1 });
   MAT.grass = M({ ...g.grass, color: 0x5c8a34, roughness: 1 });
-  MAT.path = M({ ...g.sw, color: 0x827d75, roughness: 1 });
-  MAT.ballast = M({ ...g.concrete, color: 0x6a5f55, roughness: 1 });
+  MAT.path = M({ ...g.sw, roughnessMap: null, color: 0x827d75, roughness: 1 });
+  MAT.ballast = M({ ...g.concrete, roughnessMap: null, color: 0x6a5f55, roughness: 1 });
   MAT.slate = M({ ...g.slate, color: 0xa8b0bc, roughness: 0.75 });
   MAT.zinc = M({ ...g.concrete, color: 0x6c7078, roughness: 0.5, metalness: 0.5 });
   MAT.flatroof = M({ ...g.concrete, color: 0x8a8680, roughness: 1 });
   MAT.mark = M({ color: 0xe8e8e0, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-  MAT.curb = M({ ...g.sw, color: 0xa7a39b, roughness: 0.8 });
+  MAT.curb = M({ ...g.sw, roughnessMap: null, color: 0xa7a39b, roughness: 0.8 });
   /* lowered carriageway: writes stencil 1 so the raised sidewalk plane skips it */
-  MAT.road = M({ ...g.asphalt, color: 0x9a9a9a, roughness: 1 });
-  MAT.sett = M({ ...g.cobble, color: 0x827c74, roughness: 1 }); /* cobbled carriageway of the old town's living streets */
-  MAT.stair = M({ ...g.slab, color: 0x99938a, roughness: 0.8 }); MAT.stairNose = M({ color: 0x8a857c, roughness: 0.7 });
-  MAT.fence = M({ color: 0x2a3a34, roughness: 0.5, metalness: 0.6 }); MAT.wallLow = M({ ...g.slab, color: 0x8e877b, roughness: 0.9 }); MAT.hedge = M({ color: 0x3c5a2a, roughness: 1 });
+  MAT.road = M({ ...g.asphalt, roughnessMap: null, color: 0x9a9a9a, roughness: 1 });
+  MAT.sett = M({ ...g.cobble, roughnessMap: null, color: 0x827c74, roughness: 1 }); /* cobbled carriageway of the old town's living streets */
+  MAT.stair = M({ ...g.slab, roughnessMap: null, color: 0x99938a, roughness: 0.8 }); MAT.stairNose = M({ color: 0x8a857c, roughness: 0.7 });
+  MAT.fence = M({ color: 0x2a3a34, roughness: 0.5, metalness: 0.6 }); MAT.wallLow = M({ ...g.slab, roughnessMap: null, color: 0x8e877b, roughness: 0.9 }); MAT.hedge = M({ color: 0x3c5a2a, roughness: 1 });
   for (const m of [MAT.road, MAT.highway, MAT.sett]) Object.assign(m, { stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
-  MAT.gutter = M({ ...g.slab, color: 0x898985, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  MAT.gutter = M({ ...g.slab, roughnessMap: null, color: 0x898985, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   MAT.grate = M({ color: 0x2a2a2a, roughness: 0.5, metalness: 0.7, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   MAT.manhole = M({ color: 0x3a3836, roughness: 0.45, metalness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   MAT.groundTex = g;
