@@ -141,7 +141,11 @@ async def views_fps_access(pg, J, settle):
     await J("() => { const g=window.__game; g.player.x=-582; g.player.y=22.1; g.sim(0.5); g.setcam(0.4,0.15); }"); await settle()
     # en rendu logiciel il n'y a que 3 à 5 images en 8 s : compter les images donnait 0,38 ou 0,5 au hasard.
     # On mesure donc la durée exacte entre la 1re et la dernière image (au moins 8 images et 12 s).
+    # vitesse de la machine de test : même calcul fixe avant et après la mesure (le rendu logiciel dépend du processeur)
+    CPU = "() => { const t0=performance.now(); let a=0; for (let i=0;i<3e7;i++) a+=Math.sqrt(i)*1e-9; const dt=performance.now()-t0; return a>0 ? +(1000/dt).toFixed(3) : 0; }"
+    c0 = await J(CPU)
     report['fps'] = await J("() => new Promise(r => { const ts=[]; (function f(now){ ts.push(now); if (ts.length<9 || now-ts[0]<12000) requestAnimationFrame(f); else r(+((ts.length-2)/((ts[ts.length-1]-ts[1])/1000)).toFixed(3)); })(performance.now()); })")
+    report['cpu'] = round((c0 + await J(CPU)) / 2, 3)
 
     # --- accès aux éléments de mission ---
     if await J("() => typeof reachable === 'function'"):
@@ -305,21 +309,21 @@ def compare_and_write():
         warn.append("Contrôle incomplet : le script de test n'a pas pu jouer " + ', '.join(x.split(' :')[0] for x in report['scenario']) + " (problème du banc de test, pas forcément du jeu). Ces missions sont marquées « non vérifiée ».")
     for k, v in report['access'].items():
         if not v: ko.append(f"Accès bloqué : {k}.")
-    # référence = médiane des derniers contrôles (les machines de GitHub varient d'un contrôle à l'autre)
-    fps = report.get('fps')
-    hist = [h for h in (prev.get('fps_hist') or []) if h][-4:]
-    report['fps_hist'] = hist + ([fps] if fps else [])
-    # Trois mesures historiques minimum : avec deux valeurs, la médiane choisie
-    # par rang supérieur est biaisée vers la plus haute (ex. 0.144 et 0.353 -> 0.353).
-    # Le rendu logiciel varie fortement selon la machine GitHub ; avant ce seuil,
-    # on informe sans bloquer. À partir de trois références, utiliser la vraie médiane.
+    # Les machines de GitHub n'ont pas toutes la même vitesse : on compare les images par seconde
+    # divisées par la vitesse de la machine (même calcul fixe à chaque contrôle), à la médiane
+    # d'au moins 3 contrôles précédents ; avant cela, la mesure est seulement indiquée.
+    fps, cpu = report.get('fps'), report.get('cpu')
+    rel = round(fps / cpu, 4) if fps and cpu else None
+    hist = [h for h in (prev.get('fpsr_hist') or []) if h][-4:]
+    report['fpsr_hist'] = hist + ([rel] if rel else [])
     pfps = float(np.median(hist)) if len(hist) >= 3 else None
-    if fps and pfps is None:
-        warn.append(f"Mesure FPS non bloquante : historique insuffisant ({len(hist)} référence(s), minimum 3 ; mesure actuelle {fps}).")
-    elif fps and pfps and fps < pfps * 0.75:
-        ko.append(f"Images par seconde en baisse de {round(100 * (1 - fps / pfps))} % ({pfps:.3f} → {fps}, référence = médiane des derniers contrôles).")
-    elif fps and pfps and fps < pfps * 0.88:
-        warn.append(f"Images par seconde en baisse ({pfps:.3f} → {fps}, référence = médiane des derniers contrôles).")
+    if rel and pfps is None:
+        notes.append(f"Images par seconde : {fps} sur une machine de vitesse {cpu} (référence en construction, {len(hist)}/3 contrôles).")
+    elif rel and rel < pfps * 0.75:
+        ko.append(f"Images par seconde en baisse de {round(100 * (1 - rel / pfps))} % à vitesse de machine égale ({fps} images/s, machine {cpu} ; rapport {rel} contre {pfps:.4f}, médiane des derniers contrôles).")
+    elif rel and rel < pfps * 0.88:
+        warn.append(f"Images par seconde en baisse de {round(100 * (1 - rel / pfps))} % à vitesse de machine égale ({rel} contre {pfps:.4f}).")
+    pfps = None
 
     rows, visible = [], 0
     for name, v in report['views'].items():
@@ -393,6 +397,7 @@ def merge_parts(folder):
         if r.get('harness'): report['harness'] = (report.get('harness', '') + ' ' + r['harness']).strip()
         if r.get('load') and (report['load'] is None or 'vues' in f): report['load'] = r['load']
         if r.get('fps'): report['fps'] = r['fps']
+        if r.get('cpu'): report['cpu'] = r['cpu']
         if os.path.isdir(os.path.join(d, 'vues')):
             os.makedirs(VUES, exist_ok=True)
             for img in os.listdir(os.path.join(d, 'vues')): shutil.copy(os.path.join(d, 'vues', img), VUES)
