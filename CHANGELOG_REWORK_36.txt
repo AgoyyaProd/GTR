@@ -1,0 +1,19 @@
+# Rework 36 — démarche et combat plus incarnés
+
+## Objectif
+Améliorer visiblement la lecture corporelle des déplacements et des affrontements, sans modifier les commandes, les dégâts, les distances de collision, les états de mission ni la navigation.
+
+## Modifications
+- Démarche : cycle de pas plus articulé, levée des pieds différenciée, transfert latéral du bassin, contre-rotation du thorax et stabilisation de la tête.
+- Course : flexion des jambes et des coudes plus marquée, oscillation du centre de gravité et inclinaison corporelle conservée.
+- Combat : garde plus compacte, appuis décalés, rotation du bassin et du buste pendant le coup, bras opposé maintenu en protection et tête qui accompagne le mouvement.
+- Les poses utilisent le squelette existant ; aucune géométrie, collision, règle de dégâts ou durée d'attaque n'est ajoutée.
+
+## Performance et compatibilité
+- Aucun nouvel objet, matériau, texture ou draw call.
+- Calculs limités aux rotations et positions des os déjà animés.
+- Aucun changement de géographie, de relief, de missions ou de conduite.
+
+## Vérifications
+- Syntaxe JavaScript vérifiée avant publication.
+- Contrôle automatique après push : missions, fight club, captures comparatives et performances.

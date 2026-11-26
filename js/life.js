@@ -158,11 +158,26 @@ function fightStep(p, dt, P) {
 /* arm poses layered on top of the base animation */
 function punchPose(m, f, side) {
   const b = m.userData.b, A = side ? 'L' : 'R', B = side ? 'R' : 'L', sg = side ? -1 : 1;
-  b['uArm' + A].rotation.x = -1.55 * f - 0.6 * (1 - f); b['uArm' + A].rotation.z = -0.15 * sg; b['fArm' + A].rotation.x = -1.5 * (1 - f) - 0.1;
-  b['uArm' + B].rotation.x = -0.75; b['fArm' + B].rotation.x = -1.8; b['uArm' + B].rotation.z = 0.25 * sg;
-  b.chest.rotation.y = -0.45 * f * sg; b.spine.rotation.x = 0.12 + 0.1 * f;
+  const drive = Math.sin(Math.max(0, Math.min(1, f)) * Math.PI), load = 1 - drive;
+  // The strike now starts from the floor: brace the lead leg, rotate pelvis, then unwind the chest.
+  b.thighL.rotation.x = -0.12 - 0.18 * drive; b.thighR.rotation.x = 0.08 + 0.12 * drive;
+  b.hips.rotation.y = 0.22 * drive * sg; b.hips.rotation.z = -0.045 * drive * sg;
+  b['uArm' + A].rotation.x = -1.45 * drive - 0.72 * load;
+  b['uArm' + A].rotation.z = -0.18 * sg; b['fArm' + A].rotation.x = -1.45 * load - 0.08;
+  b['uArm' + B].rotation.x = -0.82; b['fArm' + B].rotation.x = -1.72; b['uArm' + B].rotation.z = 0.28 * sg;
+  b.spine.rotation.x = 0.16 + 0.13 * drive; b.spine.rotation.y = -0.12 * drive * sg;
+  b.chest.rotation.y = -0.58 * drive * sg; b.chest.rotation.x = 0.06 + 0.08 * drive;
+  b.head.rotation.y = 0.12 * drive * sg; b.head.rotation.x = -0.035 * drive;
 }
-function guardPose(m) { const b = m.userData.b; b.uArmL.rotation.x = b.uArmR.rotation.x = -0.75; b.fArmL.rotation.x = b.fArmR.rotation.x = -1.8; b.uArmL.rotation.z = 0.25; b.uArmR.rotation.z = -0.25; b.spine.rotation.x = 0.12; }
+function guardPose(m) {
+  const b = m.userData.b;
+  b.hips.position.y = 0.91; b.hips.rotation.z = 0.035;
+  b.thighL.rotation.x = -0.12; b.thighR.rotation.x = 0.1;
+  b.uArmL.rotation.x = b.uArmR.rotation.x = -0.82;
+  b.fArmL.rotation.x = -1.72; b.fArmR.rotation.x = -1.62;
+  b.uArmL.rotation.z = 0.3; b.uArmR.rotation.z = -0.3;
+  b.spine.rotation.x = 0.16; b.chest.rotation.x = 0.04; b.head.rotation.x = -0.04;
+}
 function hurtPose(m, k) { const b = m.userData.b; b.spine.rotation.x = -0.55 * k; b.head.rotation.x = -0.7 * k; b.chest.rotation.y = 0.3 * k; b.uArmL.rotation.z += 0.6 * k; b.uArmR.rotation.z -= 0.6 * k; b.thighR.rotation.x = -0.4 * k; }
 function npcCombatPose(p) {
   if (p.state === 'fight') { if (p.swing > 0) punchPose(p.mesh, Math.sin((PUNCH - p.swing) / PUNCH * Math.PI), p.swSide); else guardPose(p.mesh); }

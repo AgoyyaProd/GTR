@@ -207,14 +207,21 @@ function poseChar(m, mode, ph, amt, t) {
     return;
   }
   const run = mode === 'run', A = amt * (run ? 0.85 : 0.5), s = Math.sin(ph), c = Math.cos(ph);
-  b.thighL.rotation.x = -s * A; b.thighR.rotation.x = s * A;
-  b.shinL.rotation.x = Math.max(0, Math.sin(ph - 1.2)) * A * (run ? 2.0 : 1.4); b.shinR.rotation.x = Math.max(0, Math.sin(ph + Math.PI - 1.2)) * A * (run ? 2.0 : 1.4);
-  b.uArmL.rotation.x = s * A * 0.8; b.uArmR.rotation.x = -s * A * 0.8; b.uArmL.rotation.z = 0.06; b.uArmR.rotation.z = -0.06;
-  b.fArmL.rotation.x = b.fArmR.rotation.x = run ? -1.3 : -0.25 - Math.abs(s) * 0.15;
-  b.hips.position.y = 0.95 - (run ? 0.06 : 0.02) + Math.abs(c) * (run ? 0.05 : 0.025);
-  b.hips.rotation.y = s * 0.08; b.chest.rotation.y = -s * 0.12; b.spine.rotation.x = run ? 0.22 : 0.03;
-  b.head.rotation.x = run ? 0.035 : -0.015; b.head.rotation.y = Math.sin(ph * 0.5) * 0.025;
-  b.fArmL.rotation.z = 0.025 + s * 0.018; b.fArmR.rotation.z = -0.025 - s * 0.018;
+  // Gait cycle: alternating foot lift, pelvis roll and counter-rotation through the torso.
+  const stride = Math.sin(ph), cross = Math.cos(ph), liftL = Math.max(0, Math.sin(ph - 0.65)), liftR = Math.max(0, Math.sin(ph + Math.PI - 0.65));
+  b.thighL.rotation.x = -stride * A; b.thighR.rotation.x = stride * A;
+  b.shinL.rotation.x = liftL * A * (run ? 2.15 : 1.55); b.shinR.rotation.x = liftR * A * (run ? 2.15 : 1.55);
+  b.hips.position.y = 0.95 - (run ? 0.055 : 0.018) + Math.abs(cross) * (run ? 0.045 : 0.018) + Math.max(liftL,liftR) * (run ? 0.018 : 0.008);
+  b.hips.rotation.y = stride * 0.11; b.hips.rotation.z = cross * (run ? 0.035 : 0.045);
+  b.spine.rotation.x = run ? 0.2 : 0.025; b.spine.rotation.z = -b.hips.rotation.z * 0.55;
+  b.chest.rotation.y = -stride * 0.15; b.chest.rotation.z = -cross * 0.018;
+  b.uArmL.rotation.x = stride * A * 0.9; b.uArmR.rotation.x = -stride * A * 0.9;
+  b.uArmL.rotation.z = 0.07 + cross * 0.025; b.uArmR.rotation.z = -0.07 - cross * 0.025;
+  b.fArmL.rotation.x = run ? -1.15 - Math.max(0, stride) * 0.12 : -0.2 - Math.abs(stride) * 0.2;
+  b.fArmR.rotation.x = run ? -1.15 - Math.max(0, -stride) * 0.12 : -0.2 - Math.abs(stride) * 0.2;
+  b.fArmL.rotation.z = 0.025 + stride * 0.025; b.fArmR.rotation.z = -0.025 - stride * 0.025;
+  b.head.rotation.x = run ? 0.025 : -0.012; b.head.rotation.y = Math.sin(ph * 0.5) * 0.035;
+  b.head.rotation.z = -b.hips.rotation.z * 0.35;
   if (m.userData.wobble) { b.spine.rotation.z = Math.sin(t * 1.3) * 0.12; b.head.rotation.z = Math.sin(t * 0.9) * 0.2; }
 }
 /* dog */
