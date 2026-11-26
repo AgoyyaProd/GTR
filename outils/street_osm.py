@@ -80,7 +80,7 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
 
 print(len(bollards), "bollards", len(kerbs), "kerb nodes")
 print(cnt.most_common(40))
-os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
+os.makedirs(os.path.dirname(OUT_FILE) or '.', exist_ok=True)
 with open(OUT_FILE, "wb") as f:
     pickle.dump({"steps": steps, "bollards": bollards, "barriers": barriers,
                  "sidewalks": sidewalks}, f, protocol=pickle.HIGHEST_PROTOCOL)
