@@ -68,6 +68,24 @@ function insetPoly(p, d) {
 }
 function perimeter(p) { let s = 0; const n = p.length / 2; for (let i = 0; i < n; i++) { const j = (i + 1) % n; s += Math.hypot(p[j * 2] - p[i * 2], p[j * 2 + 1] - p[i * 2 + 1]); } return s; }
 
+/* Palette urbaine continue : des ensembles cohérents à l'échelle des quartiers,
+   sans modifier les textures, les volumes ni les données géographiques. */
+function districtFacadeTint(x, y, style, R) {
+  const old = Math.hypot(x - OLDTOWN.x, y - OLDTOWN.y);
+  const centre = Math.hypot(x - CENTER.x, y - CENTER.y);
+  let p;
+  if (old < 430) p = [1.10, 1.015, 0.91];                 // centre ancien : enduits chauds
+  else if (centre < 980) p = [1.055, 1.035, 0.985];      // centre XIXe : pierre claire
+  else if (x > 650 && y < -350) p = [0.91, 0.965, 1.045]; // grands ensembles : gris froid
+  else if (x < -1050 && y > 450) p = [1.035, 0.965, 0.90]; // ouest : brique et enduit
+  else p = [0.985, 1.005, 0.99];                         // quartiers résidentiels
+  // Les colombages conservent un fond minéral chaud, distinct des façades modernes.
+  if (style === 2) p = [p[0] * 1.025, p[1] * 1.005, p[2] * 0.97];
+  const variation = 0.975 + R() * 0.05;
+  const shade = 0.94 + R() * 0.06;
+  return [p[0] * variation * shade, p[1] * variation * shade, p[2] * variation * shade];
+}
+
 /* ---------- building ---------- */
 function addBuilding(gb, t, h, code, p, R) {
   p = ccw(p);
@@ -79,7 +97,9 @@ function addBuilding(gb, t, h, code, p, R) {
   if (style === 5 && dc < 1300 && h > 6) style = 0;
   const soif = Math.hypot(cx + 384, cy - 124) < 260;
   const fm = facadeMats[style]; const mat = fm[(R() * fm.length) | 0];
-  const tintK = 1 - R() * 0.14, tint = [tintK, tintK * (0.98 + R() * 0.02), tintK * (0.95 + R() * 0.04)];
+  const districtTint = districtFacadeTint(cx, cy, style, R);
+  const tintK = 0.91 + R() * 0.09;
+  const tint = [districtTint[0] * tintK, districtTint[1] * tintK, districtTint[2] * tintK];
   const perU = mat.userData.perU, perV = mat.userData.perV;
   t.obs.add(...polyBox(p), { p, b: polyBox(p), h });
   if (style === 8) return addGrandstand(gb, p, h, mat);
