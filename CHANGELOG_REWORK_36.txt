@@ -17,3 +17,16 @@ Améliorer visiblement la lecture corporelle des déplacements et des affronteme
 ## Vérifications
 - Syntaxe JavaScript vérifiée avant publication.
 - Contrôle automatique après push : missions, fight club, captures comparatives et performances.
+
+## Correctif combat — extension du coup de poing
+
+- Correction de la progression de l'animation : `punchPose` reçoit déjà une valeur sinusoïdale normalisée par la progression de l'attaque. La seconde application du sinus est supprimée.
+- Le bras frappeur atteint maintenant son extension maximale au moment de l'impact, au lieu de se replier à cet instant et de produire une animation à double impulsion.
+- La progression reste bornée entre 0 et 1 ; les dégâts, la fenêtre d'impact, la durée de l'attaque, les distances et les collisions ne changent pas.
+
+## Vérifications visuelles à effectuer en jeu
+
+- Déclencher plusieurs coups alternés : le bras frappeur doit partir de la garde, s'étendre une seule fois, atteindre son extension au contact, puis revenir.
+- Vérifier que l'extension du poing coïncide avec l'impact et qu'il n'y a ni double jab ni repli du bras au moment du contact.
+- Vérifier la garde entre deux attaques et les coups des PNJ en fight club.
+- Le contrôle automatisé couvre les missions, le fight club, les captures fixes et les performances ; les captures fixes ne valident pas à elles seules la qualité de l'animation en mouvement.

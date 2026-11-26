@@ -158,7 +158,7 @@ function fightStep(p, dt, P) {
 /* arm poses layered on top of the base animation */
 function punchPose(m, f, side) {
   const b = m.userData.b, A = side ? 'L' : 'R', B = side ? 'R' : 'L', sg = side ? -1 : 1;
-  const drive = Math.sin(Math.max(0, Math.min(1, f)) * Math.PI), load = 1 - drive;
+  const drive = Math.max(0, Math.min(1, f)), load = 1 - drive;
   // The strike now starts from the floor: brace the lead leg, rotate pelvis, then unwind the chest.
   b.thighL.rotation.x = -0.12 - 0.18 * drive; b.thighR.rotation.x = 0.08 + 0.12 * drive;
   b.hips.rotation.y = 0.22 * drive * sg; b.hips.rotation.z = -0.045 * drive * sg;
