@@ -249,8 +249,48 @@ function addBuilding(gb, t, h, code, p, R) {
   const inn = insetPoly(p, d);
   const okInner = polyArea(inn) > 0.5;
   const top = h + rise;
+  /* Toitures à deux pans pour les volumes quadrangulaires allongés :
+     profil fréquent des maisons mitoyennes et immeubles étroits du centre rennais.
+     Les empreintes irrégulières conservent le toit en croupe existant. */
+  let gableBuilt = false;
+  if (n === 4 && (style <= 3 || style === 7)) {
+    const edges = [];
+    for (let q = 0; q < 4; q++) {
+      const j = (q + 1) % 4, dx = p[j * 2] - p[q * 2], dy = p[j * 2 + 1] - p[q * 2 + 1];
+      edges.push({ q, j, L: Math.hypot(dx, dy), dx, dy });
+    }
+    edges.sort((a, b) => b.L - a.L);
+    const e0 = edges[0], e1 = edges.find(e => (e.q === (e0.q + 2) % 4 || e.j === (e0.q + 2) % 4) && e.L > e0.L * 0.62);
+    const short0 = edges.find(e => e.q === (e0.q + 1) % 4 || e.j === (e0.q + 1) % 4);
+    const short1 = edges.find(e => e !== short0 && e !== e0 && e !== e1);
+    const orth = Math.abs(e0.dx * (p[((e0.q + 1) % 4) * 2] - p[((e0.q + 1) % 4) * 2]) + e0.dy * 0);
+    if (e1 && short0 && short1 && e0.L > short0.L * 1.35 && Math.abs(e0.L - e1.L) < e0.L * 0.3) {
+      const mid = e => [(p[e.q * 2] + p[e.j * 2]) * 0.5, (p[e.q * 2 + 1] + p[e.j * 2 + 1]) * 0.5];
+      const m0 = mid(short0), m1 = mid(short1);
+      const rid = h + rise * (style === 2 ? 0.92 : 0.82);
+      const A = [p[e0.q * 2], h, -p[e0.q * 2 + 1]], B = [p[e0.j * 2], h, -p[e0.j * 2 + 1]];
+      const C = [p[e1.q * 2], h, -p[e1.q * 2 + 1]], D = [p[e1.j * 2], h, -p[e1.j * 2 + 1]];
+      const R0 = [m0[0], rid, -m0[1]], R1 = [m1[0], rid, -m1[1]];
+      const roofMat = MAT.slate;
+      gb.quad(roofMat, A, B, R1, R0, [0,0], [e0.L/3,0], [e0.L/3,rise/3], [0,rise/3], [0,1,0]);
+      gb.quad(roofMat, D, C, R0, R1, [0,0], [e1.L/3,0], [e1.L/3,rise/3], [0,rise/3], [0,1,0]);
+      // Pignons triangulaires fermant proprement les deux extrémités du faîtage.
+      const endA = [p[short0.q * 2], h, -p[short0.q * 2 + 1]];
+      const endB = [p[short0.j * 2], h, -p[short0.j * 2 + 1]];
+      const endC = [p[short1.q * 2], h, -p[short1.q * 2 + 1]];
+      const endD = [p[short1.j * 2], h, -p[short1.j * 2 + 1]];
+      const n0 = [m0[0] - cx, 0, -(m0[1] - cy)], n1 = [m1[0] - cx, 0, -(m1[1] - cy)];
+      gb.tri(mat, endA, R0, endB, [0,0], [0.5,1], [1,0], n0);
+      gb.tri(mat, endC, R1, endD, [0,0], [0.5,1], [1,0], n1);
+      // Faîtage en ardoise légèrement surélevé.
+      const dx = m1[0] - m0[0], dy = m1[1] - m0[1], rl = Math.hypot(dx, dy) || 1, rw = 0.10;
+      const nx = -dy / rl * rw, ny = dx / rl * rw;
+      gb.quad(MAT.slate, [m0[0]+nx,rid+0.035,-(m0[1]+ny)], [m1[0]+nx,rid+0.035,-(m1[1]+ny)], [m1[0]-nx,rid+0.035,-(m1[1]-ny)], [m0[0]-nx,rid+0.035,-(m0[1]-ny)], [0,0], [rl,0], [rl,0.2], [0,0.2], [0,1,0]);
+      gableBuilt = true;
+    }
+  }
   let su = 0;
-  for (let i = 0; i < n; i++) {
+  if (!gableBuilt) for (let i = 0; i < n; i++) {
     const j = (i + 1) % n, ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
     const ix = okInner ? inn[i * 2] : cx, iy = okInner ? inn[i * 2 + 1] : cy, jx = okInner ? inn[j * 2] : cx, jy = okInner ? inn[j * 2 + 1] : cy;
     const L = Math.hypot(bx - ax, by - ay) || 1, nx = (by - ay) / L, ny = -(bx - ax) / L;
@@ -286,9 +326,9 @@ function addBuilding(gb, t, h, code, p, R) {
       }
     }
   }
-  if (okInner) gb.poly(style === 7 || style === 2 || roof === 2 ? MAT.slate : MAT.zinc, inn, top, 3);
-  /* chimneys */
-  if (style !== 6 && R() < 0.75 && okInner) {
+  if (!gableBuilt && okInner) gb.poly(style === 7 || style === 2 || roof === 2 ? MAT.slate : MAT.zinc, inn, top, 3);
+  /* cheminées conservées sur les toitures à deux pans et en croupe */
+  if (style !== 6 && R() < 0.75 && (okInner || gableBuilt)) {
     for (let k = 0, K = 1 + (R() * 2 | 0); k < K; k++) {
       const vi = (R() * n) | 0, qx = lerp(inn[vi * 2], cx, 0.25), qy = lerp(inn[vi * 2 + 1], cy, 0.25);
       const cw = 0.6 + R() * 0.5, cd = 0.9 + R() * 0.8, ch = 1.8, rot = R() * 3;
