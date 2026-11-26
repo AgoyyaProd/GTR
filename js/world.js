@@ -260,10 +260,9 @@ function addBuilding(gb, t, h, code, p, R) {
       edges.push({ q, j, L: Math.hypot(dx, dy), dx, dy });
     }
     edges.sort((a, b) => b.L - a.L);
-    const e0 = edges[0], e1 = edges.find(e => (e.q === (e0.q + 2) % 4 || e.j === (e0.q + 2) % 4) && e.L > e0.L * 0.62);
-    const short0 = edges.find(e => e.q === (e0.q + 1) % 4 || e.j === (e0.q + 1) % 4);
-    const short1 = edges.find(e => e !== short0 && e !== e0 && e !== e1);
-    const orth = Math.abs(e0.dx * (p[((e0.q + 1) % 4) * 2] - p[((e0.q + 1) % 4) * 2]) + e0.dy * 0);
+    const e0 = edges[0], e1 = edges.find(e => e.q === (e0.q + 2) % 4 && e.L > e0.L * 0.62);
+    const short0 = edges.find(e => e.q === (e0.q + 1) % 4);
+    const short1 = edges.find(e => e.q === (e0.q + 3) % 4);
     if (e1 && short0 && short1 && e0.L > short0.L * 1.35 && Math.abs(e0.L - e1.L) < e0.L * 0.3) {
       const mid = e => [(p[e.q * 2] + p[e.j * 2]) * 0.5, (p[e.q * 2 + 1] + p[e.j * 2 + 1]) * 0.5];
       const m0 = mid(short0), m1 = mid(short1);
