@@ -309,11 +309,17 @@ def compare_and_write():
     fps = report.get('fps')
     hist = [h for h in (prev.get('fps_hist') or []) if h][-4:]
     report['fps_hist'] = hist + ([fps] if fps else [])
-    pfps = sorted(hist)[len(hist) // 2] if hist else None
-    if len(hist) == 1 and fps and fps < pfps * 0.75:  # une seule mesure de référence : on signale sans bloquer
-        warn.append(f"Images par seconde en baisse ({pfps} → {fps}), à confirmer : une seule mesure de référence, et la vitesse des machines de GitHub varie (chargement {(report.get('load') or {}).get('secondes', '?')} s)."); pfps = None
-    if fps and pfps and fps < pfps * 0.75: ko.append(f"Images par seconde en baisse de {round(100 * (1 - fps / pfps))} % ({pfps} → {fps}, référence = médiane des derniers contrôles).")
-    elif fps and pfps and fps < pfps * 0.88: warn.append(f"Images par seconde en baisse ({pfps} → {fps}, référence = médiane des derniers contrôles).")
+    # Trois mesures historiques minimum : avec deux valeurs, la médiane choisie
+    # par rang supérieur est biaisée vers la plus haute (ex. 0.144 et 0.353 -> 0.353).
+    # Le rendu logiciel varie fortement selon la machine GitHub ; avant ce seuil,
+    # on informe sans bloquer. À partir de trois références, utiliser la vraie médiane.
+    pfps = float(np.median(hist)) if len(hist) >= 3 else None
+    if fps and pfps is None:
+        warn.append(f"Mesure FPS non bloquante : historique insuffisant ({len(hist)} référence(s), minimum 3 ; mesure actuelle {fps}).")
+    elif fps and pfps and fps < pfps * 0.75:
+        ko.append(f"Images par seconde en baisse de {round(100 * (1 - fps / pfps))} % ({pfps:.3f} → {fps}, référence = médiane des derniers contrôles).")
+    elif fps and pfps and fps < pfps * 0.88:
+        warn.append(f"Images par seconde en baisse ({pfps:.3f} → {fps}, référence = médiane des derniers contrôles).")
 
     rows, visible = [], 0
     for name, v in report['views'].items():
