@@ -742,7 +742,7 @@ function populate(dt, pl) {
     let best = -1;
     for (let tries = 0; tries < 20; tries++) {
       const a = Math.random() * Math.PI * 2, r = rnd(160, 380), x = pl.x + Math.cos(a) * r, y = pl.y + Math.sin(a) * r;
-      const i = nearestNode(x, y, 1); const d = Math.hypot(nx(i) - pl.x, ny(i) - pl.y);
+      const i = nearestNode(x, y, 1); if (i < 0) continue; const d = Math.hypot(nx(i) - pl.x, ny(i) - pl.y);
       if (d > 140 && d < 420 && (!started || camFacing(nx(i), ny(i)) < 0.6)) { best = i; break; }
     }
     if (best < 0) break;
