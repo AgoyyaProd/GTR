@@ -3,8 +3,12 @@
 const canvasEl = $('view');
 const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: false, powerPreference: 'high-performance', stencil: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+/* Color pipeline: keep the scene/composer target linear. The final grade pass below
+   performs the single filmic tone-map and the single linear-to-sRGB conversion.
+   Applying ACES + sRGB here and then grading/gamma-encoding again washed out daylight
+   and compressed material contrast. */
+renderer.outputEncoding = THREE.LinearEncoding;
+renderer.toneMapping = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -98,27 +102,28 @@ composer.addPass(bloom);
 /* Filmic grade: restrained contrast, controlled highlights and a subtle
    warm/cool split. Kept in the final pass so it does not alter scene materials. */
 const gradePass = new THREE.ShaderPass({
-  uniforms: { tDiffuse: { value: null }, vig: { value: 0.2 }, tint: { value: new THREE.Vector3(1, 1, 1) }, time: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, vig: { value: 0.16 }, tint: { value: new THREE.Vector3(1, 1, 1) }, exposure: { value: 1.0 }, time: { value: 0 } },
   vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader: `uniform sampler2D tDiffuse;uniform float vig;uniform vec3 tint;uniform float time;varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse;uniform float vig;uniform vec3 tint;uniform float exposure;uniform float time;varying vec2 vUv;
     float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
     vec3 filmic(vec3 x){x=max(vec3(0.),x);return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.);}
     void main(){
-      vec3 c=texture2D(tDiffuse,vUv).rgb*tint;
+      /* tDiffuse is linear HDR: grade once, then encode once for the display. */
+      vec3 c=max(texture2D(tDiffuse,vUv).rgb,vec3(0.))*tint;
       float lum=dot(c,vec3(.2126,.7152,.0722));
-      c=mix(vec3(lum),c,1.06);
-      c=(c-.5)*1.075+.5;
-      float shadow=1.-smoothstep(.08,.62,lum);
-      float highlight=smoothstep(.38,.95,lum);
-      c*=vec3(1.012,1.002,.985);
-      c+=shadow*vec3(-.004,.001,.009);
-      c+=highlight*vec3(.012,.004,-.009);
-      c=filmic(c*1.035);
+      c=mix(vec3(lum),c,1.045);
+      float shadow=1.-smoothstep(.025,.34,lum);
+      float highlight=smoothstep(.48,1.35,lum);
+      c*=vec3(1.006,1.002,.998);
+      c+=shadow*vec3(-.001,.0005,.002);
+      c+=highlight*vec3(.004,.002,-.003);
+      c=filmic(c*exposure);
       vec2 d=vUv-.5;
-      c*=1.-vig*dot(d,d)*1.45;
-      c+=(h(vUv*vec2(1920.,1080.)+time)-.5)*.006;
-      c=mix(pow(c,vec3(.41666))*1.055-.055,c*12.92,vec3(lessThan(c,vec3(.0031308))));
-      gl_FragColor=vec4(max(c,0.),1.);
+      c*=1.-vig*dot(d,d)*1.25;
+      c+=(h(vUv*vec2(1920.,1080.)+time)-.5)*.002;
+      c=max(c,vec3(0.));
+      c=mix(1.055*pow(c,vec3(1./2.4))-.055,12.92*c,vec3(lessThan(c,vec3(.0031308))));
+      gl_FragColor=vec4(c,1.);
     }`
 });
 composer.addPass(gradePass);
@@ -567,7 +572,9 @@ function applyMode(m) {
   hemi.intensity = night ? 0.25 : (m.rain ? 0.9 : 0.6); hemi.color.set(night ? 0x5a6aa0 : 0xcfe0ff); hemi.groundColor.set(night ? 0x201810 : 0x5a5040);
   sun.color.set(night ? 0x8aa0ff : 0xfff0d8); sun.intensity = night ? 0.35 : (m.rain ? 0.6 : 2.6);
   sun.userData.dir = night ? new THREE.Vector3(-0.4, 0.8, 0.35) : new THREE.Vector3(-0.55, 0.62, 0.45);
-  renderer.toneMappingExposure = night ? 0.92 : (m.rain ? 0.82 : 0.88);
+  /* Exposure now belongs to the final linear-HDR grade, not the renderer. */
+  gradePass.uniforms.exposure.value = night ? 0.92 : (m.rain ? 0.96 : 1.04);
+  renderer.toneMappingExposure = 1.0;
   const wet = m.rain;
   for (const mt of allMats) {
     mt.envMapIntensity = night ? 0.42 : 0.9;
@@ -581,6 +588,6 @@ function applyMode(m) {
   poolMat.opacity = night ? 1 : 0; poolMat.visible = night;
   streakMesh.visible = night && wet; rain.visible = wet && (!WX.auto || WX.k > 0.03) && !underRoof(player.x, player.y);
   bloom.strength = night ? 0.58 : 0.18; bloom.radius = night ? 0.48 : 0.34; bloom.threshold = night ? 0.86 : 0.94;
-  gradePass.uniforms.tint.value.set(...(night ? [0.98, 1, 1.06] : [1.03, 1.0, 0.96]));
+  gradePass.uniforms.tint.value.set(...(night ? [0.985, 0.995, 1.025] : (m.rain ? [0.99, 1.0, 1.015] : [1.0, 1.0, 1.0])));
   lampLights.forEach(l => l.visible = night);
 }
