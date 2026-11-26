@@ -43,9 +43,21 @@ function personGeo(L) {
   const torso = L.build === 'slim' ? 0.92 : (L.build === 'broad' ? 1.1 : 1);
   const leg = L.build === 'broad' ? 1.06 : 1;
   const top = L.jacket || L.top, sleeve = top;
+  // Tailored torso shell: a continuous lathed waist/abdomen replaces the
+  // visibly stacked cylindrical segments of the earlier pedestrian models.
+  const waist = new THREE.LatheGeometry([
+    new THREE.Vector2(0.105 * torso, 0.00), new THREE.Vector2(0.135 * torso, 0.045),
+    new THREE.Vector2(0.145 * torso, 0.12), new THREE.Vector2(0.132 * torso, 0.22),
+    new THREE.Vector2(0.15 * torso, 0.31), new THREE.Vector2(0.17 * torso, 0.39),
+    new THREE.Vector2(0.165 * torso, 0.45)
+  ], 24);
+  waist.scale(1, 1, 0.72); waist.translate(0, 0.98, 0);
   P.push([ball(0.16, [0, 0.96, 0], [L.female ? 1.05 : 0.95, 0.62, 0.72]), 'hips', L.pants]);
-  P.push([limb([0, 0.98, 0], [0, 1.28, 0], (L.female ? 0.135 : 0.15) * torso, 0.16 * torso).scale(1, 1, 0.68), 'spine', top]);
-  P.push([limb([0, 1.26, 0], [0, 1.48, 0], 0.165 * torso, (L.female ? 0.16 : 0.185) * torso).scale(1, 1, 0.66), 'chest', top]);
+  P.push([waist, 'spine', top]);
+  // A shaped upper chest and shoulder yoke give the jacket/shirt a human
+  // shoulder line instead of two cylinders meeting at a flat cross-section.
+  P.push([ball(0.174 * torso, [0, 1.405, 0], [1.22, 0.72, 0.76], 20, 14), 'chest', top]);
+  P.push([ball(0.145 * torso, [0, 1.475, -0.005], [1.38, 0.48, 0.72], 18, 12), 'chest', top]);
   if (L.jacket) P.push([boxg(0.06, 0.48, 0.02, [0, 1.22, 0.115]), 'chest', L.top]);
   P.push([ball(0.068, [sh - 0.015, 1.445, 0], [1, 0.9, 1]), 'chest', top], [ball(0.068, [-sh + 0.015, 1.445, 0], [1, 0.9, 1]), 'chest', top]);
   if (L.female) P.push([ball(0.06, [0.06, 1.36, 0.08], [1, 0.9, 0.8]), 'chest', top], [ball(0.06, [-0.06, 1.36, 0.08], [1, 0.9, 0.8]), 'chest', top]);

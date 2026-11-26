@@ -1,0 +1,21 @@
+# Rework 37 — refonte des volumes humains
+
+## Objectif
+Remplacer la silhouette en segments cylindriques empilés par une construction corporelle plus continue et anatomique, sans modifier le squelette, les points d'ancrage ni les animations.
+
+## Modifications
+- Nouveau volume de taille et d'abdomen construit par une géométrie de révolution (profil progressif en 7 sections, 24 segments radiaux).
+- Transition taille/torse plus progressive, avec un volume de poitrine et une ligne d'épaules sculptés par des ellipsoïdes lissés.
+- Conservation des variations de carrure, des couleurs de vêtements, du rig existant et du système de fusion des géométries skinnées.
+- Pas de nouveau Mesh par passant : les volumes sont fusionnés dans la géométrie skinnée existante.
+- Aucun changement aux dimensions globales, bones, animations, déplacements, collisions, IA, missions ou véhicules.
+
+## Vérifications visuelles à effectuer en jeu
+1. Observer plusieurs PNJ de face, de profil et de trois-quarts : la taille doit être plus étroite que la cage thoracique, sans effet de cylindres superposés.
+2. Comparer les silhouettes slim, average et broad, ainsi que les silhouettes féminines et masculines.
+3. Faire marcher et courir plusieurs PNJ : le nouveau torse doit suivre le squelette sans séparation visible au niveau de la taille ou des épaules.
+4. Vérifier les PNJ en garde et pendant les coups du fight club, ainsi que les conducteurs assis.
+5. Surveiller le coût de rendu avec une foule dense : les nouveaux volumes restent fusionnés dans un seul SkinnedMesh par personnage.
+
+## Limites
+Cette étape cible la silhouette du torse humain. Elle ne prétend pas achever la refonte des visages, des mains, des voitures et des deux-roues ; ces familles nécessitent des passes dédiées et une inspection en jeu.
