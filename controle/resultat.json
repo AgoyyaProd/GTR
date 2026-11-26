@@ -1,9 +1,9 @@
 {
- "date": "2026-11-26 12:47 UTC",
- "commit": "075f62b",
+ "date": "2026-11-26 13:20 UTC",
+ "commit": "5eb1db0",
  "load": {
   "ok": true,
-  "secondes": 186,
+  "secondes": 142,
   "bouton": "Jouer"
  },
  "errors": [],
@@ -17,61 +17,67 @@
   "Mission 7": true,
   "Mission 8": null,
   "Mission 9": null,
-  "Fight club": false
+  "Fight club": true
  },
  "access": {
   "Mission 3 : les 3 sacs tirés sont accessibles à pied": true,
   "Thabor (à pied, depuis la rue de Paris)": true,
   "Thabor (en voiture, depuis le bd de la Duchesse-Anne)": true
  },
- "fps": 0.38,
+ "fps": 0.5,
  "views": {
   "joffre": {
    "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.554,
-   "contraste": 0.257,
-   "saturation": 0.25,
-   "part_quasi_blanc": 0.04
+   "luminosite": 0.507,
+   "contraste": 0.225,
+   "saturation": 0.268,
+   "part_quasi_blanc": 0.009,
+   "changement": 0.64
   },
   "saint_michel": {
    "desc": "Rue Saint-Michel, jour",
-   "luminosite": 0.45,
-   "contraste": 0.235,
-   "saturation": 0.154,
-   "part_quasi_blanc": 0.015
+   "luminosite": 0.532,
+   "contraste": 0.222,
+   "saturation": 0.191,
+   "part_quasi_blanc": 0.017,
+   "changement": 0.493
   },
   "lices": {
    "desc": "Place des Lices, escalier, jour",
-   "luminosite": 0.616,
-   "contraste": 0.162,
-   "saturation": 0.17,
-   "part_quasi_blanc": 0.065
+   "luminosite": 0.591,
+   "contraste": 0.136,
+   "saturation": 0.218,
+   "part_quasi_blanc": 0.001,
+   "changement": 0.606
   },
   "halles": {
    "desc": "Halles des Lices, jour",
-   "luminosite": 0.648,
-   "contraste": 0.189,
-   "saturation": 0.16,
-   "part_quasi_blanc": 0.15
+   "luminosite": 0.638,
+   "contraste": 0.185,
+   "saturation": 0.174,
+   "part_quasi_blanc": 0.149,
+   "changement": 0.001
   },
   "lices_nuit": {
    "desc": "Place des Lices, nuit sous la pluie",
-   "luminosite": 0.229,
-   "contraste": 0.147,
-   "saturation": 0.35,
-   "part_quasi_blanc": 0.002
+   "luminosite": 0.215,
+   "contraste": 0.141,
+   "saturation": 0.352,
+   "part_quasi_blanc": 0.002,
+   "changement": 0.248
   },
   "toits": {
    "desc": "Toits du centre vus d’en haut",
-   "luminosite": 0.667,
+   "luminosite": 0.666,
    "contraste": 0.147,
    "saturation": 0.15,
-   "part_quasi_blanc": 0.043
+   "part_quasi_blanc": 0.042,
+   "changement": 0.001
   }
  },
  "scenario": [
   "m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')",
   "m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')"
  ],
- "verdict": "KO"
+ "verdict": "OK avec réserves"
 }

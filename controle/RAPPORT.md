@@ -1,14 +1,14 @@
-# Contrôle automatique — KO
+# Contrôle automatique — OK avec réserves
 
-Commit `075f62b` · 2026-11-26 12:47 UTC · chargement 186 s · 0.38 images/s en rendu logiciel
-
-## Bloquant (à corriger avant tout autre changement)
-- Fight club ne se termine plus.
+Commit `5eb1db0` · 2026-11-26 13:20 UTC · chargement 142 s · 0.5 images/s en rendu logiciel (précédent : 0.38)
 
 ## Réserves
 - Contrôle incomplet : le script de test n'a pas pu jouer m8, m9 (problème du banc de test, pas forcément du jeu). Ces missions sont marquées « non vérifiée ».
-- Place des Lices, escalier, jour : image délavée (luminosité moyenne 0.616, saturation 0.17 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
-- Halles des Lices, jour : image délavée (luminosité moyenne 0.648, saturation 0.16 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Place des Lices, escalier, jour : image délavée (luminosité moyenne 0.591, saturation 0.218 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Halles des Lices, jour : image délavée (luminosité moyenne 0.638, saturation 0.174 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+
+## Rendu
+**Changement visuel : net.** 4 vues sur 6 changent nettement. Regarder les comparaisons pour juger si c'est mieux.
 
 ## Missions
 | Mission | Résultat |
@@ -22,7 +22,7 @@ Commit `075f62b` · 2026-11-26 12:47 UTC · chargement 186 s · 0.38 images/s en
 | Mission 7 | OK |
 | Mission 8 | non vérifiée |
 | Mission 9 | non vérifiée |
-| Fight club | **KO** |
+| Fight club | OK |
 
 ## Accès aux éléments de mission
 - OK — Mission 3 : les 3 sacs tirés sont accessibles à pied
@@ -34,12 +34,21 @@ Changement = part de l’image qui change nettement par rapport au contrôle pr�
 
 | Vue | Changement | Luminosité | Contraste | Saturation | Quasi blanc |
 |---|---|---|---|---|---|
-| Rue Maréchal Joffre, jour | — | 0.554 | 0.257 | 0.25 | 4 % |
-| Rue Saint-Michel, jour | — | 0.45 | 0.235 | 0.154 | 2 % |
-| Place des Lices, escalier, jour | — | 0.616 | 0.162 | 0.17 | 6 % |
-| Halles des Lices, jour | — | 0.648 | 0.189 | 0.16 | 15 % |
-| Place des Lices, nuit sous la pluie | — | 0.229 | 0.147 | 0.35 | 0 % |
-| Toits du centre vus d’en haut | — | 0.667 | 0.147 | 0.15 | 4 % |
+| Rue Maréchal Joffre, jour | 64 % | 0.507 (-0.047) | 0.225 (-0.032) | 0.268 (+0.018) | 1 % |
+| Rue Saint-Michel, jour | 49 % | 0.532 (+0.082) | 0.222 (-0.013) | 0.191 (+0.037) | 2 % |
+| Place des Lices, escalier, jour | 61 % | 0.591 (-0.025) | 0.136 (-0.026) | 0.218 (+0.048) | 0 % |
+| Halles des Lices, jour | 0 % | 0.638 (-0.01) | 0.185 (-0.004) | 0.174 (+0.014) | 15 % |
+| Place des Lices, nuit sous la pluie | 25 % | 0.215 (-0.014) | 0.141 (-0.006) | 0.352 (+0.002) | 0 % |
+| Toits du centre vus d’en haut | 0 % | 0.666 (-0.001) | 0.147 (+0.0) | 0.15 (+0.0) | 4 % |
+
+Comparaisons avant (en haut) / après (en bas) :
+
+![halles.jpg](comparaison/halles.jpg)
+![joffre.jpg](comparaison/joffre.jpg)
+![lices.jpg](comparaison/lices.jpg)
+![lices_nuit.jpg](comparaison/lices_nuit.jpg)
+![saint_michel.jpg](comparaison/saint_michel.jpg)
+![toits.jpg](comparaison/toits.jpg)
 
 Captures actuelles :
 
