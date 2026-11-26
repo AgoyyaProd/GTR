@@ -295,6 +295,14 @@ function addBuilding(gb, t, h, code, p, R) {
       const dx = m1[0] - m0[0], dy = m1[1] - m0[1], rl = Math.hypot(dx, dy) || 1, rw = 0.10;
       const nx = -dy / rl * rw, ny = dx / rl * rw;
       gb.quad(MAT.slate, [m0[0]+nx,rid+0.035,-(m0[1]+ny)], [m1[0]+nx,rid+0.035,-(m1[1]+ny)], [m1[0]-nx,rid+0.035,-(m1[1]-ny)], [m0[0]-nx,rid+0.035,-(m0[1]-ny)], [0,0], [rl,0], [rl,0.2], [0,0.2], [0,1,0]);
+      // Cheminée sur le faîtage réel, avec solin et chaperon maçonné.
+      if (style <= 3 && R() < 0.72) {
+        const tx = (m0[0] + m1[0]) * 0.5, ty = (m0[1] + m1[1]) * 0.5;
+        const cw = 0.58, cd = 0.68, ch = 1.75, rot = Math.atan2(dy, dx);
+        addBox(gb, MAT.coping, tx, ty, rid - 0.12, cw + 0.16, cd + 0.16, 0.12, rot);
+        addBox(gb, MAT.chimney, tx, ty, rid - 0.02, cw, cd, ch, rot);
+        addBox(gb, MAT.coping, tx, ty, rid + ch - 0.02, cw + 0.18, cd + 0.18, 0.13, rot);
+      }
       gableBuilt = true;
     }
   }
@@ -681,8 +689,8 @@ function addLodBuilding(gb, t, rec, R, force) {
   }
   // Encadrements de fenêtres en relief : uniquement sur un sous-ensemble
   // proche du joueur, afin de réserver le budget géométrique aux façades lisibles.
-  if (!hall && !rec.mo && dc < 720 && h >= 8 && h <= 28 &&
-      (style === 0 || style === 1 || style === 3) && MAT.stone && R() < 0.58) {
+  if (!hall && !rec.mo && dc < 1050 && h >= 8 && h <= 32 &&
+      (style === 0 || style === 1 || style === 3) && MAT.stone && MAT.glassBus) {
     const periodU = perU || 4 * BAY;
     const rows = Math.min(8, Math.floor((h - 0.65) / FLOOR));
     const frameMat = MAT.stone;
@@ -715,6 +723,22 @@ function addLodBuilding(gb, t, rec, R, force) {
             const y1 = y0 + 2.25;
             if (y1 > edgeH - 0.22) continue;
             const half = 0.735, inner = 0.575, bar = 0.10;
+            // Vitrage en retrait et tableaux latéraux : la baie ne se limite
+            // plus à un cadre posé sur la texture de façade.
+            const paneY0 = y0 + bar + 0.035, paneY1 = y1 - bar - 0.035;
+            const paneL = center - inner + 0.035, paneR = center + inner - 0.035;
+            wallGB.quad(MAT.glassBus,
+              at(paneL, paneY0, 0.052), at(paneR, paneY0, 0.052),
+              at(paneR, paneY1, 0.052), at(paneL, paneY1, 0.052),
+              [0, 0], [1, 0], [1, 1], [0, 1], N);
+            wallGB.quad(frameMat,
+              at(center - inner, paneY0, 0.025), at(paneL, paneY0, 0.025),
+              at(paneL, paneY1, 0.052), at(center - inner, paneY1, 0.052),
+              [0, 0], [0.04, 0], [0.04, 2], [0, 2], N);
+            wallGB.quad(frameMat,
+              at(paneR, paneY0, 0.025), at(center + inner, paneY0, 0.025),
+              at(center + inner, paneY1, 0.052), at(paneR, paneY1, 0.052),
+              [0, 0], [0.04, 0], [0.04, 2], [0, 2], N);
             const strip = (s0, s1, v0, v1) => wallGB.quad(
               frameMat,
               at(s0, v0), at(s1, v0), at(s1, v1), at(s0, v1),

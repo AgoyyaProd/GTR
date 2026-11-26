@@ -1,0 +1,9 @@
+# Refonte 01 — façades et silhouettes de toiture
+
+Base : contrôle OK `0c2f5b9` (branche `main`).
+
+- Baies vitrées avec vitrage sombre, tableaux latéraux et dormant en relief sur les façades maçonnées dessinées du centre (rayon 1 050 m) ; suppression du tirage aléatoire qui laissait des bâtiments sans intervention.
+- Cheminées implantées sur le faîtage calculé des toitures à deux pans, avec solin et chaperon. Le positionnement suit l'axe réel de chaque toiture.
+- Géométrie ajoutée dans les buckets existants. Aucun changement aux empreintes, hauteurs, collisions, relief IGN, escaliers, missions, IA ou dimensions de gameplay.
+
+La validation visuelle navigateur est confiée à Claude sur cette branche avant toute fusion dans `main`.
