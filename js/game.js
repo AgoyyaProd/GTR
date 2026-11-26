@@ -451,9 +451,24 @@ async function m3() {
   await say([['Momo', 'Mauvaise nouvelle : la BAC prépare une descente. Ils sont là dans une minute.'], ['Momo', 'Y a trois sacs planqués dans le coin. Récupère-les avant eux, prends une caisse et file au Thabor.']]);
   actors.push(Object.assign(parkAt(-320, 380), { isCar: true }));
   const bags = [];
+  const startX = player.x, startY = player.y;
   for (let k = 0; k < 3; k++) {
-    let s = null; for (let q = 0; q < 40; q++) { const c = randomWalkPoint(-327, 392, 35, 110); if (c && bags.every(b => Math.hypot(b.x - c[0], b.y - c[1]) > 30) && freeSpot(c[0], c[1], 0.8) && reachable(player.x, player.y, c[0], c[1], 2.2)) { s = c; break; } }
-    if (!s) { const c = fp(-327 + rnd(-40, 40), 392 + rnd(-40, 40)); s = [c.x, c.y]; } /* fallback stays on a free walkable spot */
+    let s = null;
+    for (let q = 0; q < 60; q++) {
+      const c = randomWalkPoint(-327, 392, 35, 110);
+      if (c && bags.every(b => Math.hypot(b.x - c[0], b.y - c[1]) > 30) &&
+          freeSpot(c[0], c[1], 0.8) && reachable(startX, startY, c[0], c[1], 2.2)) {
+        s = c; break;
+      }
+    }
+    // Ne jamais placer un sac de secours hors du réseau piéton accessible.
+    // Si aucun segment distant n'est joignable, on cherche près du départ,
+    // puis on utilise le point de départ lui-même (toujours atteignable).
+    if (!s) {
+      const c = fp(startX, startY);
+      if (freeSpot(c.x, c.y, 0.8) && reachable(startX, startY, c.x, c.y, 2.2)) s = [c.x, c.y];
+    }
+    if (!s) s = [startX, startY];
     const b = beam(0x39ff6a); b.scale.set(0.5, 0.12, 0.5); b.position.copy(W3(s[0], s[1])); b.visible = true;
     const bag = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 })); bag.position.copy(W3(s[0], s[1], 0.2)); scene.add(bag);
     bags.push({ x: s[0], y: s[1], b, bag, got: false });
