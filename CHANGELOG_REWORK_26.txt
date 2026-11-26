@@ -1,0 +1,34 @@
+GRAND THEFT ROAZHON — REWORK 26
+=================================
+
+Objectif : rendre la réponse des surfaces à la pluie progressive, au lieu de
+basculer brutalement entre un matériau sec et un matériau mouillé.
+
+MODIFICATION — js/render.js
+---------------------------
+
+1. Les chaussées, marquages, pavés et sols concernés interpolent désormais
+   continûment leur rugosité et leur intensité de réflexion selon l'humidité.
+2. L'asphalte, les voies et les sols génériques s'assombrissent progressivement
+   avec la pluie, sans changer leur géométrie ni leurs textures.
+3. Après l'arrêt de la pluie visible, une humidité résiduelle décroît pendant
+   le temps de séchage déjà géré par le système météo.
+4. Les ambiances manuelles restent cohérentes : un mode pluvieux applique un
+   état mouillé, un mode sec un état sec. En météo automatique, l'interpolation
+   suit l'intensité réelle de l'averse.
+
+PÉRIMÈTRE ET PRÉSERVATION
+------------------------
+
+Aucun changement aux données géographiques, au relief IGN, aux routes, aux
+collisions, aux bâtiments, aux véhicules, aux personnages, à la police, aux
+missions 1–9 ou au fight club. Aucun nouvel objet, texture ou appel de rendu.
+Le changement agit sur les matériaux existants.
+
+VALIDATION
+----------
+
+Le code a été modifié sur main. La validation syntaxique locale, la comparaison
+visuelle dans le navigateur et les mesures FPS ne sont pas encore confirmées
+dans cette session. Le site GitHub Pages doit être contrôlé après déploiement ;
+aucune validation visuelle WebGL n'est revendiquée ici.
