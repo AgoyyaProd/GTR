@@ -260,10 +260,10 @@ function makeFacade(style, v, R) {
   const base = { 0: ['tuffeau', ['#f2e6cf', '#e8dcc4']], 1: ['plaster', ['#efe2c8', '#e8c89a', '#e9d2c8', '#dfe0da']], 2: ['plaster', ['#efe6d2', '#f2e2c0', '#e8e0d8']], 3: ['brick', ['#ffffff']], 4: ['grey', ['#e8e8e6', '#d8d4cc']], 5: ['grey', ['#9aa2aa', '#b8b2a6']], 6: ['stone', ['#c8c4bc']], 7: ['plaster', ['#f6f4ee', '#efe8da']], 8: ['grey', ['#6a6a70']] }[style];
   const img = wallImgs[base[0]];
   tiled(g, img, S, S, style === 3 ? 150 : style === 0 ? 210 : 230, style === 3 ? null : '#ffffff');
-  if (style !== 3) { /* neutral grey: the real colour of each building is applied per vertex */
-    g.save(); g.globalCompositeOperation = 'saturation'; g.fillStyle = '#808080'; g.fillRect(0, 0, S, S); g.restore();
-    g.save(); g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(150,150,150,.55)'; g.fillRect(0, 0, S, S); g.restore();
-  }
+  /* Conserver la chromie et les micro-variations des textures photographiques.
+     La neutralisation en niveaux de gris suivie d'un voile screen écrasait les
+     nuances de pierre, les reprises d'enduit et les différences de vieillissement.
+     La teinte urbaine reste appliquée proprement par vertex dans world.js. */
   /* height base from photo luminance */
   hg.drawImage(c, 0, 0, 512, 512); hg.globalCompositeOperation = 'source-over'; hg.globalAlpha = 0.55; hg.fillStyle = '#808080'; hg.fillRect(0, 0, 512, 512); hg.globalAlpha = 1;
   const glass = (x, y, w, h, lit) => {
