@@ -1,0 +1,30 @@
+GRAND THEFT ROAZHON — REFONTE 07
+================================
+
+Base : GrandTheftRoazhon_refonte_06.zip
+
+MODIFICATION
+------------
+js/world.js — enrichissement des encadrements de baies du centre historique.
+- Ajout sélectif de linteaux en pierre légèrement débordants au-dessus des fenêtres.
+- Ajout d'une clef centrale en faible relief pour donner une lecture plus crédible
+  des encadrements maçonnés.
+- Détail limité au centre ancien (rayon 430 m), sur les façades dessinées déjà
+  équipées d'encadrements et uniquement sur une sélection déterministe de baies.
+- Géométrie ajoutée au bucket de façade existant ; aucune nouvelle texture,
+  aucun nouvel objet Three.js et aucun tirage aléatoire supplémentaire.
+
+PÉRIMÈTRE
+---------
+Aucun changement apporté aux missions, au fight club, aux collisions, au relief,
+aux données OSM, aux véhicules, à la police ou aux systèmes de vie.
+
+LIMITES
+-------
+Le détail est procédural et non issu d'un relevé façade par façade.
+Le rendu WebGL en navigateur et le coût GPU réel n'ont pas pu être mesurés ici.
+
+VÉRIFICATIONS
+-------------
+Contrôle syntaxique Node.js sur tous les fichiers JavaScript.
+Contrôle d'intégrité de l'archive ZIP.

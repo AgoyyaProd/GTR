@@ -1,0 +1,36 @@
+GRAND THEFT ROAZHON — REWORK 12
+================================
+
+Base : GrandTheftRoazhon_rework_11.zip
+Objectif : dépasser les aplats uniformes en ajoutant une réponse de surface PBR
+procédurale, partagée et peu coûteuse, sans toucher au gameplay.
+
+1) CARROSSERIES — js/actors.js
+------------------------------
+- Ajout d'une texture neutre de micro-grain/peau d'orange, d'une carte de rugosité
+  et d'une carte de relief très faible pour les peintures automobiles.
+- Les matériaux conservent leur teinte propre par variante ; la texture ne remplace
+  pas la couleur de peinture et reste commune pour limiter les allocations GPU.
+- Clearcoat renforcé et réponse métallique légèrement ajustée pour mieux lire les
+  reflets sur les carrosseries.
+
+2) VÊTEMENTS — js/actors.js
+---------------------------
+- Ajout d'une microstructure textile neutre utilisée en roughnessMap et bumpMap
+  sur le matériau skinné partagé des piétons et des conducteurs.
+- Les couleurs vertex existantes restent la source des couleurs des vêtements,
+  peaux et cheveux. Aucun nouvel objet Mesh n'est créé par personnage.
+
+3) COMPATIBILITÉ ET LIMITES
+--------------------------
+- Aucun changement aux missions, déplacements, collisions, circulation, géographie
+  ou systèmes de police/transports.
+- Textures générées procéduralement à l'initialisation ; aucune dépendance réseau.
+- Il s'agit de micro-détails de matière, pas de textures photographiques ni de
+  photoréalisme. Le rendu réel dépend du GPU, de l'éclairage et des réglages actifs.
+- Validation navigateur/WebGL et mesure FPS non disponibles dans cet environnement.
+
+VALIDATION
+----------
+- node --check sur tous les fichiers JavaScript : voir contrôle de livraison.
+- Intégrité ZIP : vérifiée.

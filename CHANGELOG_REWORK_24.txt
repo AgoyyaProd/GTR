@@ -1,0 +1,47 @@
+GRAND THEFT ROAZHON — REWORK 24
+================================
+Refonte des petits équipements de l'espace public : mobilier urbain et
+stationnement vélo. Base : Rework 23.
+
+1. BANCS PUBLICS
+----------------
+- Reprise du piètement métallique avec des appuis au sol plus lisibles.
+- Ajout de bras et de traverses d'accoudoirs pour donner une structure continue
+  aux extrémités du banc.
+- Conservation des lames d'assise et de dossier dans leur géométrie bois dédiée.
+- Les éléments restent superposés dans les mêmes matrices d'instances que les
+  bancs existants : aucune implantation n'est ajoutée ou déplacée.
+
+2. CORBEILLES
+-------------
+- Couvercle supérieur mieux étagé et lèvre périphérique renforcée.
+- Ajout de nervures verticales réparties autour du corps cylindrique.
+- Conservation du support arrière et de la géométrie d'ancrage au sol.
+
+3. POTELETS
+-----------
+- Embase élargie et collerette de pied plus lisible.
+- Deux bagues de fût supplémentaires pour détailler la silhouette du mobilier.
+- Géométrie toujours regroupée dans le modèle instancié des potelets.
+
+4. ARCEAUX VÉLO
+---------------
+- Ajout de platines de fixation au sol et de petits ancrages verticaux.
+- Conservation des trois arceaux et de leur entraxe d'origine.
+- Aucun nouvel emplacement vélo n'est généré.
+
+5. INTÉGRATION ET LIMITES
+-------------------------
+- Modifications limitées aux géométries partagées de PROPS dans js/world.js.
+- Les tableaux de matrices d'instances, les données OSM, les coordonnées, les
+  collisions, les routes, les trottoirs et le relief restent inchangés.
+- Pas de Mesh indépendant par objet : les modèles restent fusionnés par famille
+  et rendus via le système InstancedMesh existant.
+- Les ajouts reprennent les matériaux déjà affectés à chaque famille ; il ne
+  s'agit pas d'un système de matériaux multicouches ou d'une nouvelle texture.
+
+6. VALIDATION
+-------------
+- Syntaxe JavaScript vérifiée avec node --check sur tous les scripts.
+- Intégrité de l'archive ZIP vérifiée.
+- Aucun test visuel navigateur ni mesure FPS disponible dans cet environnement.

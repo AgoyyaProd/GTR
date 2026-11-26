@@ -1,0 +1,44 @@
+GRAND THEFT ROAZHON — REWORK 23
+================================
+Refonte de la végétation urbaine : diversité structurelle des arbres.
+Base : Rework 22.
+
+1. SIX SILHOUETTES DE HOUPPIERS
+-------------------------------
+- Remplacement du système à deux couronnes répétées par six géométries
+  procédurales distinctes.
+- Profils différenciés : houppier large et bas, port élancé, couronne compacte,
+  dôme plus bas, couronne ample et aérée, silhouette irrégulière.
+- Densités de grappes foliaires et proportions propres à chaque profil.
+- Échelles et rapports de hauteur/largeur légèrement variés arbre par arbre.
+
+2. GÉNÉRATION ET COHÉRENCE
+--------------------------
+- Affectation d'un profil par arbre lors de la génération de la tuile.
+- Les choix utilisent le générateur pseudo-aléatoire déjà employé par la tuile :
+  la répartition reste stable lors d'une reconstruction à données identiques.
+- Les positions d'arbres, leurs troncs, leurs grilles de plantation et leurs
+  volumes de collision ne sont pas déplacés.
+
+3. RENDU ET PERFORMANCE
+-----------------------
+- Les six couronnes sont des géométries partagées, instanciées par familles.
+- Conservation du matériau foliaire, de l'alpha-test et du matériau de profondeur
+  dédié aux ombres.
+- Le découpage spatial existant des InstancedMesh en cellules de 200 m est
+  conservé ; aucun Mesh individuel n'est créé pour les feuilles.
+- Aucun nouvel asset ou téléchargement de texture.
+
+4. PÉRIMÈTRE NON MODIFIÉ
+------------------------
+- Pas de modification des chaussées, trottoirs, bordures, relief, eau ou terrain.
+- Pas de modification des données OSM, des bâtiments, des arbres placés,
+  collisions, circulation, véhicules, personnages, police ou missions.
+- Les six profils restent des arbres procéduraux stylisés, pas des essences
+  botaniques identifiées ni des scans photogrammétriques.
+
+5. VALIDATION ET LIMITES
+------------------------
+- Syntaxe JavaScript vérifiée avec node --check sur tous les scripts.
+- Intégrité de l'archive ZIP vérifiée.
+- Aucun test visuel navigateur ni mesure FPS disponible dans cet environnement.

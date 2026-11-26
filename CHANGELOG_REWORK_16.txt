@@ -1,0 +1,13 @@
+REWORK VISUEL 16 — STRUCTURES DE DEVANTURES
+===========================================
+
+- Les stores de cafés et restaurants reçoivent désormais des bras de soutien
+  métalliques, des platines murales et une traverse frontale rigide.
+- Les renforts sont construits dans le bucket de géométrie des devantures déjà
+  utilisé par la ville : pas de Mesh indépendant ajouté par commerce.
+- Les matériaux métalliques existants sont réutilisés.
+- Aucun changement aux missions, collisions, déplacements, circulation,
+  police, géographie ou données de terrain.
+
+Validation : syntaxe JavaScript et intégrité de l'archive vérifiées.
+Aucun test visuel navigateur ni mesure FPS réalisés.

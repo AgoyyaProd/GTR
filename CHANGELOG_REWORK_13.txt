@@ -1,0 +1,38 @@
+GRAND THEFT ROAZHON — REWORK 13
+================================
+
+Objectif : améliorer la lecture des volumes des véhicules et leur mécanique,
+avec des détails de carrosserie intégrés aux modèles existants.
+
+1) AUTOMOBILES — js/actors.js
+-----------------------------
+- Ajout de joints de vitrage latéraux (contours), de séparations de panneaux
+  et de lignes de bas de caisse.
+- Ajout de lignes de capot discrètes pour mieux lire le volume avant.
+- Les traits sont regroupés dans une géométrie de lignes par véhicule, plutôt
+  que créés en objets séparés pour chaque segment.
+- Les silhouettes et dimensions des catégories existantes sont conservées.
+
+2) MOTOCYCLETTES — js/actors.js
+-------------------------------
+- Ajout de fourreaux de fourche, suspensions arrière, disques de frein,
+  repose-pieds, transmission et bouchon de réservoir.
+- Les détails utilisent les matériaux mécaniques déjà partagés.
+
+3) VÉLOS — js/actors.js
+-----------------------
+- Ajout de disques de frein, d'une chaîne et d'un dérailleur pour rendre
+  la lecture du vélo plus crédible à moyenne distance.
+
+4) COMPATIBILITÉ
+----------------
+- Pas de changement aux missions, au joueur, aux collisions, à la circulation,
+  aux piétons, à la police, aux transports ou aux données géographiques.
+- Les modèles restent procéduraux et low-poly enrichis ; il ne s'agit pas de
+  modèles scannés ni de véhicules sous licence reproduits à l'identique.
+- Test visuel navigateur/WebGL et mesure FPS non réalisés dans cet environnement.
+
+VALIDATION
+----------
+- Tous les scripts JavaScript passent node --check.
+- Intégrité de l'archive ZIP contrôlée après création.

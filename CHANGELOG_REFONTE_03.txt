@@ -1,0 +1,33 @@
+GRAND THEFT ROAZHON — REFONTE 03
+================================
+
+Base : GrandTheftRoazhon_refonte_02.zip
+
+MODIFICATION
+------------
+js/world.js — addKerb()
+- Ajout de joints de pose fins sur la face verticale des bordures en granit.
+- Espacement régulier de 1,5 m le long des polylignes de bordure.
+- Détails limités à un rayon de 950 m autour du centre du jeu pour maîtriser
+  le coût géométrique.
+- Les joints sont légèrement décalés de la face pour éviter le z-fighting.
+- Aucun changement aux tracés OSM, aux largeurs de chaussée, au relief,
+  aux collisions ou aux données de tuiles.
+
+CONSERVATION
+------------
+Aucun changement apporté à game.js, life.js, police.js, actors.js,
+bus.js, stadium.js, core.js, render.js, aux missions ou au fight club.
+
+VERIFICATIONS
+-------------
+- node --check : les 9 fichiers JavaScript passent.
+- Archive ZIP : intégrité vérifiée après création.
+- Test navigateur/WebGL : non effectué. Playwright et Puppeteer ne sont
+  pas installés dans l'environnement de génération.
+- Le résultat visuel des joints reste à confirmer en jeu sur Chrome/Firefox.
+
+DONNEES
+-------
+Les données OSM et IGN sont conservées sans modification.
+Crédits : © contributeurs OpenStreetMap (ODbL) ; relief IGN RGE ALTI.

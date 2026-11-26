@@ -1,0 +1,36 @@
+GRAND THEFT ROAZHON — REWORK 11
+================================
+
+Base : GrandTheftRoazhon_rework_10.zip
+Objectif : augmenter la diversité lisible des piétons et ajouter des détails de finition
+aux véhicules, sans changer le système de déplacement ni les missions.
+
+1) PERSONNAGES — js/actors.js
+-----------------------------
+- Génération aléatoire enrichie : barbes, lunettes, queues-de-cheval, cheveux bouclés,
+  coiffures séparées, bonnets/casquettes existants, écharpes et manteaux longs.
+- Visage : oreilles, bouche, barbe et montures de lunettes.
+- Les nouveaux éléments sont ajoutés au maillage skinné existant, affectés aux os
+  de la tête ou du torse : ils suivent donc les animations walk/run/idle/drive.
+- Les variantes sont déterministes au niveau du look déjà tiré par randomLook ;
+  aucun nouveau système de simulation n'est introduit.
+- La géométrie des accessoires est fusionnée dans le SkinnedMesh du personnage :
+  pas de nouvel objet Mesh par accessoire au rendu.
+
+2) VÉHICULES — js/actors.js
+---------------------------
+- Ajout de détails de finition sur les modèles automobiles : essuie-glaces avant
+  et sorties d'échappement.
+- Les pièces réutilisent les matériaux déjà créés et restent dans le groupe du véhicule.
+
+3) COMPATIBILITÉ
+----------------
+- Pas de modification de game.js, life.js, police.js, bus.js, stadium.js ou des missions.
+- Pas de changement aux collisions, au trafic, aux vitesses ou à la géographie.
+- Les modèles restent procéduraux : ce ne sont pas des scans photogrammétriques.
+- Contrôle navigateur/WebGL et mesure FPS non disponibles dans cet environnement.
+
+VALIDATION
+----------
+- node --check sur les 17 fichiers JavaScript du projet : OK.
+- Intégrité de l'archive ZIP : OK.

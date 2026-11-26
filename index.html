@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grand Theft Roazhon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: jeu de nuit rennais, réaliste, sous le crachin
+   IDEA: Rennes reconstruite depuis OpenStreetMap, rues et façades plausibles
+   PICTURE: le jeu plein écran ; l'écran titre est une affiche néon sur la ville qui charge derrière
+   COLOUR: bleu nuit, néon rose, jaune sodium, gyrophare bleu
+   TYPE: Anton pour les titres, Barlow Condensed pour l'interface */
+:root{color-scheme:dark;--ink:#f3eee6;--night:#0b1020;--neon:#ff3d8b;--sodium:#ffc04a;--blue:#3d8bff}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--night);color:var(--ink);font:16px/1.45 Barlow,system-ui,sans-serif}
+canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:fixed;pointer-events:none;font-family:"Barlow Condensed",sans-serif;text-shadow:0 2px 0 #000,0 0 8px #000}
+#tl{top:14px;right:16px;font-size:20px;line-height:1.1;text-align:right}
+#tl b{font-size:32px;color:#7dff9a;display:block}
+#wanted{top:76px;right:16px;display:flex;gap:6px}
+#wanted i{width:24px;height:24px;border-radius:50%;background:#2228;border:2px solid #fff4}
+#wanted i.on{background:var(--blue);border-color:#fff;box-shadow:0 0 14px var(--blue);animation:flash .5s steps(2) infinite}
+#wanted i.on:nth-child(even){animation-delay:.25s}
+#wanted i{width:20px;height:20px}
+#wanted i.x6{display:none;background:#300;border-color:#f44a}
+#wanted.six i.x6{display:block}
+#wanted.six i.on{background:#e01830;box-shadow:0 0 16px #ff2040}
+@keyframes flash{50%{background:#ff2d4a;box-shadow:0 0 14px #ff2d4a}}
+#evade{top:106px;right:16px;font-size:17px;color:#9cc4ff;text-align:right}
+#mini{bottom:18px;left:18px;width:220px;height:220px;border-radius:50%;border:3px solid #000a;box-shadow:0 0 0 2px #fff3,0 8px 24px #0008}
+#street{bottom:24px;left:252px;font-size:22px;font-weight:700;color:#fff}
+#speed{bottom:18px;right:22px;text-align:right;display:none}
+#speed b{font-size:54px;line-height:1;font-family:Anton,sans-serif;color:#fff}
+#speed span{font-size:18px;color:#fffc;margin-left:4px}
+#obj{bottom:70px;left:50%;transform:translateX(-50%);max-width:min(640px,58vw);text-align:center;font-size:23px;font-weight:700;color:#fff}
+#obj:empty{display:none}
+#bar{top:16px;left:50%;transform:translateX(-50%);width:min(340px,50vw);text-align:center;font-size:17px;display:none}
+#bar div{height:10px;border-radius:5px;background:#0009;border:1px solid #fff5;overflow:hidden;margin-top:3px}
+#bar span{display:block;height:100%;width:50%;background:var(--sodium)}
+#banner{top:26%;left:0;right:0;text-align:center;font-family:Anton,sans-serif;font-size:clamp(36px,6vw,68px);line-height:1.05;color:var(--sodium);opacity:0;transition:opacity .4s}
+#banner small{display:block;font-family:"Barlow Condensed";font-size:24px;color:#fff}
+#banner.show{opacity:1}
+#toast{top:62%;left:50%;transform:translateX(-50%);font-size:22px;color:#fff;opacity:0;transition:opacity .3s;text-align:center}
+#toast.show{opacity:1}
+#prompt{top:56%;left:50%;transform:translateX(-50%);font-size:20px;color:#fff;background:#000a;padding:4px 12px;border-radius:6px;display:none}
+#hint{top:14px;left:16px;font-size:15px;color:#fffb;line-height:1.35}
+#dialog{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);width:min(660px,92vw);background:#0b1020e8;border:2px solid var(--neon);border-radius:10px;padding:14px 18px 12px;display:none;font-size:19px;z-index:3}
+#dialog b{font-family:"Barlow Condensed";color:var(--neon);font-size:20px;display:block}
+#dialog small{display:block;text-align:right;color:#fff8;font-size:13px;margin-top:6px}
+#bigmap{position:fixed;inset:3vh 3vw;display:none;background:#0d1220;border:2px solid #fff3;border-radius:14px;overflow:hidden;z-index:4}
+#bigc{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#bigc:active{cursor:grabbing}
+.mapbar{position:absolute;top:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.mapbar button,.modes button{font:700 17px "Barlow Condensed";min-height:44px;min-width:44px;padding:6px 14px;border-radius:10px;border:1px solid #fff4;background:#0b1020d9;color:#fff;cursor:pointer}
+.mapbar button:focus-visible,.modes button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
+.maphelp{position:absolute;left:14px;bottom:12px;font:600 15px "Barlow Condensed";color:#fffc;text-shadow:0 1px 0 #000;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.maphelp i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px;border:1px solid #000}
+#title{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,#0b1020f2 0,#0b1020c8 45%,#0b102033 100%);z-index:5;padding:24px;overflow:auto}
+#title .card{max-width:1100px;width:100%}
+#title h1{font-family:Anton,sans-serif;font-weight:400;font-size:clamp(54px,10vw,128px);line-height:.92;margin:0;color:#fff;text-shadow:0 0 18px var(--neon),4px 4px 0 var(--neon)}
+#title h1 span{display:block;color:var(--sodium);text-shadow:0 0 18px #ff8a00,4px 4px 0 #7a2b00}
+#title p{font-size:18px;max-width:56ch;color:#e9e2f2}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px 18px;font-family:"Barlow Condensed";font-size:18px;margin:16px 0 18px;max-width:760px}
+kbd{display:inline-block;min-width:26px;text-align:center;padding:1px 6px;border:1px solid #fff6;border-bottom-width:3px;border-radius:5px;margin-right:6px;font-family:inherit}
+.modes{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.modes button[aria-pressed=true]{background:var(--sodium);color:#111;border-color:var(--sodium)}
+#play{font:700 24px "Barlow Condensed";padding:12px 34px;min-height:54px;border:0;border-radius:999px;background:var(--neon);color:#fff;cursor:pointer;box-shadow:0 6px 0 #8a1048}
+#play:disabled{background:#3a3f50;box-shadow:none;cursor:wait}
+#play:focus-visible{outline:3px solid var(--sodium);outline-offset:3px}
+#title footer{margin-top:22px;font-size:13px;color:#fff9;max-width:760px}
+#title footer a{color:#fffb}
+#hp{top:110px;right:16px;width:150px;text-align:right}
+#hp div{height:9px;border-radius:5px;background:#0009;border:1px solid #fff5;overflow:hidden}
+#hp span{display:block;height:100%;width:100%;background:#4ade80;transition:width .2s}
+#hp.low span{background:#ff4a4a}
+#evade{top:132px !important}
+#flash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,#c00000 100%);opacity:0;z-index:2}
+#fade{position:fixed;inset:0;pointer-events:none;background:#000;opacity:0;transition:opacity .25s;z-index:2}
+#metro{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,94vw);max-height:88vh;overflow:auto;background:#0b1020f0;border:2px solid #d4202a;border-radius:14px;padding:18px 22px;z-index:6;display:none;font-family:"Barlow Condensed",sans-serif}
+#metro h2{font-family:Anton,sans-serif;font-weight:400;margin:0 0 4px;font-size:30px}
+#metro p{margin:0 0 12px;color:#fffc}
+#metro .mcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#metro h3{margin:0 0 8px;font-size:20px}
+#metro .mbadge{display:inline-block;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;color:#fff;background:#d4202a}
+#metro .mbadge.b{background:#1f8a4c}
+#metro button{display:block;width:100%;text-align:left;font:600 18px "Barlow Condensed";min-height:40px;margin:0 0 6px;padding:6px 12px;border-radius:8px;border:1px solid #fff3;background:#151b2e;color:#fff;cursor:pointer}
+#metro button:hover:not(:disabled),#metro button:focus-visible{background:#d4202a;outline:none}
+#metro button:disabled{opacity:.45;cursor:default}
+#metro .mclose{margin-top:10px;text-align:center}
+@media(max-width:760px){#mini{width:140px;height:140px}#street{left:170px;font-size:17px}#obj{font-size:18px;max-width:86vw;bottom:170px}#hint{display:none}#speed b{font-size:40px}}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div class="hud" id="hint">Clic : souris pour regarder · Clic gauche / Espace : frapper · Marche vers une porte pour entrer · E : parler, fouiller, métro · M : carte · T : météo · F : façades</div>
+<div class="hud" id="tl"><span id="clock">23:12</span><b id="money">0 €</b></div>
+<div class="hud" id="wanted"><i></i><i></i><i></i><i></i><i></i><i class="x6"></i></div>
+<div class="hud" id="hp"><div><span id="hpfill"></span></div></div>
+<div class="hud" id="evade"></div>
+<div id="flash"></div><div id="fade"></div>
+<canvas class="hud" id="mini" width="220" height="220"></canvas>
+<div class="hud" id="street"></div>
+<div class="hud" id="speed"><b id="kmh">0</b><span>km/h</span></div>
+<div class="hud" id="bar"><em id="barlabel"></em><div><span id="barfill"></span></div></div>
+<div class="hud" id="obj"></div>
+<div class="hud" id="banner"></div>
+<div class="hud" id="toast"></div>
+<div class="hud" id="prompt"></div>
+<div id="dialog"><b id="dwho"></b><span id="dtxt"></span><small>E / Entrée pour continuer</small></div>
+<div id="bigmap">
+  <canvas id="bigc"></canvas>
+  <div class="mapbar">
+    <button id="mzin" aria-label="Zoomer">+</button><button id="mzout" aria-label="Dézoomer">−</button>
+    <button id="mme">Me recentrer</button><button id="mclear">Effacer le GPS</button><button id="mclose">Fermer (M)</button>
+  </div>
+  <div class="maphelp"><span>Molette ou + − : zoom · Glisser : se déplacer · Clic : poser un point GPS</span><span><i style="background:#ff3d8b"></i>Mission</span><span><i style="background:#ffc04a"></i>Objectif / GPS</span><span><i style="background:#39d0ff"></i>Petit boulot</span><span><i style="background:#3d8bff"></i>Police</span><span>Échelle : 100 px ≈ <b id="mapscale"></b></span><span>© contributeurs OpenStreetMap</span></div>
+</div>
+<div id="title"><div class="card">
+<h1>Grand Theft <span>Roazhon</span></h1>
+<p>Toute la ville dans la rocade, rue par rue, d'après OpenStreetMap et la maquette 3D de Rennes Métropole. 23 h passées, il crachine sur les pavés. La rue de la Soif déborde, la BAC tourne, et place Sainte-Anne, un chien nommé Kaos cherche quelqu'un de réglo. Neuf missions, de la gamelle volée jusqu'au Baron de Villejean, des petits boulots en bleu sur la carte, et des bars où l'on peut entrer.</p>
+<div class="keys">
+<div><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou flèches : bouger</div>
+<div><kbd>Maj</kbd> courir</div>
+<div><kbd>E</kbd> voiture, parler, entrer</div>
+<div><kbd>Clic</kbd> ou <kbd>Espace</kbd> frapper (à pied)</div>
+<div><kbd>Espace</kbd> frein à main (en voiture)</div>
+<div><kbd>M</kbd> carte et GPS</div>
+<div><kbd>T</kbd> changer la météo</div>
+<div><kbd>F</kbd> façades photo ou dessinées</div>
+</div>
+<div class="modes" role="group" aria-label="Ambiance de départ">
+<button data-mode="auto" aria-pressed="true">Automatique</button><button data-mode="nuit-pluie" aria-pressed="false">Nuit, crachin</button><button data-mode="nuit" aria-pressed="false">Nuit sèche</button><button data-mode="jour" aria-pressed="false">Jour</button><button data-mode="jour-pluie" aria-pressed="false">Jour gris</button>
+</div>
+<button id="play" disabled>Chargement…</button>
+<footer>Sur ordinateur, au clavier, avec une carte graphique correcte. Carte © contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL). Bâtiments 3D et photos des façades : source : Rennes Métropole (ODbL). Textures et ciels <a href="https://polyhaven.com">Poly Haven</a> (CC0). Parodie de fan, sans lien avec Rockstar Games. Personnages et histoire fictifs.</footer>
+</div></div>
+<script src="lib/three.min.js"></script>
+<script src="lib/ex/shaders/CopyShader.js"></script>
+<script src="lib/ex/shaders/LuminosityHighPassShader.js"></script>
+<script src="lib/ex/shaders/FXAAShader.js"></script>
+<script src="lib/ex/postprocessing/EffectComposer.js"></script>
+<script src="lib/ex/postprocessing/RenderPass.js"></script>
+<script src="lib/ex/postprocessing/ShaderPass.js"></script>
+<script src="lib/ex/postprocessing/UnrealBloomPass.js"></script>
+<script src="js/core.js"></script>
+<script src="js/render.js"></script>
+<script src="js/world.js"></script>
+<script src="js/stadium.js"></script>
+<script src="js/actors.js"></script>
+<script src="js/police.js"></script>
+<script src="js/game.js"></script>
+<script src="js/life.js"></script>
+<script src="js/bus.js"></script>
+</body>
+</html>

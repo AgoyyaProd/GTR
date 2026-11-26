@@ -1,0 +1,65 @@
+GRAND THEFT ROAZHON — REWORK 10
+================================
+
+Base : GrandTheftRoazhon_refonte_09.zip
+Périmètre : équipement urbain, personnages et véhicules 3D.
+
+1) PERSONNAGES — js/actors.js
+-----------------------------
+- Géométrie de tête plus fine (maillage de visage densifié).
+- Ajout de reliefs faciaux très discrets : arête du nez et arcades sourcilières.
+- Ajout de détails de vêtements intégrés au squelette animé : col, patte de boutonnage,
+  bas de veste, poches, poignets, semelles et sangles de sac.
+- Casque de vélo/mobilité ajouté aux cyclistes et conducteurs de deux-roues.
+- Les éléments restent attachés aux os correspondants et suivent les animations.
+
+2) VOITURES — js/actors.js
+--------------------------
+- Peinture moins métallique et vernis moins miroir.
+- Vitrage avec teinte et rugosité plus crédibles.
+- Roues enrichies : disques, moyeux et rayons, avec géométrie des rayons regroupée
+  en un seul LineSegments par roue pour limiter les draw calls.
+- Détails de carrosserie : calandre, baguettes, poignées, rétroviseurs,
+  répétiteurs latéraux, bas de caisse et éléments arrière.
+- Deux silhouettes supplémentaires dans le trafic : compacte et break.
+- Le pool de voitures existant reste actif.
+
+3) MOBILITÉS LÉGÈRES — js/actors.js + js/game.js
+------------------------------------------------
+- Reprise du vélo : jantes, rayonnage, moyeux, garde-boue, pédalier, manivelles,
+  pédales et catadioptres.
+- Reprise du scooter motorisé : selle, optique avant, feu arrière, clignotants,
+  rétroviseurs et échappement.
+- Nouveau modèle de moto : cadre, réservoir, bloc moteur, selle, roues rayonnées,
+  phare, feu arrière et échappement.
+- Nouveau modèle de trottinette électrique : plateau, colonne, guidon, petites roues,
+  éclairage avant/arrière et conducteur debout.
+- Moto et trottinettes électriques intégrées à la génération du trafic avec une
+  fréquence limitée ; vitesses et rayons de collision adaptés.
+
+4) MOBILIER URBAIN — js/world.js
+--------------------------------
+- Lanternes de centre ancien : fût, collerette, chapeau, vitrage/cadre et éléments
+  verticaux de cage plus détaillés.
+- Candélabres : base, fût, potence et tête affinés.
+- Corbeilles : corps, rebords, couvercle, poignée et pied plus lisibles.
+- Bancs : lames d'assise et de dossier supplémentaires, fixations discrètes.
+- Abribus : toiture en débord, montants renforcés et panneaux vitrés latéraux.
+- Arceaux vélo : tubes et traverses de liaison enrichis.
+- Les clés PROPS et le système d'instanciation restent inchangés : les équipements
+  continuent d'être regroupés par type.
+
+5) COMPATIBILITÉ / LIMITES
+--------------------------
+- Aucun contenu de mission ni scénario du fight club modifié.
+- Aucun changement aux données géographiques, au relief ou aux collisions de bâtiments.
+- Les nouveaux détails sont procéduraux ; ils ne constituent pas des scans de véhicules
+  ou des modèles constructeur sous licence.
+- Le rendu navigateur et les performances GPU réelles n'ont pas pu être mesurés dans
+  cet environnement. Le regroupement des rayons et l'instanciation des équipements
+  limitent néanmoins les coûts de rendu supplémentaires.
+
+VALIDATION TECHNIQUE
+--------------------
+- node --check sur tous les fichiers JavaScript du projet.
+- Test d'intégrité de l'archive ZIP.

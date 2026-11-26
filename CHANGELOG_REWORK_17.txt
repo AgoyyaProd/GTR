@@ -1,0 +1,43 @@
+GRAND THEFT ROAZHON — REWORK 17
+================================
+
+REFONTE DES DEVANTURES COMMERCIALES — js/world.js
+-------------------------------------------------
+Cette passe remplace l'approche « panneau + store » par une composition de
+menuiserie commerciale plus construite, générée dans le bucket de géométrie
+des devantures existant.
+
+1. PORTES ET VITRINES ENCADRÉES
+- Ajout de montants verticaux et de traverses horizontales pour segmenter les
+  grandes surfaces vitrées.
+- Les devantures étroites reçoivent une composition simplifiée afin d'éviter
+  une grille trop dense.
+- Ajout d'un profil de porte, d'une plaque basse de protection et d'une
+  poignée/poignée verticale stylisée.
+
+2. SEUILS, LINTEAUX ET FINITIONS
+- Seuil inférieur en relief, traverse de vitrage et bandeau supérieur.
+- Les éléments utilisent les matériaux de menuiserie/métal déjà présents.
+- Les détails sont construits avec le helper de géométrie de devanture et
+  fusionnés avec les autres éléments de commerces : aucun Mesh indépendant
+  n'est créé pour chaque barre ou poignée.
+
+3. ÉCLAIRAGE ARCHITECTURAL
+- Ajout de petites appliques murales avec platine et capot au-dessus d'une
+  partie des entrées.
+- Leur placement est déterministe par commerce pour conserver une ville
+  stable entre les générations.
+
+4. COMPATIBILITÉ ET PÉRIMÈTRE
+- Modification limitée à js/world.js et ajout de ce journal.
+- Pas de changement aux missions, scripts de gameplay, collisions, trafic,
+  police, données géographiques, terrain ou relief.
+- La géométrie reste procédurale : ce n'est pas une modélisation manuelle
+  individuelle de chaque commerce réel.
+
+VALIDATION
+----------
+- Vérification syntaxique de tous les scripts JavaScript avec node --check.
+- Contrôle d'intégrité de l'archive ZIP après empaquetage.
+- Aucun test visuel navigateur/WebGL ni mesure FPS réalisés dans cet
+  environnement ; le rendu et le coût GPU doivent encore être vérifiés en jeu.

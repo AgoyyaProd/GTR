@@ -1,0 +1,52 @@
+GRAND THEFT ROAZHON — REWORK 20
+REFONTE VISUELLE TRANSVERSALE : ARCHITECTURE ET CHAUSSÉES
+
+BASE
+- Reprise intégrale du projet Rework 19.
+- Modifications ciblées dans js/world.js et js/render.js.
+- Aucun changement des données OSM, des tuiles, du relief IGN ou des scripts de gameplay.
+
+1. ARCHITECTURE : FAÇADES PLUS CONSTRUITES
+- Ajout de bandeaux horizontaux de niveau sur les immeubles procéduraux du tissu
+  urbain central (styles 0, 1 et 3, hors pans de bois déjà traités séparément).
+- Les bandeaux sont placés à une cadence proche d'un étage, avec une saillie
+  faible pour créer une ombre de contact et souligner la lecture des niveaux.
+- Ajout de pilastres d'angle discrets sur les longues façades des bâtiments
+  suffisamment hauts.
+- Les lignes suivent les segments réels des empreintes polygonales : les
+  façades irrégulières et les angles ne sont pas remplacés par des rectangles.
+- La géométrie est injectée dans les buckets GB déjà existants ; pas de Mesh
+  autonome par bandeau ou pilastre.
+
+2. CHAUSSÉES : REPRISES D'ENROBÉ
+- Création d'un matériau partagé asphaltRepair, basé sur les textures asphalt
+  existantes avec une teinte et une rugosité légèrement différentes.
+- Ajout de petites plaques de réparation irrégulières sur certaines routes
+  carrossables suffisamment larges, dans un rayon de 850 m autour du centre.
+- Placement déterministe à partir des coordonnées des segments : la génération
+  des tuiles ne consomme pas le RNG global et ne change pas la population,
+  les missions ou la disposition d'autres éléments.
+- Les plaques restent dans l'emprise de la chaussée et sont intégrées aux
+  buckets géométriques de la tuile.
+
+3. MATÉRIAUX ET COÛT DE RENDU
+- Le matériau de réparation réutilise les maps d'asphalte existantes ; aucune
+  nouvelle texture lourde ni chargement réseau supplémentaire.
+- Pas de matériau ni de Mesh créé par plaque de réparation.
+- Les matériaux d'origine et les passes de rendu restent en place.
+- La quantité de détails est volontairement limitée à la zone centrale et aux
+  routes adaptées, afin de maîtriser la croissance de géométrie.
+
+4. SYSTÈMES PRÉSERVÉS
+- Missions 1 à 9 et fight club.
+- Joueur, caméra, contrôles, interactions et sauvegardes.
+- Collisions, navigation, terrain et hauteurs mesurées.
+- Trafic, véhicules, piétons, police, bus et stade.
+- Tuiles géographiques, données OpenStreetMap et bâtiments LOD2.
+
+VALIDATION
+- Vérification syntaxique node --check de tous les scripts JavaScript.
+- Vérification d'intégrité de l'archive ZIP.
+- Contrôle des références locales de textures et fichiers de terrain.
+- Pas de test navigateur/capture GPU ni de mesure FPS disponible : le rendu
+  final et le coût GPU doivent encore être contrôlés sur une machine de jeu.

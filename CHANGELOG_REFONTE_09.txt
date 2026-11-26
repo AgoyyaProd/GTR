@@ -1,0 +1,35 @@
+GRAND THEFT ROAZHON — REFONTE 09
+================================
+
+Base : GrandTheftRoazhon_refonte_08.zip
+
+FOCUS : MATÉRIAUX DE FAÇADE PBR
+--------------------------------
+js/render.js — makeFacade()
+- Renforcement discret du relief micro-minéral dans la carte de hauteur utilisée
+  pour générer les normales des façades.
+- Carte de rugosité moins uniforme : variations fines sur les surfaces minérales,
+  sans rendre les murs artificiellement brillants.
+- Rugosité du vitrage ajustée pour conserver un reflet doux, moins proche d'un miroir.
+- Salissures verticales générées avec un dégradé d'écoulement, afin d'éviter
+  l'effet de traits noirs uniformes posés au hasard.
+- Normal map avec intensité réglée explicitement pour privilégier le relief
+  perceptible en lumière rasante sans embossage excessif.
+
+IMPACT TECHNIQUE
+----------------
+Les cartes restent générées une seule fois lors de la création des variantes
+de façade. Aucun objet de scène supplémentaire, aucune texture externe chargée,
+aucune modification des collisions ou des systèmes de jeu.
+Le coût CPU de génération des atlas augmente légèrement au chargement ; le coût
+GPU par pixel reste celui des cartes PBR déjà utilisées (normal + roughness).
+
+PÉRIMÈTRE
+---------
+Aucun changement aux missions, fight club, données géographiques, relief,
+police, véhicules, passants ou collisions.
+
+VALIDATION
+----------
+Contrôle syntaxique Node.js et intégrité de l'archive.
+Rendu visuel réel et comparaison navigateur non validés dans cet environnement.

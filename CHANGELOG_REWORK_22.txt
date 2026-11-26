@@ -1,0 +1,52 @@
+GRAND THEFT ROAZHON — REWORK 22
+================================
+Refonte ciblée des personnages : volumes anatomiques, mains, vêtements,
+chaussures et transitions d'animation.
+Base : Rework 21.
+
+1. SILHOUETTES ET VARIATIONS
+---------------------------
+- Ajout d'une variation de carrure (fine, moyenne, large) dans les looks.
+- Ajustement de la largeur du tronc et du thorax selon la carrure.
+- Ajout d'une variation de style de chaussures (sneakers, bottines, chaussures
+  habillées) avec volumes et finitions différenciés.
+- Les paramètres restent déterministes lorsque le générateur reçoit un RNG.
+
+2. MAINS ET BRAS
+----------------
+- Reprise du volume de paume avec une forme plus lisible.
+- Ajout du pouce et de quatre doigts simplifiés.
+- Ajout de manchettes et de détails de manche.
+- Tous les éléments sont pondérés sur les os d'avant-bras existants : aucune
+  modification de squelette ni de contrat d'animation.
+
+3. VÊTEMENTS ET JAMBES
+---------------------
+- Ajout de détails de revers, coutures et poches pour les vestes.
+- Ajout d'une ligne de taille et de détails de pantalon.
+- Renforcement du volume des genoux.
+- Chaussures enrichies avec semelles, embouts et talons selon le style.
+- Les nouvelles pièces sont fusionnées dans la géométrie skinnée du personnage.
+
+4. ANIMATION
+------------
+- Ajout de très faibles contre-mouvements de tête et d'avant-bras pendant la
+  marche et la course pour réduire l'impression de mouvement rigide.
+- Les modes idle, sit, down et drive conservent leur logique et leurs poses.
+- Aucun os ajouté ou renommé.
+
+5. PERFORMANCE ET COMPATIBILITÉ
+------------------------------
+- Pas de Mesh indépendant par doigt, couture, poche ou semelle.
+- Les détails rejoignent la géométrie skinnée fusionnée existante.
+- Matériaux partagés inchangés ; aucune texture externe ajoutée.
+- Aucun changement aux missions, collisions, circulation, police, bus, stade,
+  véhicules, géographie ou relief.
+
+6. VALIDATION ET LIMITES
+-----------------------
+- Syntaxe vérifiée avec node --check sur tous les scripts JavaScript.
+- Intégrité ZIP vérifiée après empaquetage.
+- Aucun test visuel navigateur ni mesure FPS disponible.
+- Modèles toujours procéduraux : il s'agit d'une amélioration de volume et de
+  lisibilité, pas de scans photogrammétriques ni de personnages photoréalistes.

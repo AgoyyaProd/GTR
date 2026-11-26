@@ -1,0 +1,25 @@
+GRAND THEFT ROAZHON — REWORK 24b (fusion des correctifs)
+========================================================
+
+Base : GrandTheftRoazhon_rework_24.zip
+
+Le rework 24 repartait du rework 10 d'origine : les correctifs de la 10b/10c
+avaient disparu. Ils sont réintégrés ici :
+
+1. js/world.js — addLodBuilding() : cx, cy et dc à nouveau définis.
+   Sans eux, la ville restait bloquée sur « Construction de Rennes… 0 % ».
+2. js/core.js — reachable() : calcul de chemin à pied avec les vraies collisions.
+3. js/game.js — mission 3 : les sacs ne sont posés qu'à un endroit accessible.
+4. js/life.js — livraisons en scooter : client jamais derrière une clôture.
+5. tiles/*.json — passages ouverts dans les clôtures là où une rue ou une allée les
+   traverse (Thabor accessible). Script : outils/gates.py.
+
+Les apports visuels des reworks 11 à 24 (actors.js, render.js, world.js) sont conservés.
+
+VÉRIFICATIONS
+- Chargement de la ville et captures en jeu (navigateur headless, WebGL logiciel).
+- Missions 1 à 9 et fight club : OK.
+
+POUR LA SUITE
+Partir de CE zip (24b), pas du 24, pour ne pas reperdre les correctifs.
+Toujours lancer le jeu dans un navigateur avant de livrer.

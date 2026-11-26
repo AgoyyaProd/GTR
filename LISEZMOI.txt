@@ -1,0 +1,117 @@
+GRAND THEFT ROAZHON — version jouable et modifiable hors de Claude
+====================================================================
+
+LANCER LE JEU
+-------------
+Le jeu charge ses données (relief, tuiles de la ville, textures) avec fetch() :
+il faut donc le servir par un petit serveur web local, un double-clic sur
+index.html ne suffit pas.
+
+  Windows : double-cliquer sur  lancer_jeu.bat
+  Mac / Linux : dans un terminal, dans ce dossier :  ./lancer_jeu.sh
+
+Ces scripts utilisent Python 3 (https://www.python.org). Ils lancent
+"python -m http.server 8000" puis ouvrent http://localhost:8000 dans le navigateur.
+Autre possibilité si vous avez Node.js :  npx serve .  (puis ouvrir l'adresse indiquée)
+
+Tout fonctionne hors ligne : three.js r128 est fourni dans lib/ (sans internet, seules les polices du menu sont remplacées par celles du système).
+Navigateur conseillé : Chrome, Edge ou Firefox récents (WebGL 2).
+
+COMMANDES
+---------
+ZQSD (AZERTY) / WASD ou flèches : se déplacer / conduire    Maj : courir    Souris : regarder
+Clic gauche / Espace : frapper                       E : parler, fouiller, monter, métro
+M : carte    T : météo    F : façades photo/dessinées
+
+ORGANISATION DES FICHIERS
+-------------------------
+index.html            page du jeu (HUD, menus, ordre de chargement des scripts)
+js/core.js            outils communs : grilles, collisions, hauteur du sol (groundH), escaliers
+js/render.js          moteur de rendu : relief dans les shaders, matériaux, lumière, météo, post-traitement
+js/world.js           construction de la ville par tuiles : bâtiments, rues, trottoirs, escaliers,
+                      murs, place des Lices (buildLices), halles Martenot (buildHall), sol global
+js/actors.js          personnages et véhicules (modèles)
+js/game.js            boucle de jeu, joueur, caméra, missions principales
+js/life.js            vie de la ville : passants, boutiques où l'on entre, corps, métro, petits boulots
+js/police.js          système de recherche (6 niveaux), barrages, CRS, hélicoptère
+js/bus.js             bus Chronostar, manèges
+js/stadium.js         Roazhon Park
+tiles/t*.json         données de la ville par tuile de 200 m (bâtiments, rues, escaliers, murs...)
+tiles/a*.jpg          atlas de façades photo
+terrain.png / .json   relief global (4 m)      terrain_d.png  relief fin du centre (1 m, IGN RGE ALTI)
+landcover.png         parcs / places / parkings      water.png  eau
+global.json, metro.json, chrono.json   données globales, métro, lignes de bus
+tex/                  textures (pavés, dalles, asphalte, façades...)
+outils/               scripts Python qui ont fabriqué les données (relief, rues OSM...) — facultatifs
+
+MODIFIER
+--------
+Les fichiers .js sont du JavaScript lisible : modifiez-les puis rechargez la page (Ctrl+F5).
+Exemples : réglages de la police en tête de js/police.js ; la place des Lices dans buildLices
+(js/world.js) ; les missions dans MISSIONS (js/game.js).
+
+Données cartographiques : © les contributeurs OpenStreetMap (ODbL) ; relief : IGN RGE ALTI.
+
+
+REWORK VISUEL 10
+----------------
+Équipements urbains, personnages et modèles 3D de véhicules enrichis. Voir CHANGELOG_REWORK_10.txt pour le détail.
+
+
+REWORK VISUEL 11
+----------------
+Diversité des piétons (visages, coiffures, accessoires, manteaux) et détails de finition des véhicules. Voir CHANGELOG_REWORK_11.txt.
+
+
+REWORK VISUEL 12
+----------------
+Micro-relief procédural des peintures automobiles et microstructure textile sur les personnages. Voir CHANGELOG_REWORK_12.txt.
+
+REWORK VISUEL 13
+----------------
+Détails de carrosserie, vitrages, panneaux, mécaniques de motos et vélos enrichis.
+Voir CHANGELOG_REWORK_13.txt pour le détail.
+
+REWORK VISUEL 15
+----------------
+Volets, jardinières et descentes d'eaux pluviales ajoutés sur une sélection de
+façades du centre. Voir CHANGELOG_REWORK_15.txt.
+
+REWORK 16 — DEVANTURES
+---------------------
+Les stores de certains cafés et restaurants disposent de bras de soutien,
+platines murales et traverses métalliques en géométrie regroupée.
+Voir CHANGELOG_REWORK_16.txt.
+
+REWORK 19 — voir CHANGELOG_REWORK_19.txt pour le détail de la refonte des
+caniveaux, avaloirs et joints de dalles de trottoir dans le centre urbain.
+
+REWORK 20 — Refonte visuelle transversale des façades et chaussées.
+Voir CHANGELOG_REWORK_20.txt pour le détail et les limites de validation.
+
+REWORK 21 — REFONTE DES VOITURES
+--------------------------------
+Les voitures disposent d'un habitacle procédural visible à travers les vitres :
+tableau de bord, console, sièges, banquette, appuie-têtes, panneaux de portes
+et volant. Les géométries d'habitacle sont fusionnées et mises en cache par
+silhouette pour limiter les appels de rendu. Les roues gagnent des étriers et
+des détails de pneumatique. Voir CHANGELOG_REWORK_21.txt pour le détail.
+
+REWORK 22
+---------
+Cette version améliore les modèles de personnages : variations de carrure,
+mains simplifiées, détails de vêtements, chaussures et micro-ajustements des
+poses de marche/course. Voir CHANGELOG_REWORK_22.txt pour le détail.
+
+REWORK 23 — VÉGÉTATION URBAINE
+------------------------------
+Les arbres utilisent désormais six silhouettes de houppiers procédurales au lieu
+de deux formes répétées. Les familles restent instanciées et découpées en
+cellules spatiales. Voir CHANGELOG_REWORK_23.txt pour le détail et les limites.
+
+REWORK 24 — MOBILIER URBAIN
+--------------------------
+Les bancs, corbeilles, potelets et arceaux vélo reçoivent des détails de
+construction supplémentaires (piètements, accoudoirs, nervures, embases et
+platines), sans déplacement des équipements ni modification des collisions.
+Voir CHANGELOG_REWORK_24.txt pour le détail et les limites.

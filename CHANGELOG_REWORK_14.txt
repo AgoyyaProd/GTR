@@ -1,0 +1,34 @@
+GRAND THEFT ROAZHON — REWORK 14
+================================
+
+Objectif : enrichir nettement l'architecture et les silhouettes urbaines sans
+modifier les systèmes de jeu.
+
+1) FAÇADES RÉSIDENTIELLES — js/world.js
+--------------------------------------
+- Ajout de balcons procéduraux sur une sélection de façades adaptées.
+- Dalles en pierre/béton, garde-corps métalliques, barreaux verticaux et
+  mains courantes donnent une lecture plus crédible des immeubles.
+- La génération utilise les buckets géométriques GB déjà présents : les
+  détails sont regroupés par matériau et ne créent pas un objet Three.js
+  indépendant pour chaque élément.
+
+2) TOITURES — js/world.js
+------------------------
+- Équipement technique des toits plats enrichi : socles, caissons HVAC,
+  grilles de ventilation et quelques lanterneaux vitrés.
+- Les équipements sont placés dans l'emprise des bâtiments et restent
+  intégrés à la géométrie regroupée.
+
+3) COMPATIBILITÉ ET LIMITES
+--------------------------
+- Aucune modification des missions, du joueur, des collisions, de la police,
+  des transports, de la circulation ou des données géographiques.
+- Les ajouts sont procéduraux et soumis aux choix aléatoires déjà utilisés
+  par le générateur de ville ; le résultat varie selon les bâtiments.
+- Validation navigateur/WebGL et mesure FPS non réalisées.
+
+VALIDATION
+----------
+- Tous les scripts JavaScript passent node --check.
+- Intégrité de l'archive ZIP contrôlée après création.

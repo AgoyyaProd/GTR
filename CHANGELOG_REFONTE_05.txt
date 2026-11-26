@@ -1,0 +1,42 @@
+GRAND THEFT ROAZHON — REFONTE 05
+================================
+
+Base : GrandTheftRoazhon_refonte_04.zip
+
+MODIFICATION
+------------
+js/world.js — addCrosswalk()
+- Ajout de petites dalles podotactiles de part et d'autre des traversées
+  pour les segments routiers que le code identifie déjà comme abaissés.
+- Les dalles sont limitées aux largeurs de chaussée comprises entre 3,5 m
+  et 16,5 m afin d'éviter les voies trop étroites ou les grands axes.
+- Chaque dalle réutilise les matériaux de pavage et de bordure existants.
+- Cinq nervures géométriques peu élevées sont ajoutées sur chaque dalle.
+- La géométrie suit l'orientation du segment OSM retenu.
+
+PORTÉE ET LIMITES
+-----------------
+- Il s'agit d'un détail de surface visuel, pas d'une reconstruction complète
+  de rampe PMR ni d'une validation de conformité réglementaire.
+- Les dalles ne sont générées que lorsque isLowered(best) est vrai selon
+  les règles déjà présentes dans le jeu.
+- Les pentes, bordures et altimétries réelles des traversées n'ont pas été
+  recalculées. Les données OSM/IGN restent inchangées.
+- Le rendu visuel doit encore être contrôlé en jeu ; aucun navigateur WebGL
+  n'a été utilisé pour cette livraison.
+
+CONSERVATION
+------------
+Aucun changement apporté aux missions, au fight club, aux systèmes de police,
+aux collisions, au relief, aux tuiles ou aux scripts autres que js/world.js.
+
+VERIFICATIONS
+-------------
+- node --check : 9/9 fichiers JS réussis.
+- Intégrité ZIP : testzip réussi.
+- Fichiers de gameplay et moteur protégés : inchangés.
+- Test navigateur/WebGL : non effectué.
+
+DONNEES
+-------
+© contributeurs OpenStreetMap (ODbL) ; relief IGN RGE ALTI.

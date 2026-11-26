@@ -1,0 +1,38 @@
+GRAND THEFT ROAZHON — REFONTE 08
+================================
+
+Base : GrandTheftRoazhon_refonte_07.zip
+
+OBJECTIF
+--------
+Première passe cohérente de refonte de l'image globale, et non une simple
+addition de détails isolés.
+
+1. js/render.js — étalonnage global
+-----------------------------------
+- Remplacement du grade final très léger par un étalonnage filmique plus
+  structuré : contraste modéré, saturation contrôlée, compression des hautes
+  lumières, légère séparation chromatique ombres froides / hautes lumières chaudes.
+- Réduction du vignettage et du grain numérique pour éviter l'aspect artificiel.
+- Bloom plus contenu en journée et mieux contrôlé la nuit afin de préserver
+  les détails lumineux sans halo excessif.
+- Réglage de l'exposition jour / pluie / nuit pour mieux préserver les matières.
+- Réponse de rugosité des surfaces mouillées renforcée pour une lecture plus
+  nette des chaussées humides et des reflets d'environnement.
+
+2. js/world.js — silhouettes de toiture
+---------------------------------------
+- Ajout d'un solin autour de la base des souches de cheminée.
+- Ajout d'un chaperon débordant en pierre/béton au sommet des cheminées.
+- Géométrie intégrée au buffer de toiture existant ; pas de nouvel objet Three.js.
+
+PÉRIMÈTRE DE SÉCURITÉ
+---------------------
+Aucun changement dans les scripts de missions, fight club, collisions,
+relief, données géographiques, IA, véhicules ou systèmes de vie.
+
+VALIDATION
+----------
+À effectuer ici : syntaxe JavaScript et intégrité ZIP.
+Le rendu WebGL réel, la comparaison avant/après et le coût GPU doivent encore
+être vérifiés dans un navigateur de jeu sur la machine cible.

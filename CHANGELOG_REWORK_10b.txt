@@ -1,0 +1,46 @@
+GRAND THEFT ROAZHON — REWORK 10b (correctif)
+============================================
+
+Base : GrandTheftRoazhon_rework_10.zip
+
+CORRECTIF BLOQUANT
+------------------
+js/world.js — addLodBuilding()
+- Les détails de façade (refontes 01, 02, 06, 07) utilisent les variables dc, cx et cy,
+  qui n'existent pas dans cette fonction. ReferenceError à la première tuile :
+  la ville restait bloquée sur « Construction de Rennes… 0 % ».
+- Le correctif de la 04b n'avait pas été repris (les refontes 05 à 10 partent de la 04).
+- cx, cy (centre du bâtiment) et dc (distance au centre-ville) sont maintenant calculés
+  au début de la fonction.
+
+VÉRIFICATIONS (navigateur headless, WebGL logiciel)
+---------------------------------------------------
+- La ville se charge ; captures de jour, de nuit sous la pluie, rue Maréchal Joffre,
+  rue Saint-Michel, rue Poulain Duparc.
+- Missions 1 à 9 et fight club : OK.
+
+POINTS À SURVEILLER (non corrigés)
+----------------------------------
+- Étalonnage de la refonte 08 : de jour, l'image est nettement plus claire et délavée
+  qu'avant (sols et façades presque blancs). La nuit reste correcte.
+- Quelques traits sombres flottent au-dessus de certaines toitures (détails de
+  cheminées ou de corniches de la refonte 08 probablement mal placés).
+
+RÈGLE POUR LES PROCHAINES REFONTES
+---------------------------------
+Toujours lancer le jeu dans un navigateur avant de livrer : « node --check » ne détecte
+pas les variables non définies.
+
+ACCÈS AUX ÉLÉMENTS DE MISSION (ajout du soir)
+---------------------------------------------
+- Parc du Thabor : OSM dessine les clôtures du parc d'un seul trait, sans portails.
+  Le parc était entièrement fermé (vérifié par un calcul de chemin à pied).
+  outils/gates.py ouvre un passage dans les clôtures, rambardes, murets et haies
+  partout où une rue, une allée ou un trottoir les traverse (868 passages, toute la ville).
+  Les murs de soutènement ne sont pas touchés.
+- Mission 3 (les sacs) : environ 15 % des emplacements tirés au hasard tombaient dans
+  une cour ou un jardin fermé. Un sac n'est maintenant posé que si un chemin à pied
+  existe depuis la position du joueur (js/core.js : reachable()).
+- Petit boulot de livraison en scooter : le client n'est plus jamais placé derrière une clôture.
+- Attention : les scénarios de test automatiques téléportent le joueur sur les objectifs ;
+  ils ne détectent pas un objectif inaccessible. reachable(x0, y0, x1, y1) permet de le vérifier.

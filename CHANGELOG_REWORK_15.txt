@@ -1,0 +1,15 @@
+REWORK VISUEL 15 — DÉTAILS ARCHITECTURAUX DU CENTRE
+===================================================
+
+- Volets battants en bois avec lames horizontales sur une sélection de fenêtres
+  des façades dessinées du centre rennais.
+- Jardinières sous certaines baies, avec bac et végétation.
+- Descentes d'eaux pluviales métalliques sur une sélection d'immeubles proches,
+  avec colliers de fixation.
+- Détails limités au premier plan et regroupés dans les buckets de façades
+  existants ; aucune création d'objet Three.js indépendant par détail.
+- Aucun changement aux missions, collisions, déplacements, circulation,
+  police, géographie ou données de terrain.
+
+Validation : syntaxe JavaScript et intégrité de l'archive vérifiées.
+Aucun test visuel navigateur ni mesure FPS réalisés.

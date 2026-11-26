@@ -1,0 +1,23 @@
+GRAND THEFT ROAZHON — REWORK 18
+Refonte architecturale ciblée : pans de bois et couvertures
+
+1. FAÇADES À COLOMBAGES
+- Ajout de sablières horizontales, de potelets verticaux et de décharges diagonales en bois sur les bâtiments procéduraux de style 2 du centre-ville.
+- Les éléments sont placés dans le plan de façade avec un léger déport pour lire leur relief sans z-fighting.
+- La répartition des travées dépend de la longueur réelle de chaque façade ; les diagonales sont adaptées à chaque travée.
+- Géométrie fusionnée dans les buckets existants, sans Mesh indépendant par poutre.
+
+2. COUVERTURES EN ARDOISE
+- Ajout de nervures/joints discrets parallèles à la pente sur les pans de toiture des styles urbains concernés.
+- Espacement déterminé par la longueur de façade, avec un plafond de 18 nervures par pan pour contenir le coût géométrique.
+- Les nervures suivent les points de pente entre l'égout et le faîtage et utilisent le matériau d'ardoise existant.
+
+3. COMPATIBILITÉ ET PÉRIMÈTRE
+- Modifications limitées à js/world.js et ce changelog.
+- Aucun changement aux missions, contrôles, collisions, circulation, police, données OSM, relief ou systèmes de rendu globaux.
+- Les bâtiments LOD2 photographiques et leurs atlas restent inchangés ; les ajouts concernent la génération procédurale classique.
+
+VALIDATION
+- Vérification syntaxique de tous les scripts JavaScript avec node --check.
+- Vérification d'intégrité de l'archive ZIP.
+- Pas de validation visuelle navigateur ni de mesure FPS disponible pour cette livraison.

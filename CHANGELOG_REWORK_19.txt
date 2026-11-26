@@ -1,0 +1,35 @@
+GRAND THEFT ROAZHON — REWORK 19
+Refonte des interfaces chaussée / trottoir dans le centre urbain
+
+OBJECTIF
+Améliorer la lecture des rues à l'échelle du piéton : bordures en granit,
+caniveaux, évacuation des eaux et calepinage des trottoirs. Cette passe
+complète les interventions architecturales des Reworks 17 et 18.
+
+1. CANIVEAUX ET DRAINAGE
+- Deux filets longitudinaux discrets matérialisent les rainures du caniveau
+  dans la bande d'écoulement au pied de la bordure.
+- Ajout d'avaloirs périodiques avec cadre métallique et barreaux transversaux.
+- Les avaloirs sont distribués selon la longueur cumulée de la bordure, et non
+  selon le découpage des segments : leur espacement reste régulier aux sommets.
+- Les détails sont limités à un rayon de 760 m autour du centre pour préserver
+  le budget géométrique des quartiers éloignés.
+
+2. CALEPINAGE DES TROTTOIRS
+- Ajout de joints transversaux de dalles sur une trame de 1,2 m le long des
+  bordures centrales.
+- Les joints sont placés sur la bande piétonne, à l'écart du dessus du granit.
+- La trame utilise la distance cumulée des segments afin de rester cohérente
+  lorsque les lignes OSM sont composées de plusieurs tronçons.
+
+3. PERFORMANCE ET COMPATIBILITÉ
+- Toute la géométrie est ajoutée aux buckets GB existants.
+- Aucun Mesh, matériau ou texture dédié n'est créé par avaloir ou joint.
+- Aucun changement aux missions, contrôles, collisions, terrain, navigation,
+  trafic, piétons, police, données géographiques ou systèmes de rendu.
+- Modification limitée à js/world.js, plus ce changelog.
+
+VALIDATION
+- Tous les scripts JavaScript passent node --check.
+- Intégrité ZIP vérifiée après empaquetage.
+- Pas de test navigateur, de capture visuelle ou de mesure FPS disponible.

@@ -1,0 +1,39 @@
+GRAND THEFT ROAZHON — REFONTE 04
+================================
+
+Base : GrandTheftRoazhon_refonte_03.zip
+
+MODIFICATION
+------------
+js/world.js — addCrosswalk()
+- Ajout de lignes d'arrêt transversales avant les passages piétons.
+- Limité aux segments de voirie carrossable (type 0), d'au moins 5,5 m
+  de largeur et sans indicateur de sens unique.
+- Les lignes sont générées uniquement lorsque le passage est suffisamment
+  éloigné des extrémités du segment OSM, afin de limiter les artefacts
+  au voisinage immédiat des carrefours.
+- Les lignes réutilisent la géométrie et le matériau de marquage existants.
+- Aucun changement des polylignes OSM, des largeurs, du relief, des collisions,
+  des trottoirs ou des données de tuiles.
+
+LIMITES
+-------
+- Les lignes d'arrêt sont une convention graphique générique ; elles ne
+  remplacent pas une validation réglementaire ou une vérification Street View.
+- Les passages situés dans des carrefours ou sur des voies à sens unique
+  ne reçoivent pas cette amélioration.
+- Rendu visuel à confirmer dans le navigateur du joueur.
+
+CONSERVATION
+------------
+Aucun changement apporté aux missions, au fight club, à game.js, life.js,
+police.js, actors.js, bus.js, stadium.js, core.js ou render.js.
+
+VERIFICATIONS
+-------------
+À compléter après contrôle de syntaxe et d'intégrité de l'archive.
+
+DONNEES
+-------
+Les données OSM et IGN sont conservées sans modification.
+Crédits : © contributeurs OpenStreetMap (ODbL) ; relief IGN RGE ALTI.

@@ -1,0 +1,28 @@
+GRAND THEFT ROAZHON — REFONTE VISUELLE 02
+=========================================
+
+Base : GrandTheftRoazhon_refonte_01.
+
+Modifications dans js/world.js :
+- Façades historiques dessinées : plinthe, bandeaux d'étage et corniche
+  haute en géométrie 3D légèrement saillante.
+- Ajout d'encadrements de fenêtres en relief et d'appuis de pierre.
+- Les encadrements sont alignés sur la trame de façade existante
+  (BAY = 3,2 m ; FLOOR = 3,1 m), en tenant compte du sens UV de chaque pan.
+- Détails limités aux styles historiques 0, 1 et 3, aux bâtiments non
+  monumentaux, et à une zone proche du centre (720 à 1 050 m selon le détail).
+- Géométries ajoutées aux buckets existants ; pas de mesh individuel par fenêtre.
+- Aucun changement des empreintes OSM, des tracés de rue, du relief, des
+  collisions, des missions, de la police ou du fight club.
+
+Vérifications :
+- node --check exécuté sur tous les fichiers js/*.js : OK.
+- global.json : tuiles de 600 m, 182 tuiles.
+- Intégrité de l'archive ZIP : vérifiée.
+- Test navigateur : non validé. Chromium headless échoue à initialiser WebGL
+  (erreurs EGL / XCB dans l'environnement de génération). Le rendu doit être
+  contrôlé dans le navigateur local.
+
+Données :
+- © contributeurs OpenStreetMap (ODbL)
+- Relief IGN RGE ALTI

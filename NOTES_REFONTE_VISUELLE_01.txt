@@ -1,0 +1,43 @@
+GRAND THEFT ROAZHON — PREMIÈRE PASSE DE REFINEMENT VISUEL
+========================================================
+
+Périmètre
+---------
+Cette première passe est volontairement limitée à js/world.js. Elle ajoute
+un relief géométrique discret aux bandeaux de plancher des façades historiques
+(style tuffeau, enduit et brique) dans le secteur central, pour donner davantage
+de profondeur aux façades procédurales dessinées.
+
+Les bandeaux sont :
+- générés à partir des arêtes réelles des empreintes de bâtiments ;
+- limités aux bâtiments de plus de 9 m et à moins de 1 300 m du centre ;
+- limités à sept niveaux au maximum ;
+- ignorés pour les monuments et les Halles ;
+- placés dans le groupe des façades dessinées, sans altérer les atlas photo.
+
+Aucun changement n'a été apporté aux missions, au fight club, aux collisions,
+au relief, aux données OSM/IGN, aux scripts de génération ou au système de
+chargement des tuiles.
+
+Audit de la base
+----------------
+- 182 tuiles présentes.
+- global.json déclare une taille de tuile de 600 m (et non 200 m).
+- 47 268 bâtiments LOD2.
+- 38 461 enregistrements de voirie.
+- La zone autour de la tuile t4_6 contient 594 bâtiments LOD2 et 495
+  enregistrements de voirie ; les tuiles voisines contiennent également les
+  secteurs adjacents du centre.
+
+Vérifications
+-------------
+- node --check exécuté avec succès sur les neuf fichiers js/*.js.
+- Le test navigateur headless n'a pas pu être mené à terme : Chromium ne
+  parvient pas à initialiser WebGL dans l'environnement de validation.
+- Le rendu visuel et le coût GPU de ces bandeaux restent donc à valider sur
+  le navigateur et la machine de jeu de l'utilisateur.
+
+Cette modification constitue un premier prototype de profondeur architecturale,
+pas encore une refonte complète. La prochaine étape doit traiter les façades
+(rythme des fenêtres, encadrements, balcons, rez-de-chaussée) et les raccords
+routiers à partir des données géographiques existantes.

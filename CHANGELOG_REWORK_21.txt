@@ -1,0 +1,48 @@
+GRAND THEFT ROAZHON — REWORK 21
+================================
+Refonte ciblée des modèles de voitures : habitacles, vitrage et roues.
+Base : Rework 20.
+
+1. HABITACLES VISIBLES
+----------------------
+- Création d'une géométrie d'habitacle par silhouette de véhicule (hatch,
+  sedan, van, SUV, compact et estate), calculée une seule fois au chargement.
+- Ajout d'un tableau de bord, d'une console centrale et d'une casquette
+  d'instrumentation.
+- Ajout de deux sièges avant avec assises, dossiers et appuie-têtes.
+- Ajout d'une banquette arrière et de trois appuie-têtes.
+- Ajout de panneaux intérieurs de portes et de rails de seuil.
+- Ajout d'un volant et de son moyeu dans le cockpit.
+- L'habitacle utilise le matériau intérieur partagé et est placé derrière le
+  vitrage afin d'améliorer la lecture du volume depuis l'extérieur.
+
+2. ROUES ET FREINAGE
+--------------------
+- Ajout d'étriers de frein visibles derrière les disques.
+- Ajout de stries radiales de lecture du pneumatique sous forme de segments
+  regroupés par roue.
+- Conservation des disques, moyeux et rayons existants.
+
+3. VITRAGES ET PANNEAUX
+-----------------------
+- Renforcement des séparations de vitrages par des lignes de montants.
+- Conservation des lignes de panneaux, poignées, rétroviseurs, essuie-glaces,
+  sorties d'échappement et éléments de carrosserie précédemment ajoutés.
+
+4. PERFORMANCE / ARCHITECTURE
+-----------------------------
+- Les volumes d'habitacle sont fusionnés en une géométrie non indexée par type
+  de véhicule et mis en cache dans CAR_TYPES.
+- Une seule Mesh d'habitacle par voiture, sans Mesh indépendant par siège,
+  appuie-tête ou panneau intérieur.
+- Matériaux partagés ; aucune texture externe ajoutée.
+- Les véhicules à deux roues, les piétons et les systèmes de circulation ne
+  sont pas modifiés dans cette version.
+
+5. COMPATIBILITÉ ET LIMITES
+---------------------------
+- Aucun changement aux missions, au joueur, aux collisions, à la police, aux
+  bus, au stade, aux données géographiques ou au relief.
+- Vérification syntaxique effectuée avec node --check sur les scripts JS.
+- Intégrité de l'archive ZIP vérifiée.
+- Pas de test visuel navigateur ni de mesure FPS disponible pour cette version.

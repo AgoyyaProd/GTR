@@ -1,0 +1,44 @@
+GRAND THEFT ROAZHON — REFONTE 06
+================================
+
+Base : GrandTheftRoazhon_refonte_05.zip
+
+MODIFICATION
+------------
+js/world.js — génération des détails de façade des bâtiments OSM dessinés.
+- Ajout de petits balcons en géométrie 3D sur une sélection déterministe
+  de fenêtres des façades historiques du centre (rayon 430 m).
+- Dalles en pierre, nez de dalle, garde-corps métalliques, poteaux et
+  retours latéraux.
+- Balcons limités aux premier et deuxième étages pour conserver une
+  silhouette architecturale plausible.
+- Sélection spatiale déterministe : aucune consommation supplémentaire
+  du générateur aléatoire du jeu.
+- Aucun balcon sur les bâtiments photo, monuments, halles ou bâtiments
+  en dehors des styles historiques déjà traités par le système d'encadrements.
+
+LIMITES
+-------
+- Les balcons sont procéduraux et ne proviennent pas d'un relevé individuel
+  de chaque immeuble ; leur emplacement reste une interprétation visuelle.
+- Le détail est ajouté au groupe de géométrie des façades existant. Son
+  impact réel sur les draw calls et les performances doit être mesuré en jeu.
+- Le test navigateur WebGL n'a pas pu être exécuté : la navigation locale
+  headless a été bloquée par l'environnement (ERR_BLOCKED_BY_ADMINISTRATOR).
+- La capture d'écran du jeu n'a donc pas pu être produite.
+
+CONSERVATION
+------------
+Base complète conservée. Aucun changement apporté à game.js, life.js,
+police.js, actors.js, bus.js, stadium.js, core.js, render.js, aux missions,
+au fight club, au relief IGN ou aux données OSM.
+
+VERIFICATIONS
+-------------
+- node --check : 9/9 fichiers JavaScript réussis.
+- Intégrité ZIP : testzip réussi.
+- Fichiers de gameplay et moteur protégés : inchangés.
+
+DONNEES
+-------
+© contributeurs OpenStreetMap (ODbL) ; relief IGN RGE ALTI.
