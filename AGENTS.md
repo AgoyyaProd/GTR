@@ -29,6 +29,28 @@ plusieurs contrôles. Si le rapport n'est pas arrivé 35 minutes après le push,
 Un push n'est « fini » que lorsque son contrôle est OK. Toujours partir du dernier commit de `main`
 (ne jamais repartir d'un ancien zip : des correctifs ont déjà été perdus de cette façon).
 
+## Après chaque push : suivre le contrôle sans attendre une demande
+
+Le contrôle est déjà déclenché automatiquement par GitHub Actions à chaque push sur `main` :
+**ne demande jamais à l'utilisateur de dire « check » et ne lui délègue pas le déclenchement.**
+
+Après avoir poussé un changement de code :
+1. Récupère le SHA du commit poussé et vérifie dans l'onglet Actions / l'API GitHub que le workflow
+   « Contrôle automatique » correspondant à ce SHA a bien démarré.
+2. Suis son exécution jusqu'à sa fin (en consultant périodiquement son statut ; ne lance pas un second
+   contrôle en parallèle).
+3. Une fois terminé, récupère `controle/RAPPORT.md` et vérifie que son en-tête cite bien le SHA du commit
+   poussé. Consulte aussi les comparaisons dans `controle/comparaison/` si elles sont disponibles.
+4. Communique spontanément à l'utilisateur le verdict, les éventuels blocages/réserves et les mesures
+   importantes. Si le workflow échoue ou si aucun rapport correspondant n'est publié, indique-le clairement
+   et diagnostique le problème au lieu de présenter le contrôle comme réussi.
+5. Ne considère pas le travail terminé avant ce retour. Ne pousse pas d'autre modification pendant que le
+   contrôle tourne : un nouveau push annule le workflow en cours.
+
+Cette procédure s'applique à chaque push de code, y compris lorsque l'utilisateur ne demande pas
+explicitement une vérification. Les commits automatiques de publication du rapport (`[skip ci]`) ne
+doivent pas déclencher un nouveau contrôle.
+
 ## Ce qui ne doit jamais casser
 
 - Le chargement de la ville (aucune erreur JavaScript). `node --check` ne suffit pas : une variable non
