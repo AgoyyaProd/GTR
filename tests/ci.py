@@ -309,7 +309,9 @@ def compare_and_write():
     fps = report.get('fps')
     hist = [h for h in (prev.get('fps_hist') or []) if h][-4:]
     report['fps_hist'] = hist + ([fps] if fps else [])
-    pfps = sorted(hist)[len(hist) // 2] if len(hist) >= 2 else None
+    pfps = sorted(hist)[len(hist) // 2] if hist else None
+    if len(hist) == 1 and fps and fps < pfps * 0.75:  # une seule mesure de référence : on signale sans bloquer
+        warn.append(f"Images par seconde en baisse ({pfps} → {fps}), à confirmer : une seule mesure de référence, et la vitesse des machines de GitHub varie (chargement {(report.get('load') or {}).get('secondes', '?')} s)."); pfps = None
     if fps and pfps and fps < pfps * 0.75: ko.append(f"Images par seconde en baisse de {round(100 * (1 - fps / pfps))} % ({pfps} → {fps}, référence = médiane des derniers contrôles).")
     elif fps and pfps and fps < pfps * 0.88: warn.append(f"Images par seconde en baisse ({pfps} → {fps}, référence = médiane des derniers contrôles).")
 
