@@ -112,7 +112,7 @@ async def run():
                     try: await pg.close()
                     except Exception: pass
                     if not crashed: break
-                    report['errors'].append(f"le navigateur de test a planté pendant {', '.join(names)} (essai {attempt})")
+                    report.setdefault('crashes', []).append(f"le navigateur de test a planté pendant {', '.join(names)} (essai {attempt})")
             await b.close()
     finally:
         srv.terminate()
@@ -229,27 +229,32 @@ async def run_missions(pg, J, settle, names):
         await go("for (const n of g.INT.npcs.slice()) if (n.tough && !n.staff) g.hitPed(n, 999, g.INT.me);", 0.4)
         await enters(1); await go("", 0.2); await go("g.leaveInterior();", 0); await asyncio.sleep(0.8); done(7, await go("", 0.4))
 
-    async def wait_mission(n=40):
-        # sur une machine lente, la mission met du temps à se déclencher : on laisse le jeu tourner et le dialogue défiler
-        for _ in range(n):
-            if await J("() => !!window.__game.mission"): return
-            await enters(1); await J("() => window.__game.sim(0.4)"); await asyncio.sleep(0.8)
+    async def wait_for(cond, key, n=60):
+        # machine lente : on laisse défiler le dialogue et tourner le jeu jusqu'à ce que l'objet de la mission existe ;
+        # si la mission n'a pas démarré, on s'éloigne puis on revient sur le point de départ pour la réarmer
+        for k in range(n):
+            if await J("() => { const g=window.__game; return !!(" + cond + "); }"): return
+            if k % 10 == 9 and not await J("() => !!window.__game.mission"):
+                await go(f"g.player.x=g.P['{key}'][0]+15; g.player.y=g.P['{key}'][1];", 0.3); await tp(key); await go("", 0.4)
+            await enters(1); await J("() => window.__game.sim(0.4)"); await asyncio.sleep(1)
 
     async def m8():
-        await go("g.setWanted(0);", 0); await tp('yann8'); await settle(6); await go("", 0.4); await enters(2); await go("", 0.3); await wait_mission()
+        await go("g.setWanted(0);", 0); await tp('yann8'); await settle(6); await go("", 0.4); await enters(2); await go("", 0.3); await wait_for("g.cars.find(c=>c.keep && c.type==='sedan' && !c.ai && !c.driver)", 'yann8')
         await go("const c=g.cars.find(c=>c.keep && c.type==='sedan' && !c.ai && !c.driver); g.player.x=c.x+2.5; g.player.y=c.y;", 0.05)
         await pg.keyboard.press('KeyE'); await go("", 0.3)
         await go("g.setWanted(0);", 0.1); await tpGoal(); await go("g.setWanted(0);", 0.5); await enters(2); done(8, await go("", 0.3))
 
     async def m9():
         await go("g.setWanted(0); if (g.player.car) { g.player.car.v=0; }", 0); await go("g.player.car=null; g.player.mesh.visible=true;", 0)
-        await tp('lices9'); await settle(6); await go("", 0.4); await enters(3); await go("", 0.3); await wait_mission()
+        await tp('lices9'); await settle(6); await go("", 0.4); await enters(3); await go("", 0.3); await wait_for("g.peds.find(p=>p.name==='Le Baron')", 'lices9')
         await go("const b=g.peds.find(p=>p.name==='Le Baron'); g.player.x=b.x+5; g.player.y=b.y;", 0.4); await enters(2); await go("", 0.3)
         await go("for (const p of g.peds.slice()) if (p.tough && p.name!=='Le Baron' && p.keep) g.hitPed(p, 999, g.player);", 0.5)
         await go("const b=g.peds.find(p=>p.name==='Le Baron'); g.hitPed(b, 999, g.player);", 0.5)
         await go("g.setWanted(0);", 0.2); await tpGoal(); await go("g.setWanted(0);", 0.5); await enters(3); done(9, await go("", 0.3))
 
     async def fight():
+        # repartir d'un état propre, même si une mission précédente a échoué dans cette page
+        await go("if (g.mission) g.mission.cancel('test'); g.setWanted(0); g.setHP(100); if (g.player.car) { g.player.car.v=0; } g.player.car=null; g.player.mesh.visible=true; if (g.INT && g.INT.active) g.leaveInterior();", 0); await asyncio.sleep(1); await enters(2); await go("", 4.5)
         await go("const s=g.SIDE[2]; g.player.x=s.at.x; g.player.y=s.at.y; s.cd=0;", 0); await settle(6); await go("", 0.2)
         await pg.keyboard.press('KeyE'); await go("", 0.3); await enters(2); await go("", 0.3)
         for _ in range(3):
@@ -257,6 +262,8 @@ async def run_missions(pg, J, settle, names):
             await asyncio.sleep(1.8); await go("", 0.3)
         s = await go("", 0.5)
         M['Fight club'] = 'TERMIN' in (s['banner'] or '').upper()
+        if not M['Fight club'] and report.get('scenario'):  # joué après un échec du script dans la même page : pas une preuve
+            M['Fight club'] = None; report['scenario'].append("fight : joué après un échec du script, résultat non retenu")
 
     table = {'m1': (1, m1), 'm2': (2, m2), 'm3': (3, m3), 'm4': (4, m4), 'm5': (5, m5), 'm6': (6, m6), 'm7': (7, m7), 'm8': (8, m8), 'm9': (9, m9)}
     if names[0] == 'm7':
@@ -338,7 +345,7 @@ def compare_and_write():
         L += ['Comparaisons avant (en haut) / après (en bas) :', ''] + [f"![{n}](comparaison/{n})" for n in sorted(os.listdir(COMP))] + ['']
     L += ['Captures actuelles :', ''] + [f"![{n}](vues/{n}.png)" for n in report['views']] + ['']
     if report['errors']: L += ['## Erreurs JavaScript du jeu', '```'] + report['errors'][:20] + ['```', '']
-    if report.get('scenario'): L += ['## Problèmes du script de test (pas du jeu)', '```'] + report['scenario'] + ['```', '']
+    if report.get('scenario') or report.get('crashes'): L += ['## Problèmes du script de test (pas du jeu)', '```'] + report.get('scenario', []) + report.get('crashes', []) + ['```', '']
     L += ['---', 'Ce rapport est produit par `tests/ci.py` (workflow « Contrôle automatique »). Les règles de travail sont dans `AGENTS.md`.']
     open(os.path.join(OUT, 'RAPPORT.md'), 'w').write('\n'.join(L) + '\n')
     json.dump(report, open(os.path.join(OUT, 'resultat.json'), 'w'), ensure_ascii=False, indent=1)
@@ -365,6 +372,7 @@ def merge_parts(folder):
         for k in ('missions', 'access', 'views'): report[k].update(r.get(k, {}))
         report['errors'] += r.get('errors', [])
         if r.get('scenario'): report.setdefault('scenario', []).extend(r['scenario'])
+        if r.get('crashes'): report.setdefault('crashes', []).extend(r['crashes'])
         if r.get('harness'): report['harness'] = (report.get('harness', '') + ' ' + r['harness']).strip()
         if r.get('load') and (report['load'] is None or 'vues' in f): report['load'] = r['load']
         if r.get('fps'): report['fps'] = r['fps']
@@ -390,6 +398,7 @@ if __name__ == '__main__':
         except Exception as e:  # un problème du banc de test ne doit pas empêcher d'écrire le rapport
             report['harness'] = f"{type(e).__name__}: {str(e)[:300]}"
         if PART != 'all':  # une partie écrit seulement ses résultats bruts
+            os.makedirs(os.path.join(ROOT, 'partie'), exist_ok=True)
             json.dump(report, open(os.path.join(ROOT, 'partie', 'partie.json'), 'w'), ensure_ascii=False)
             sys.exit(0)
     v = compare_and_write()
