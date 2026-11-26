@@ -154,7 +154,7 @@ function M(o) { const m = new THREE.MeshStandardMaterial(o); allMats.push(m); re
 
 const MAT = {};
 /* Shared dry albedo for the global sidewalk/square ground, also used by world.js. */
-MAT.groundAlbedo = 0x969189;
+MAT.groundAlbedo = 0x807b73;
 const ENV = {};
 async function loadEnvironments(progress) {
   const pmrem = new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
@@ -177,11 +177,11 @@ async function loadGroundMaterials() {
   /* Reprises d'enrobé : même famille de texture, teinte et rugosité légèrement différentes. */
   MAT.asphaltRepair = M({ ...g.asphalt, color: 0x777875, roughness: 0.96 });
   MAT.highway = M({ ...g.asphalt, color: 0x7c7c7c, roughness: 1 });
-  MAT.pave = M({ ...g.pave, color: 0x918b82, roughness: 1 });
-  MAT.cobble = M({ ...g.cobble, color: 0x918a80, roughness: 1 });
-  MAT.square = M({ ...g.square, color: 0x969087, roughness: 1 });
+  MAT.pave = M({ ...g.pave, color: 0x807b73, roughness: 1 });
+  MAT.cobble = M({ ...g.cobble, color: 0x807b73, roughness: 1 });
+  MAT.square = M({ ...g.square, color: 0x807b73, roughness: 1 });
   MAT.grass = M({ ...g.grass, color: 0x5c8a34, roughness: 1 });
-  MAT.path = M({ ...g.sw, color: 0x99948b, roughness: 1 });
+  MAT.path = M({ ...g.sw, color: 0x827d75, roughness: 1 });
   MAT.ballast = M({ ...g.concrete, color: 0x6a5f55, roughness: 1 });
   MAT.slate = M({ ...g.slate, color: 0xa8b0bc, roughness: 0.75 });
   MAT.zinc = M({ ...g.concrete, color: 0x6c7078, roughness: 0.5, metalness: 0.5 });

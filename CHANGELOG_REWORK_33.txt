@@ -1,0 +1,23 @@
+# Rework 33 — Assombrissement des sols minéraux
+
+## Objectif
+Réduire la luminosité excessive persistante des vues piétonnes de jour après le correctif d'albedo du rework 32, sans toucher aux façades ni à l'exposition globale.
+
+## Modifications
+- Sol global (grille proche et fine) : `MAT.groundAlbedo` passe de `0x969189` à `0x807b73` ; cette teinte est appliquée à la texture de dalles `g.slab` déjà utilisée par le shader du sol.
+- Pavés : teinte du matériau `MAT.pave` abaissée à `0x807b73`.
+- Pavés granitiques / cobbles : `MAT.cobble` abaissé à `0x807b73`.
+- Places dallées : `MAT.square` abaissé à `0x807b73`.
+- Chemins : `MAT.path` abaissé à `0x827d75`.
+
+## Préservé
+- Façades et leurs textures inchangées.
+- Exposition, contraste, saturation, brouillard, éclairage et météo inchangés.
+- Rendu nocturne et transitions d'humidité inchangés.
+- Relief IGN, géométrie, collisions, déplacements, missions et gameplay inchangés.
+- Aucun nouveau mesh, matériau, texture, draw call ou traitement runtime supplémentaire.
+
+## Vérifications techniques
+- Analyse syntaxique de `js/render.js` avec `new Function` : OK.
+- Contrôle visuel automatisé : à venir sur ce commit.
+- Mesures locales de référence communiquées par Claude pour `dc4f5a3` : Joffre 0,551 ; Saint-Michel 0,558 ; Lices 0,555. Cible de l'étape : 0,45–0,50 sur les vues de jour.
