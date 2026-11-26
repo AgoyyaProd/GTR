@@ -22,7 +22,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'controle')
 VUES, PREC, COMP = (os.path.join(OUT, d) for d in ('vues', 'precedent', 'comparaison'))
 PORT = 8799
-CHROME = os.environ.get('CHROME')  # sinon le Chromium installé par Playwright
+CHROME = os.environ.get('CHROME')
+# --part vues | m1-6 | m7-9 : une seule partie (exécutées en parallèle sur GitHub), puis --merge ; sans option : tout
+PART = sys.argv[sys.argv.index('--part') + 1] if '--part' in sys.argv else 'all'  # sinon le Chromium installé par Playwright
 
 # Math.random déterministe : mêmes passants et mêmes voitures d'un contrôle à l'autre
 SEED = """(() => { let s = 1234567; Math.random = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s);
@@ -94,16 +96,17 @@ async def run():
                     await asyncio.sleep(2)
                 return pg, J, settle
 
-            # phase 1 : vues fixes, images par seconde, accès
-            pg, J, settle = await open_game(True)
-            if not pg:
-                await b.close(); return
-            await views_fps_access(pg, J, settle)
-            await pg.close()
-            # phases 2 et 3 : les missions, chacune dans une page neuve (une seule longue session fait planter le rendu logiciel)
-            for names in (['m1', 'm2', 'm3', 'm4', 'm5', 'm6'], ['m7', 'm8', 'm9', 'fight']):
+            # partie « vues » : vues fixes, images par seconde, accès ; parties « m1-6 » / « m7-9 » : missions
+            if PART in ('all', 'vues'):
+                pg, J, settle = await open_game(True)
+                if not pg:
+                    await b.close(); return
+                await views_fps_access(pg, J, settle)
+                await pg.close()
+            groups = {'m1-6': [['m1', 'm2', 'm3', 'm4', 'm5', 'm6']], 'm7-9': [['m7', 'm8', 'm9', 'fight']]}
+            for names in (groups['m1-6'] + groups['m7-9'] if PART == 'all' else groups.get(PART, [])):
                 for attempt in (1, 2):
-                    pg, J, settle = await open_game()
+                    pg, J, settle = await open_game(report['load'] is None)
                     if not pg: break
                     crashed = await run_missions(pg, J, settle, names)
                     try: await pg.close()
@@ -336,19 +339,53 @@ def compare_and_write():
     return verdict
 
 
-if __name__ == '__main__':
-    os.makedirs(OUT, exist_ok=True)
-    # le contrôle précédent devient la référence
+def rotate_reference():
+    """le contrôle précédent devient la référence"""
     if os.path.exists(os.path.join(OUT, 'resultat.json')):
         if os.path.exists(PREC): shutil.rmtree(PREC)
         os.makedirs(PREC)
         shutil.copy(os.path.join(OUT, 'resultat.json'), PREC)
         if os.path.exists(VUES): shutil.copytree(VUES, os.path.join(PREC, 'vues'))
     if os.path.exists(VUES): shutil.rmtree(VUES)
-    try:
-        asyncio.run(run())
-    except Exception as e:  # un problème du banc de test ne doit pas empêcher d'écrire le rapport
-        report['harness'] = f"{type(e).__name__}: {str(e)[:300]}"
+
+
+def merge_parts(folder):
+    """réunit les résultats des parties exécutées en parallèle"""
+    for f in sorted(os.listdir(folder)):
+        d = os.path.join(folder, f)
+        pj = os.path.join(d, 'partie.json')
+        if not os.path.exists(pj): continue
+        r = json.load(open(pj))
+        for k in ('missions', 'access', 'views'): report[k].update(r.get(k, {}))
+        report['errors'] += r.get('errors', [])
+        if r.get('scenario'): report.setdefault('scenario', []).extend(r['scenario'])
+        if r.get('harness'): report['harness'] = (report.get('harness', '') + ' ' + r['harness']).strip()
+        if r.get('load') and (report['load'] is None or 'vues' in f): report['load'] = r['load']
+        if r.get('fps'): report['fps'] = r['fps']
+        if os.path.isdir(os.path.join(d, 'vues')):
+            os.makedirs(VUES, exist_ok=True)
+            for img in os.listdir(os.path.join(d, 'vues')): shutil.copy(os.path.join(d, 'vues', img), VUES)
+    found = {f.replace('partie-', '') for f in os.listdir(folder) if os.path.exists(os.path.join(folder, f, 'partie.json'))}
+    for part in ('vues', 'm1-6', 'm7-9'):
+        if part not in found: report['harness'] = (report.get('harness', '') + f" partie « {part} » absente (machine de test arrêtée ou trop lente).").strip()
+    if report['load'] is None: report['load'] = {'ok': False, 'bouton': 'aucune partie du contrôle n\u2019a abouti'}
+
+
+if __name__ == '__main__':
+    os.makedirs(OUT, exist_ok=True)
+    if '--merge' in sys.argv:
+        rotate_reference()
+        merge_parts(sys.argv[sys.argv.index('--merge') + 1])
+    else:
+        if PART == 'all': rotate_reference()
+        else: VUES = os.path.join(ROOT, 'partie', 'vues')
+        try:
+            asyncio.run(run())
+        except Exception as e:  # un problème du banc de test ne doit pas empêcher d'écrire le rapport
+            report['harness'] = f"{type(e).__name__}: {str(e)[:300]}"
+        if PART != 'all':  # une partie écrit seulement ses résultats bruts
+            json.dump(report, open(os.path.join(ROOT, 'partie', 'partie.json'), 'w'), ensure_ascii=False)
+            sys.exit(0)
     v = compare_and_write()
     print(open(os.path.join(OUT, 'RAPPORT.md')).read())
     sys.exit(1 if v == 'KO' else 0)

@@ -1,7 +1,8 @@
 name: Contrôle automatique
 
-# À chaque push sur main : le jeu est lancé dans un vrai navigateur, testé, photographié,
-# et le rapport controle/RAPPORT.md est mis à jour dans le dépôt.
+# À chaque push sur main : le jeu est lancé dans de vrais navigateurs (3 machines en parallèle :
+# vues fixes, missions 1 à 6, missions 7 à 9 + fight club), puis controle/RAPPORT.md est publié
+# dans le dépôt. Un nouveau push annule le contrôle en cours : seul le dernier commit compte.
 on:
   push:
     branches: [main]
@@ -14,31 +15,54 @@ permissions:
 
 concurrency:
   group: controle
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  controle:
+  partie:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [vues, m1-6, m7-9]
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Installer le navigateur de test
         run: |
           pip install playwright==1.47.0 pillow numpy
           python -m playwright install --with-deps chromium
+      - name: Contrôle (${{ matrix.part }})
+        run: |
+          mkdir -p partie
+          python tests/ci.py --part ${{ matrix.part }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: partie-${{ matrix.part }}
+          path: partie/
+          if-no-files-found: warn
 
-      - name: Lancer le contrôle
+  rapport:
+    needs: partie
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pillow numpy playwright==1.47.0
+      - uses: actions/download-artifact@v4
+        with:
+          path: parties/
+      - name: Assembler le rapport
         id: run
         continue-on-error: true
-        run: python tests/ci.py
-
+        run: python tests/ci.py --merge parties
       - name: Publier le rapport dans le dépôt
-        if: always()
         run: |
           git config user.name "controle-automatique"
           git config user.email "controle-automatique@users.noreply.github.com"
@@ -46,11 +70,9 @@ jobs:
           git commit -m "Contrôle automatique de ${GITHUB_SHA::7} : $(head -1 controle/RAPPORT.md | sed 's/# Contrôle automatique — //') [skip ci]" || exit 0
           for i in 1 2 3; do git pull --rebase -X theirs origin main && git push && exit 0; sleep 5; done
           exit 1
-
       - name: Résumé
         if: always()
         run: cat controle/RAPPORT.md >> "$GITHUB_STEP_SUMMARY" || true
-
       - name: Verdict
         if: steps.run.outcome == 'failure'
         run: |

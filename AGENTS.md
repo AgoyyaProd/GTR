@@ -6,7 +6,7 @@ publié sur https://agoyyaprod.github.io/GTR/ depuis la branche `main`. Lire `LI
 ## Contrôle automatique à chaque push — à lire AVANT tout nouveau travail
 
 Chaque push sur `main` déclenche le workflow **« Contrôle automatique »** (`.github/workflows/controle.yml`).
-Il lance le jeu dans un vrai navigateur et publie, environ 30 minutes plus tard, un commit
+Il lance le jeu dans de vrais navigateurs (trois machines en parallèle) et publie, environ 20 minutes plus tard, un commit
 « Contrôle automatique de <commit> : <verdict> » qui met à jour :
 
 - `controle/RAPPORT.md` : verdict, missions, accès, images par seconde, mesures de rendu ;
@@ -21,6 +21,10 @@ Avant de commencer un nouveau travail :
    le travail n'a pas atteint son objectif. Ne pas le présenter comme réussi ; changer d'approche.
 4. Les « Réserves » (image délavée, contraste faible, baisse d'images par seconde) sont des problèmes réels
    à traiter, pas des détails.
+
+Le rapport à lire est celui dont le titre de commit cite **ton dernier commit**. Un nouveau push annule le
+contrôle en cours : pousser ses modifications en un seul push (et non commit par commit) évite d'attendre
+plusieurs contrôles. Si le rapport n'est pas arrivé 35 minutes après le push, regarder l'onglet Actions.
 
 Un push n'est « fini » que lorsque son contrôle est OK. Toujours partir du dernier commit de `main`
 (ne jamais repartir d'un ancien zip : des correctifs ont déjà été perdus de cette façon).
