@@ -1,0 +1,19 @@
+# Rework 27 — palettes architecturales par quartier
+
+## Changement
+- Palette de teintes de façade déterminée par la position des bâtiments dans la ville.
+- Centre ancien autour des Lices : enduits plus chauds.
+- Centre élargi : pierre et enduits plus clairs.
+- Secteurs de grands ensembles à l'est/sud-est : tonalité plus froide.
+- Secteurs résidentiels de l'ouest : tonalité plus chaude, évoquant brique et enduit.
+- Faible variation locale conservée pour éviter un rendu uniforme.
+
+## Implémentation
+- Utilise le canal vertexColors déjà présent sur les matériaux de façades et les buckets de géométrie existants.
+- Aucun nouveau mesh, matériau, texture ou draw call.
+- Aucun changement aux géométries, données OSM, relief IGN, collisions, navigation, véhicules, personnages, police, missions 1–9 ou fight club.
+- Les styles architecturaux et textures existants restent inchangés ; seule la teinte de façade est modulée selon le quartier.
+
+## Vérifications
+- js/world.js récupéré après commit et analysé par V8 via new Function (analyse syntaxique uniquement, sans exécution du jeu).
+- Déploiement GitHub Pages et rendu WebGL en jeu non validés dans cet environnement. Aucune mesure FPS ni capture comparative n'est revendiquée.
