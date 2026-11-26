@@ -204,9 +204,10 @@ function addBuilding(gb, t, h, code, p, R) {
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n, A = [p[i * 2], p[i * 2 + 1]], B = [p[j * 2], p[j * 2 + 1]], C = [o[j * 2], o[j * 2 + 1]], D = [o[i * 2], o[i * 2 + 1]];
       const L = Math.hypot(B[0] - A[0], B[1] - A[1]), nx = (B[1] - A[1]) / (L || 1), ny = -(B[0] - A[0]) / (L || 1);
-      gb.quad(MAT.stone, [D[0], h - 0.4, -D[1]], [C[0], h - 0.4, -C[1]], [C[0], h, -C[1]], [D[0], h, -D[1]], [0, 0], [L / 2, 0], [L / 2, 0.2], [0, 0.2], [nx, 0, -ny]);
-      gb.quad(MAT.stone, [A[0], h - 0.4, -A[1]], [B[0], h - 0.4, -B[1]], [C[0], h - 0.4, -C[1]], [D[0], h - 0.4, -D[1]], [0, 0], [1, 0], [1, 0.1], [0, 0.1], [0, -1, 0]);
-      gb.quad(MAT.stone, [A[0], h, -A[1]], [B[0], h, -B[1]], [C[0], h, -C[1]], [D[0], h, -D[1]], [0, 0], [1, 0], [1, 0.1], [0, 0.1], [0, 1, 0]);
+      const edge = fe.find(e => e[7] === i), edgeH = edge && edge[6] > 5 ? edge[6] : h;
+      gb.quad(MAT.stone, [D[0], edgeH - 0.4, -D[1]], [C[0], edgeH - 0.4, -C[1]], [C[0], edgeH, -C[1]], [D[0], edgeH, -D[1]], [0, 0], [L / 2, 0], [L / 2, 0.2], [0, 0.2], [nx, 0, -ny]);
+      gb.quad(MAT.stone, [A[0], edgeH - 0.4, -A[1]], [B[0], edgeH - 0.4, -B[1]], [C[0], edgeH - 0.4, -C[1]], [D[0], edgeH - 0.4, -D[1]], [0, 0], [1, 0], [1, 0.1], [0, 0.1], [0, -1, 0]);
+      gb.quad(MAT.stone, [A[0], edgeH, -A[1]], [B[0], edgeH, -B[1]], [C[0], edgeH, -C[1]], [D[0], edgeH, -D[1]], [0, 0], [1, 0], [1, 0.1], [0, 0.1], [0, 1, 0]);
     }
   }
   /* roof */
@@ -611,7 +612,23 @@ function addLodBuilding(gb, t, rec, R, force) {
   } else { const tk = 1 - R() * 0.14; tint = [tk, tk, tk]; }
   if (hall) tint = [1, 1, 1];
   /* facade u is measured along the footprint outline so every triangle of one wall shares the same window grid */
-  const fe = []; { let acc = 0; for (let q = 0, n = f.length / 2; q < n; q++) { const ax = f[q * 2], ay = f[q * 2 + 1], bx = f[((q + 1) % n) * 2], by = f[((q + 1) % n) * 2 + 1], L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue; fe.push([ax, ay, (bx - ax) / L, (by - ay) / L, L, acc]); acc += L; } }
+  /* Hauteur de rive locale mesurée sur le maillage CityJSON : rec.h peut
+     être la hauteur du faîtage, pas celle du mur sous le rampant du pignon. */
+  const fe = []; {
+    let acc = 0;
+    for (let q = 0, n = f.length / 2; q < n; q++) {
+      const ax = f[q * 2], ay = f[q * 2 + 1], bx = f[((q + 1) % n) * 2], by = f[((q + 1) % n) * 2 + 1];
+      const L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue;
+      let wallTop = 0;
+      for (let vi = 0; vi < v.length; vi += 3) {
+        if (segNear(v[vi] / 10, v[vi + 1] / 10, ax, ay, bx, by, _q) <= 0.22)
+          wallTop = Math.max(wallTop, v[vi + 2] / 10);
+      }
+      if (wallTop < 2) wallTop = h;
+      fe.push([ax, ay, (bx - ax) / L, (by - ay) / L, L, acc, Math.min(h, wallTop), q]);
+      acc += L;
+    }
+  }
   const ccwF = polyArea(f) > 0;
   const _bb = polyBox(f), cx = (_bb[0] + _bb[2]) / 2, cy = (_bb[1] + _bb[3]) / 2, dc = Math.hypot(cx - CENTER.x, cy - CENTER.y); /* centre and distance to the city centre (used by the facade details, were undefined here) */
   /* Relief architectural discret pour les façades historiques dessinées :
@@ -623,10 +640,11 @@ function addLodBuilding(gb, t, rec, R, force) {
     // Rehausses discrètes des lignes de plancher : plinthe, bandeaux et corniche.
     // Géométrie regroupée dans le bucket de façade, jamais ajoutée aux bâtiments
     // hors du centre ni aux monuments / halles.
-    const floors = Math.min(9, Math.floor((h - 0.8) / FLOOR));
+    const floors = Math.min(9, Math.floor((edgeH - 0.8) / FLOOR));
     const stoneMat = MAT.coping;
     for (const e of fe) {
-      if (e[4] < 3.2) continue;
+      const edgeH = e[6] || h;
+      if (e[4] < 3.2 || edgeH < 5) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const ax = e[0], ay = e[1], bx = ax + e[2] * e[4], by = ay + e[3] * e[4];
       const N = [nx, 0, -ny], uv = e[4] / 2.4;
@@ -650,8 +668,8 @@ function addLodBuilding(gb, t, rec, R, force) {
         wallGB.quad(stoneMat, A, B, C, D, [0, 0], [uv, 0], [uv, 0.035], [0, 0.035], [0, 1, 0]);
       }
       // Corniche haute très fine : elle donne une vraie ligne d'ombre à la toiture.
-      if (h > 11) {
-        const y = h - 0.32;
+      if (edgeH > 11) {
+        const y = edgeH - 0.32;
         face(y, y + 0.12, 0.14);
         const A = [ax + nx * 0.14, y + 0.12, -(ay + ny * 0.14)];
         const B = [bx + nx * 0.14, y + 0.12, -(by + ny * 0.14)];
@@ -666,11 +684,11 @@ function addLodBuilding(gb, t, rec, R, force) {
   if (!hall && !rec.mo && dc < 720 && h >= 8 && h <= 28 &&
       (style === 0 || style === 1 || style === 3) && MAT.stone && R() < 0.58) {
     const periodU = perU || 4 * BAY;
-    const rows = Math.min(8, Math.floor((h - 0.65) / FLOOR));
+    const rows = Math.min(8, Math.floor((edgeH - 0.65) / FLOOR));
     const frameMat = MAT.stone;
     for (const e of fe) {
-      const L = e[4];
-      if (L < 5.4) continue;
+      const L = e[4], edgeH = e[6] || h;
+      if (L < 5.4 || edgeH < 8) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const sg = e[2] * ny - e[3] * nx > 0 ? 1 : -1;
       const dirX = e[2], dirY = e[3], N = [nx, 0, -ny];
@@ -695,7 +713,7 @@ function addLodBuilding(gb, t, rec, R, force) {
           for (let fl = 0; fl < rows; fl++) {
             const y0 = fl * FLOOR + FLOOR * 0.2 - 0.16;
             const y1 = y0 + 2.25;
-            if (y1 > h - 0.22) continue;
+            if (y1 > edgeH - 0.22) continue;
             const half = 0.735, inner = 0.575, bar = 0.10;
             const strip = (s0, s1, v0, v1) => wallGB.quad(
               frameMat,
@@ -824,17 +842,18 @@ function addLodBuilding(gb, t, rec, R, force) {
   if (!hall && !rec.mo && dc < 390 && h > 7 && h < 30 && MAT.metal) {
     const roofCenter = polyBox(f), bcx = (roofCenter[0] + roofCenter[2]) * 0.5, bcy = (roofCenter[1] + roofCenter[3]) * 0.5;
     for (const e of fe) {
-      if (e[4] < 7 || Math.abs(Math.sin(bcx * 7.13 + bcy * 19.71 + e[5] * 0.37)) > 0.22) continue;
+      const edgeH = e[6] || h;
+      if (e[4] < 7 || edgeH < 5 || Math.abs(Math.sin(bcx * 7.13 + bcy * 19.71 + e[5] * 0.37)) > 0.22) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const px = e[0] + e[2] * 0.34 + nx * 0.16;
       const py = e[1] + e[3] * 0.34 + ny * 0.16;
-      const half = 0.045, z0 = 0.38, z1 = h - 0.38;
+      const half = 0.045, z0 = 0.38, z1 = edgeH - 0.38;
       const A = [px - e[3] * half, z0, -(py + e[2] * half)];
       const B = [px + e[3] * half, z0, -(py - e[2] * half)];
       const C = [B[0], z1, B[2]], D = [A[0], z1, A[2]];
       wallGB.quad(MAT.metal, A, B, C, D, [0, 0], [1, 0], [1, z1 - z0], [0, z1 - z0], [nx, 0, -ny]);
       // Collier de fixation et coude de raccordement au niveau de la gouttière.
-      for (const yy of [1.1, Math.min(3.2, h * 0.45), h - 1.0]) {
+      for (const yy of [1.1, Math.min(3.2, edgeH * 0.45), edgeH - 1.0]) {
         const q0 = [px - e[3] * 0.075, yy, -(py + e[2] * 0.075)];
         const q1 = [px + e[3] * 0.075, yy, -(py - e[2] * 0.075)];
         wallGB.quad(MAT.metalLight, q0, q1, [q1[0], yy + 0.035, q1[2]], [q0[0], yy + 0.035, q0[2]], [0, 0], [0.15, 0], [0.15, 0.035], [0, 0.035], [nx, 0, -ny]);
@@ -885,6 +904,9 @@ function addLodBuilding(gb, t, rec, R, force) {
     for (const tr of rtris) for (let e = 0; e < 3; e++) { const A = tr[e], B = tr[(e + 1) % 3], k1 = K(A), k2 = K(B), key = k1 < k2 ? k1 + '|' + k2 : k2 + '|' + k1, o = E.get(key); if (o) o.n++; else E.set(key, { n: 1, A, B, tr }); }
     for (const { n, A, B, tr } of E.values()) {
       if (n !== 1) continue;
+      /* Les arêtes inclinées sont les rampants des pignons, pas des rives :
+         ne pas leur appliquer de fascia évite les traits flottants sur les toits. */
+      if (!tr[3] && Math.abs(B[1] - A[1]) > 0.28) continue;
       const dx = B[0] - A[0], dz = B[2] - A[2], L = Math.hypot(dx, dz); if (L < 0.4) continue;
       let ox = -dz / L, oz = dx / L; const cx = (tr[0][0] + tr[1][0] + tr[2][0]) / 3, cz = (tr[0][2] + tr[1][2] + tr[2][2]) / 3;
       if ((cx - A[0]) * ox + (cz - A[2]) * oz > 0) { ox = -ox; oz = -oz; }
