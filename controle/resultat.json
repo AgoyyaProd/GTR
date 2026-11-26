@@ -1,83 +1,22 @@
 {
- "date": "2026-11-26 15:56 UTC",
- "commit": "8ffd17d",
+ "date": "2026-11-26 16:08 UTC",
+ "commit": "386ef72",
  "load": {
-  "ok": true,
-  "secondes": 142,
-  "bouton": "Jouer"
+  "ok": false,
+  "secondes": 420,
+  "bouton": "Construction de Rennes… 0 %"
  },
- "errors": [],
- "missions": {
-  "Mission 1": true,
-  "Mission 2": true,
-  "Mission 3": true,
-  "Mission 4": true,
-  "Mission 5": true,
-  "Mission 6": true,
-  "Mission 7": true,
-  "Mission 8": true,
-  "Mission 9": true,
-  "Fight club": true
- },
- "access": {
-  "Mission 3 : les 3 sacs tirés sont accessibles à pied": true,
-  "Thabor (à pied, depuis la rue de Paris)": true,
-  "Thabor (en voiture, depuis le bd de la Duchesse-Anne)": true
- },
- "fps": 0.198,
- "views": {
-  "joffre": {
-   "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.519,
-   "contraste": 0.232,
-   "saturation": 0.27,
-   "part_quasi_blanc": 0.037,
-   "changement": 0.169
-  },
-  "saint_michel": {
-   "desc": "Rue Saint-Michel, jour",
-   "luminosite": 0.611,
-   "contraste": 0.193,
-   "saturation": 0.184,
-   "part_quasi_blanc": 0.096,
-   "changement": 0.0
-  },
-  "lices": {
-   "desc": "Place des Lices, escalier, jour",
-   "luminosite": 0.631,
-   "contraste": 0.155,
-   "saturation": 0.172,
-   "part_quasi_blanc": 0.083,
-   "changement": 0.001
-  },
-  "halles": {
-   "desc": "Halles des Lices, jour",
-   "luminosite": 0.634,
-   "contraste": 0.197,
-   "saturation": 0.18,
-   "part_quasi_blanc": 0.168,
-   "changement": 0.053
-  },
-  "lices_nuit": {
-   "desc": "Place des Lices, nuit sous la pluie",
-   "luminosite": 0.274,
-   "contraste": 0.156,
-   "saturation": 0.376,
-   "part_quasi_blanc": 0.002,
-   "changement": 0.034
-  },
-  "toits": {
-   "desc": "Toits du centre vus d’en haut",
-   "luminosite": 0.666,
-   "contraste": 0.149,
-   "saturation": 0.151,
-   "part_quasi_blanc": 0.042,
-   "changement": 0.001
-  }
- },
- "cpu": 13.091,
+ "errors": [
+  "edgeH is not defined",
+  "edgeH is not defined",
+  "edgeH is not defined"
+ ],
+ "missions": {},
+ "access": {},
+ "fps": null,
+ "views": {},
  "fpsr_hist": [
   0.0151
  ],
- "verdict": "OK avec réserves"
+ "verdict": "KO"
 }
