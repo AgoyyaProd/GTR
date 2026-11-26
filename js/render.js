@@ -102,16 +102,18 @@ composer.addPass(bloom);
 /* Filmic grade: restrained contrast, controlled highlights and a subtle
    warm/cool split. Kept in the final pass so it does not alter scene materials. */
 const gradePass = new THREE.ShaderPass({
-  uniforms: { tDiffuse: { value: null }, vig: { value: 0.16 }, tint: { value: new THREE.Vector3(1, 1, 1) }, exposure: { value: 1.0 }, time: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, vig: { value: 0.16 }, tint: { value: new THREE.Vector3(1, 1, 1) }, exposure: { value: 1.0 }, contrast: { value: 1.0 }, saturation: { value: 1.0 }, time: { value: 0 } },
   vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader: `uniform sampler2D tDiffuse;uniform float vig;uniform vec3 tint;uniform float exposure;uniform float time;varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse;uniform float vig;uniform vec3 tint;uniform float exposure;uniform float contrast;uniform float saturation;uniform float time;varying vec2 vUv;
     float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
     vec3 filmic(vec3 x){x=max(vec3(0.),x);return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.);}
     void main(){
       /* tDiffuse is linear HDR: grade once, then encode once for the display. */
       vec3 c=max(texture2D(tDiffuse,vUv).rgb,vec3(0.))*tint;
       float lum=dot(c,vec3(.2126,.7152,.0722));
-      c=mix(vec3(lum),c,1.045);
+      c=mix(vec3(lum),c,saturation);
+       /* Restore midtone separation before the highlight shoulder; avoids a flat, chalky daytime image. */
+       c=max(vec3(0.),(c-vec3(.18))*contrast+vec3(.18));
       float shadow=1.-smoothstep(.025,.34,lum);
       float highlight=smoothstep(.48,1.35,lum);
       c*=vec3(1.006,1.002,.998);
@@ -590,13 +592,15 @@ function applyMode(m) {
   const night = m.night;
   scene.background = night ? (m.rain ? SKY.nightRain : SKY.nightClear) : (m.rain ? SKY.dayRain : (ENV.sky_day || new THREE.Color(0x9ab8d8)));
   scene.environment = night ? ENV.env_night : ENV.env_day;
-  const fogC = night ? (m.rain ? 0x1a2030 : 0x121828) : (m.rain ? 0x8a9098 : 0xb8c8d8);
-  scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0052 : 0.0026));
+  const fogC = night ? (m.rain ? 0x1a2030 : 0x121828) : (m.rain ? 0x737f8a : 0x9eafbd);
+  scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0025 : 0.00145));
   hemi.intensity = night ? 0.25 : (m.rain ? 0.9 : 0.6); hemi.color.set(night ? 0x5a6aa0 : 0xcfe0ff); hemi.groundColor.set(night ? 0x201810 : 0x5a5040);
   sun.color.set(night ? 0x8aa0ff : 0xfff0d8); sun.intensity = night ? 0.35 : (m.rain ? 0.6 : 2.6);
   sun.userData.dir = night ? new THREE.Vector3(-0.4, 0.8, 0.35) : new THREE.Vector3(-0.55, 0.62, 0.45);
   /* Exposure now belongs to the final linear-HDR grade, not the renderer. */
-  gradePass.uniforms.exposure.value = night ? 0.92 : (m.rain ? 0.96 : 1.04);
+  gradePass.uniforms.exposure.value = night ? 0.92 : (m.rain ? 0.91 : 0.90);
+  gradePass.uniforms.contrast.value = night ? 1.06 : (m.rain ? 1.10 : 1.18);
+  gradePass.uniforms.saturation.value = night ? 1.04 : (m.rain ? 1.08 : 1.12);
   renderer.toneMappingExposure = 1.0;
   const wet = m.rain;
   for (const mt of allMats) {
