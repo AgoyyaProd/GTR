@@ -204,7 +204,7 @@ function addBuilding(gb, t, h, code, p, R) {
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n, A = [p[i * 2], p[i * 2 + 1]], B = [p[j * 2], p[j * 2 + 1]], C = [o[j * 2], o[j * 2 + 1]], D = [o[i * 2], o[i * 2 + 1]];
       const L = Math.hypot(B[0] - A[0], B[1] - A[1]), nx = (B[1] - A[1]) / (L || 1), ny = -(B[0] - A[0]) / (L || 1);
-      const edge = fe.find(e => e[7] === i), edgeH = edge && edge[6] > 5 ? edge[6] : h;
+      const edgeH = h; /* bâtiments extrudés simples : pas de maillage CityJSON, donc pas de hauteur locale (fe n existe pas ici) */
       gb.quad(MAT.stone, [D[0], edgeH - 0.4, -D[1]], [C[0], edgeH - 0.4, -C[1]], [C[0], edgeH, -C[1]], [D[0], edgeH, -D[1]], [0, 0], [L / 2, 0], [L / 2, 0.2], [0, 0.2], [nx, 0, -ny]);
       gb.quad(MAT.stone, [A[0], edgeH - 0.4, -A[1]], [B[0], edgeH - 0.4, -B[1]], [C[0], edgeH - 0.4, -C[1]], [D[0], edgeH - 0.4, -D[1]], [0, 0], [1, 0], [1, 0.1], [0, 0.1], [0, -1, 0]);
       gb.quad(MAT.stone, [A[0], edgeH, -A[1]], [B[0], edgeH, -B[1]], [C[0], edgeH, -C[1]], [D[0], edgeH, -D[1]], [0, 0], [1, 0], [1, 0.1], [0, 0.1], [0, 1, 0]);
@@ -640,7 +640,7 @@ function addLodBuilding(gb, t, rec, R, force) {
     // Rehausses discrètes des lignes de plancher : plinthe, bandeaux et corniche.
     // Géométrie regroupée dans le bucket de façade, jamais ajoutée aux bâtiments
     // hors du centre ni aux monuments / halles.
-    const floors = Math.min(9, Math.floor((edgeH - 0.8) / FLOOR));
+    const floors = Math.min(9, Math.floor((h - 0.8) / FLOOR));
     const stoneMat = MAT.coping;
     for (const e of fe) {
       const edgeH = e[6] || h;
@@ -684,7 +684,7 @@ function addLodBuilding(gb, t, rec, R, force) {
   if (!hall && !rec.mo && dc < 720 && h >= 8 && h <= 28 &&
       (style === 0 || style === 1 || style === 3) && MAT.stone && R() < 0.58) {
     const periodU = perU || 4 * BAY;
-    const rows = Math.min(8, Math.floor((edgeH - 0.65) / FLOOR));
+    const rows = Math.min(8, Math.floor((h - 0.65) / FLOOR));
     const frameMat = MAT.stone;
     for (const e of fe) {
       const L = e[4], edgeH = e[6] || h;
