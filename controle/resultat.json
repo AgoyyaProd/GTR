@@ -1,9 +1,9 @@
 {
- "date": "2026-11-26 13:20 UTC",
- "commit": "5eb1db0",
+ "date": "2026-11-26 13:57 UTC",
+ "commit": "c72b548",
  "load": {
   "ok": true,
-  "secondes": 142,
+  "secondes": 94,
   "bouton": "Jouer"
  },
  "errors": [],
@@ -15,8 +15,8 @@
   "Mission 5": true,
   "Mission 6": true,
   "Mission 7": true,
-  "Mission 8": null,
-  "Mission 9": null,
+  "Mission 8": true,
+  "Mission 9": true,
   "Fight club": true
  },
  "access": {
@@ -28,19 +28,19 @@
  "views": {
   "joffre": {
    "desc": "Rue Maréchal Joffre, jour",
-   "luminosite": 0.507,
-   "contraste": 0.225,
-   "saturation": 0.268,
-   "part_quasi_blanc": 0.009,
-   "changement": 0.64
+   "luminosite": 0.515,
+   "contraste": 0.232,
+   "saturation": 0.272,
+   "part_quasi_blanc": 0.045,
+   "changement": 0.52
   },
   "saint_michel": {
    "desc": "Rue Saint-Michel, jour",
-   "luminosite": 0.532,
-   "contraste": 0.222,
-   "saturation": 0.191,
-   "part_quasi_blanc": 0.017,
-   "changement": 0.493
+   "luminosite": 0.538,
+   "contraste": 0.219,
+   "saturation": 0.192,
+   "part_quasi_blanc": 0.019,
+   "changement": 0.248
   },
   "lices": {
    "desc": "Place des Lices, escalier, jour",
@@ -48,36 +48,32 @@
    "contraste": 0.136,
    "saturation": 0.218,
    "part_quasi_blanc": 0.001,
-   "changement": 0.606
+   "changement": 0.004
   },
   "halles": {
    "desc": "Halles des Lices, jour",
-   "luminosite": 0.638,
-   "contraste": 0.185,
-   "saturation": 0.174,
-   "part_quasi_blanc": 0.149,
-   "changement": 0.001
+   "luminosite": 0.646,
+   "contraste": 0.182,
+   "saturation": 0.166,
+   "part_quasi_blanc": 0.159,
+   "changement": 0.272
   },
   "lices_nuit": {
    "desc": "Place des Lices, nuit sous la pluie",
-   "luminosite": 0.215,
-   "contraste": 0.141,
-   "saturation": 0.352,
-   "part_quasi_blanc": 0.002,
-   "changement": 0.248
+   "luminosite": 0.269,
+   "contraste": 0.157,
+   "saturation": 0.381,
+   "part_quasi_blanc": 0.004,
+   "changement": 0.438
   },
   "toits": {
    "desc": "Toits du centre vus d’en haut",
    "luminosite": 0.666,
-   "contraste": 0.147,
+   "contraste": 0.148,
    "saturation": 0.15,
-   "part_quasi_blanc": 0.042,
+   "part_quasi_blanc": 0.043,
    "changement": 0.001
   }
  },
- "scenario": [
-  "m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')",
-  "m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')"
- ],
  "verdict": "OK avec réserves"
 }

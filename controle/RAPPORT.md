@@ -1,11 +1,10 @@
 # Contrôle automatique — OK avec réserves
 
-Commit `5eb1db0` · 2026-11-26 13:20 UTC · chargement 142 s · 0.5 images/s en rendu logiciel (précédent : 0.38)
+Commit `c72b548` · 2026-11-26 13:57 UTC · chargement 94 s · 0.5 images/s en rendu logiciel (précédent : 0.5)
 
 ## Réserves
-- Contrôle incomplet : le script de test n'a pas pu jouer m8, m9 (problème du banc de test, pas forcément du jeu). Ces missions sont marquées « non vérifiée ».
 - Place des Lices, escalier, jour : image délavée (luminosité moyenne 0.591, saturation 0.218 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
-- Halles des Lices, jour : image délavée (luminosité moyenne 0.638, saturation 0.174 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
+- Halles des Lices, jour : image délavée (luminosité moyenne 0.646, saturation 0.166 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
 
 ## Rendu
 **Changement visuel : net.** 4 vues sur 6 changent nettement. Regarder les comparaisons pour juger si c'est mieux.
@@ -20,8 +19,8 @@ Commit `5eb1db0` · 2026-11-26 13:20 UTC · chargement 142 s · 0.5 images/s en 
 | Mission 5 | OK |
 | Mission 6 | OK |
 | Mission 7 | OK |
-| Mission 8 | non vérifiée |
-| Mission 9 | non vérifiée |
+| Mission 8 | OK |
+| Mission 9 | OK |
 | Fight club | OK |
 
 ## Accès aux éléments de mission
@@ -34,12 +33,12 @@ Changement = part de l’image qui change nettement par rapport au contrôle pr�
 
 | Vue | Changement | Luminosité | Contraste | Saturation | Quasi blanc |
 |---|---|---|---|---|---|
-| Rue Maréchal Joffre, jour | 64 % | 0.507 (-0.047) | 0.225 (-0.032) | 0.268 (+0.018) | 1 % |
-| Rue Saint-Michel, jour | 49 % | 0.532 (+0.082) | 0.222 (-0.013) | 0.191 (+0.037) | 2 % |
-| Place des Lices, escalier, jour | 61 % | 0.591 (-0.025) | 0.136 (-0.026) | 0.218 (+0.048) | 0 % |
-| Halles des Lices, jour | 0 % | 0.638 (-0.01) | 0.185 (-0.004) | 0.174 (+0.014) | 15 % |
-| Place des Lices, nuit sous la pluie | 25 % | 0.215 (-0.014) | 0.141 (-0.006) | 0.352 (+0.002) | 0 % |
-| Toits du centre vus d’en haut | 0 % | 0.666 (-0.001) | 0.147 (+0.0) | 0.15 (+0.0) | 4 % |
+| Rue Maréchal Joffre, jour | 52 % | 0.515 (+0.008) | 0.232 (+0.007) | 0.272 (+0.004) | 4 % |
+| Rue Saint-Michel, jour | 25 % | 0.538 (+0.006) | 0.219 (-0.003) | 0.192 (+0.001) | 2 % |
+| Place des Lices, escalier, jour | 0 % | 0.591 (+0.0) | 0.136 (+0.0) | 0.218 (+0.0) | 0 % |
+| Halles des Lices, jour | 27 % | 0.646 (+0.008) | 0.182 (-0.003) | 0.166 (-0.008) | 16 % |
+| Place des Lices, nuit sous la pluie | 44 % | 0.269 (+0.054) | 0.157 (+0.016) | 0.381 (+0.029) | 0 % |
+| Toits du centre vus d’en haut | 0 % | 0.666 (+0.0) | 0.148 (+0.001) | 0.15 (+0.0) | 4 % |
 
 Comparaisons avant (en haut) / après (en bas) :
 
@@ -58,12 +57,6 @@ Captures actuelles :
 ![halles](vues/halles.png)
 ![lices_nuit](vues/lices_nuit.png)
 ![toits](vues/toits.png)
-
-## Problèmes du script de test (pas du jeu)
-```
-m8 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')
-m9 : Page.evaluate: TypeError: Cannot read properties of undefined (reading 'x')
-```
 
 ---
 Ce rapport est produit par `tests/ci.py` (workflow « Contrôle automatique »). Les règles de travail sont dans `AGENTS.md`.
