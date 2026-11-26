@@ -19,3 +19,8 @@ Réduire le voile clair observé dans les vues piétonnes de jour en agissant su
 ## Vérifications techniques
 - Analyse syntaxique de js/render.js et js/world.js avec new Function : OK.
 - Contrôle visuel et mesures automatisées : en attente du workflow GitHub.
+
+## Correctif après mesure locale
+- Cause du sol global trop clair : applyMode() réécrivait la teinte au changement de mode/météo. Une constante unique `MAT.groundAlbedo` vaut désormais `0x969189` et est utilisée à la création dans `world.js` comme dans `applyMode()`.
+- `updateWetSurfaceBlend()` mémorise maintenant cette teinte sèche corrigée au premier passage ; son endpoint humide reste distinct (`0x9a9690`) et ne réinitialise pas le sol à l'ancienne valeur claire.
+- Diagnostic nuit : la branche de lumière hémisphérique nocturne reste explicitement à `0.25` ; les valeurs de mélange humide nocturne (`roughness` / `envMapIntensity`) n'ont pas été modifiées dans ce correctif. Le delta de luminosité nocturne observé n'est donc pas attribuable à la nouvelle intensité hémisphérique diurne. Il reste à confirmer sur le contrôle automatisé après ce correctif.
