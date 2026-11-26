@@ -153,6 +153,8 @@ const allMats = [];
 function M(o) { const m = new THREE.MeshStandardMaterial(o); allMats.push(m); return m; }
 
 const MAT = {};
+/* Shared dry albedo for the global sidewalk/square ground, also used by world.js. */
+MAT.groundAlbedo = 0x969189;
 const ENV = {};
 async function loadEnvironments(progress) {
   const pmrem = new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
@@ -624,7 +626,7 @@ function applyMode(m) {
     mt.envMapIntensity = mt.userData.wetDryEnv;
   }
   MAT.asphalt.color.set(0x858585); MAT.road.color.set(0x858585); MAT.highway.color.set(0x707070);
-  for (const gm of [MAT.ground, MAT.groundF]) if (gm) gm.color.set(0xd0ccc4);
+  for (const gm of [MAT.ground, MAT.groundF]) if (gm) gm.color.set(MAT.groundAlbedo);
   updateWetSurfaceBlend(WX.auto ? WX.k : (wet ? 1 : 0), night);
   if (typeof ROOMLIT !== 'undefined') ROOMLIT.value = night ? 1.1 : 0.55;
   poolMat.opacity = night ? 1 : 0; poolMat.visible = night;
