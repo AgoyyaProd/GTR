@@ -175,24 +175,24 @@ async function loadGroundMaterials() {
   /* Reprises d'enrobé : même famille de texture, teinte et rugosité légèrement différentes. */
   MAT.asphaltRepair = M({ ...g.asphalt, color: 0x777875, roughness: 0.96 });
   MAT.highway = M({ ...g.asphalt, color: 0x7c7c7c, roughness: 1 });
-  MAT.pave = M({ ...g.pave, color: 0xb8b2aa, roughness: 1 });
-  MAT.cobble = M({ ...g.cobble, color: 0xb0aaa2, roughness: 1 });
-  MAT.square = M({ ...g.square, color: 0xc8c0b4, roughness: 1 });
+  MAT.pave = M({ ...g.pave, color: 0x918b82, roughness: 1 });
+  MAT.cobble = M({ ...g.cobble, color: 0x918a80, roughness: 1 });
+  MAT.square = M({ ...g.square, color: 0x969087, roughness: 1 });
   MAT.grass = M({ ...g.grass, color: 0x5c8a34, roughness: 1 });
-  MAT.path = M({ ...g.sw, color: 0xc4c0b8, roughness: 1 });
+  MAT.path = M({ ...g.sw, color: 0x99948b, roughness: 1 });
   MAT.ballast = M({ ...g.concrete, color: 0x6a5f55, roughness: 1 });
   MAT.slate = M({ ...g.slate, color: 0xa8b0bc, roughness: 0.75 });
   MAT.zinc = M({ ...g.concrete, color: 0x6c7078, roughness: 0.5, metalness: 0.5 });
   MAT.flatroof = M({ ...g.concrete, color: 0x8a8680, roughness: 1 });
   MAT.mark = M({ color: 0xe8e8e0, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-  MAT.curb = M({ ...g.sw, color: 0xe0dedb, roughness: 0.8 });
+  MAT.curb = M({ ...g.sw, color: 0xa7a39b, roughness: 0.8 });
   /* lowered carriageway: writes stencil 1 so the raised sidewalk plane skips it */
   MAT.road = M({ ...g.asphalt, color: 0x9a9a9a, roughness: 1 });
-  MAT.sett = M({ ...g.cobble, color: 0x9a948c, roughness: 1 }); /* cobbled carriageway of the old town's living streets */
-  MAT.stair = M({ ...g.slab, color: 0xbdb7ad, roughness: 0.8 }); MAT.stairNose = M({ color: 0x8a857c, roughness: 0.7 });
-  MAT.fence = M({ color: 0x2a3a34, roughness: 0.5, metalness: 0.6 }); MAT.wallLow = M({ ...g.slab, color: 0xa8a092, roughness: 0.9 }); MAT.hedge = M({ color: 0x3c5a2a, roughness: 1 });
+  MAT.sett = M({ ...g.cobble, color: 0x827c74, roughness: 1 }); /* cobbled carriageway of the old town's living streets */
+  MAT.stair = M({ ...g.slab, color: 0x99938a, roughness: 0.8 }); MAT.stairNose = M({ color: 0x8a857c, roughness: 0.7 });
+  MAT.fence = M({ color: 0x2a3a34, roughness: 0.5, metalness: 0.6 }); MAT.wallLow = M({ ...g.slab, color: 0x8e877b, roughness: 0.9 }); MAT.hedge = M({ color: 0x3c5a2a, roughness: 1 });
   for (const m of [MAT.road, MAT.highway, MAT.sett]) Object.assign(m, { stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
-  MAT.gutter = M({ ...g.slab, color: 0xa4a4a4, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  MAT.gutter = M({ ...g.slab, color: 0x898985, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   MAT.grate = M({ color: 0x2a2a2a, roughness: 0.5, metalness: 0.7, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   MAT.manhole = M({ color: 0x3a3836, roughness: 0.45, metalness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   MAT.groundTex = g;
@@ -262,6 +262,11 @@ function makeFacade(style, v, R) {
   const base = { 0: ['tuffeau', ['#f2e6cf', '#e8dcc4']], 1: ['plaster', ['#efe2c8', '#e8c89a', '#e9d2c8', '#dfe0da']], 2: ['plaster', ['#efe6d2', '#f2e2c0', '#e8e0d8']], 3: ['brick', ['#ffffff']], 4: ['grey', ['#e8e8e6', '#d8d4cc']], 5: ['grey', ['#9aa2aa', '#b8b2a6']], 6: ['stone', ['#c8c4bc']], 7: ['plaster', ['#f6f4ee', '#efe8da']], 8: ['grey', ['#6a6a70']] }[style];
   const img = wallImgs[base[0]];
   tiled(g, img, S, S, style === 3 ? 150 : style === 0 ? 210 : 230, style === 3 ? null : '#ffffff');
+  /* Les enduits et pierres claires doivent conserver leur nuance sous le soleil :
+     réduction d'albedo à la source, avant de dessiner vitrages, menuiseries et détails. */
+  if ([0, 1, 2, 6, 7].includes(style)) {
+    g.save(); g.globalCompositeOperation = 'multiply'; g.fillStyle = 'rgb(205,198,186)'; g.fillRect(0, 0, S, S); g.restore();
+  }
   /* Conserver la chromie et les micro-variations des textures photographiques.
      La neutralisation en niveaux de gris suivie d'un voile screen écrasait les
      nuances de pierre, les reprises d'enduit et les différences de vieillissement.
@@ -594,7 +599,7 @@ function applyMode(m) {
   scene.environment = night ? ENV.env_night : ENV.env_day;
   const fogC = night ? (m.rain ? 0x1a2030 : 0x121828) : (m.rain ? 0x737f8a : 0x9eafbd);
   scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0025 : 0.00145));
-  hemi.intensity = night ? 0.25 : (m.rain ? 0.9 : 0.6); hemi.color.set(night ? 0x5a6aa0 : 0xcfe0ff); hemi.groundColor.set(night ? 0x201810 : 0x5a5040);
+  hemi.intensity = night ? 0.25 : (m.rain ? 0.52 : 0.36); hemi.color.set(night ? 0x5a6aa0 : 0xcfe0ff); hemi.groundColor.set(night ? 0x201810 : 0x5a5040);
   sun.color.set(night ? 0x8aa0ff : 0xfff0d8); sun.intensity = night ? 0.35 : (m.rain ? 0.6 : 2.6);
   sun.userData.dir = night ? new THREE.Vector3(-0.4, 0.8, 0.35) : new THREE.Vector3(-0.55, 0.62, 0.45);
   /* Exposure now belongs to the final linear-HDR grade, not the renderer. */
@@ -618,7 +623,7 @@ function applyMode(m) {
     mt.roughness = mt.userData.wetDryRoughness;
     mt.envMapIntensity = mt.userData.wetDryEnv;
   }
-  MAT.asphalt.color.set(0x9a9a9a); MAT.road.color.set(0x9a9a9a); MAT.highway.color.set(0x7c7c7c);
+  MAT.asphalt.color.set(0x858585); MAT.road.color.set(0x858585); MAT.highway.color.set(0x707070);
   for (const gm of [MAT.ground, MAT.groundF]) if (gm) gm.color.set(0xd0ccc4);
   updateWetSurfaceBlend(WX.auto ? WX.k : (wet ? 1 : 0), night);
   if (typeof ROOMLIT !== 'undefined') ROOMLIT.value = night ? 1.1 : 0.55;
