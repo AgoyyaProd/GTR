@@ -8,13 +8,15 @@ on:
     branches: [main]
     paths-ignore:
       - 'controle/**'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: controle
+  group: controle-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -63,6 +65,7 @@ jobs:
         continue-on-error: true
         run: python tests/ci.py --merge parties
       - name: Publier le rapport dans le dépôt
+        if: github.event_name == 'push'
         run: |
           git config user.name "controle-automatique"
           git config user.email "controle-automatique@users.noreply.github.com"
