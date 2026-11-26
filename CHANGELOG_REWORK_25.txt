@@ -1,0 +1,37 @@
+GRAND THEFT ROAZHON — REWORK 25
+=================================
+
+Objectif : remettre à plat la chaîne colorimétrique du rendu avant de retoucher
+les textures et les modèles. Le symptôme ciblé est le rendu diurne délavé et le
+manque de séparation tonale signalés lors des comparaisons précédentes.
+
+MODIFICATION — js/render.js
+---------------------------
+
+1. Le renderer ne réalise plus une conversion sRGB ni un tone mapping ACES en
+   amont du post-traitement. La scène est envoyée au composer dans un espace
+   linéaire, sans seconde transformation colorimétrique implicite.
+2. Le ShaderPass final devient l'unique étape de tone mapping filmique et
+   d'encodage linéaire-vers-sRGB.
+3. La courbe filmique est conservée, mais son contraste/saturation et ses
+   corrections de teinte sont modérés. Le grain et le vignettage sont réduits
+   pour éviter de masquer la lecture des matériaux.
+4. L'exposition est pilotée dans le grade final : jour sec 1.04, jour humide
+   0.96, nuit 0.92. Les dominantes jour/pluie/nuit sont plus mesurées.
+5. Le bloom reste dépendant de l'ambiance et n'est pas supprimé.
+
+PÉRIMÈTRE ET PRÉSERVATION
+------------------------
+Aucun changement aux données géographiques, au relief IGN, aux collisions,
+aux routes, aux bâtiments, aux véhicules, aux personnages, à la police, aux
+missions 1–9 ou au fight club. Aucun nouvel objet 3D ni coût géométrique ajouté.
+Le plafond de pixel ratio et la résolution des ombres restent inchangés.
+
+VALIDATION
+----------
+Le commit modifie uniquement la chaîne de rendu dans js/render.js.
+La validation visuelle en navigateur, les captures comparatives et les mesures
+FPS avant/après restent à effectuer. Le changement de pipeline colorimétrique
+doit être évalué sur les mêmes points de vue et pour les quatre ambiances
+(jour, jour-pluie, nuit, nuit-pluie) avant de considérer le calibrage final.
+Ne pas présenter cette étape comme une validation visuelle ou performance.
