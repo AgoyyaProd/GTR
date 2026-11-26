@@ -699,8 +699,8 @@ async function startSide(s) {
 }
 function sideReward(n, txt) { setMoney(money + n); banner('BOULOT TERMINÉ', n ? `+${n} € · ${txt}` : txt, 4); }
 function farPoint(x, y, rmin, rmax, mask) {
-  for (let k = 0; k < 40; k++) { const a = Math.random() * 6.283, r = rnd(rmin, rmax), i = nearestNode(x + Math.cos(a) * r, y + Math.sin(a) * r, mask || 1), d = Math.hypot(nx(i) - x, ny(i) - y); if (d > rmin * 0.8 && d < rmax * 1.2) return { x: nx(i), y: ny(i) }; }
-  const i = nearestNode(x + rmin, y, mask || 1); return { x: nx(i), y: ny(i) };
+  for (let k = 0; k < 40; k++) { const a = Math.random() * 6.283, r = rnd(rmin, rmax), i = nearestNode(x + Math.cos(a) * r, y + Math.sin(a) * r, mask || 1); if (i < 0) continue; const d = Math.hypot(nx(i) - x, ny(i) - y); if (d > rmin * 0.8 && d < rmax * 1.2) return { x: nx(i), y: ny(i) }; }
+  const i = nearestNode(x + rmin, y, mask || 1); return i >= 0 ? { x: nx(i), y: ny(i) } : { x: x + rmin, y };
 }
 async function sideTaxi() {
   const taxi = parkAt(player.x + 6, player.y, { kind: 'taxi', color: 0xe8e8e8, type: 'sedan' }); taxi.isCar = true; actors.push(taxi);
@@ -768,7 +768,7 @@ async function sideRace() {
   await say([['Starter', 'Dix points de passage à travers la ville. Le chrono part quand tu démarres.']]);
   goal(sc.x, sc.y); objective('Monte sur le scooter (E)');
   await wait(() => player.car === sc);
-  const s0 = nearestNode(sc.x, sc.y, 1), g0 = nearestNode(sc.x + 900, sc.y + 700, 1), path = astar(s0, g0, 1) || [s0];
+  const s0 = nearestNode(sc.x, sc.y, 1), g0 = nearestNode(sc.x + 900, sc.y + 700, 1); if (s0 < 0 || g0 < 0) { toast('Réseau routier indisponible pour cette course.', 3); return; } const path = astar(s0, g0, 1) || [s0];
   const cps = []; let acc = 0;
   for (let k = 1; k < path.length; k++) { acc += Math.hypot(nx(path[k]) - nx(path[k - 1]), ny(path[k]) - ny(path[k - 1])); if (acc > 110 || k === path.length - 1) { cps.push({ x: nx(path[k]), y: ny(path[k]) }); acc = 0; if (cps.length >= 10) break; } }
   let len = 0; for (let k = 1; k < cps.length; k++) len += Math.hypot(cps[k].x - cps[k - 1].x, cps[k].y - cps[k - 1].y);
@@ -816,13 +816,15 @@ async function m8() {
   const yann = spawnActor('yann8', YANN); face(yann, player); yann.mesh.userData.talk = true; kaosFor(yann);
   await say([['Yann', 'Le Baron l\'a mauvaise. Il gare sa berline noire place du Colombier, le coffre plein de liquide.'], ['Yann', 'Pique-la, et emmène-la au garage de Momo à Cleunay. Momo ouvre pas s\'il y a des gyrophares derrière toi.']]);
   const ci = nearestNode(...P.baronCar, 1), e = outEdges(ci, 1), b = e.length ? GNB[e[0]] : ci;
-  const car = addCar(nx(ci), ny(ci), Math.atan2(nx(b) - nx(ci), ny(b) - ny(ci)), { ai: null, driver: false, keep: true, type: 'sedan', color: 0x0a0a0c }); car.isCar = true; actors.push(car);
+  const cx = ci >= 0 ? nx(ci) : P.baronCar[0], cy = ci >= 0 ? ny(ci) : P.baronCar[1];
+  const ch = ci >= 0 && b >= 0 ? Math.atan2(nx(b) - cx, ny(b) - cy) : 0;
+  const car = addCar(cx, cy, ch, { ai: null, driver: false, keep: true, type: 'sedan', color: 0x0a0a0c }); car.isCar = true; actors.push(car);
   const g1 = addPed(car.x + 3, car.y + 2, { keep: true, look: THUG() }); g1.tough = true; g1.dmg = [7, 11]; g1.state = 'idle'; g1.still = true; actors.push(g1);
   g1.onHit = p => { p.state = 'fight'; };
   goal(car.x, car.y); objective('Vole la berline noire du Baron');
   await wait(() => player.car === car);
   setWanted(2); banner('ALARME !', 'La berline est signalée. Sème les flics.', 3);
-  const gi = nearestNode(...P.garage, 1), gar = { x: nx(gi), y: ny(gi) };
+  const gi = nearestNode(...P.garage, 1), gar = gi >= 0 ? { x: nx(gi), y: ny(gi) } : { x: P.garage[0], y: P.garage[1] };
   goal(gar.x, gar.y); objective('Amène la berline au garage de Momo, à Cleunay, sans les flics');
   let warned = false;
   await wait(() => { if (dist(car, gar) < 12) { if (wanted === 0 && player.car === car) return true; if (!warned) { warned = true; toast('Momo n\'ouvre pas : t\'es suivi !', 2.5); } } else warned = false; return false; }, () => car.removed ? 'La berline est perdue.' : false);
