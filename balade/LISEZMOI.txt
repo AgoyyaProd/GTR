@@ -1,0 +1,8 @@
+Prototype « Rennes photoréaliste » : le vrai Rennes en 3D (Google Photorealistic 3D Tiles) dans three.js, balade à pied.
+En ligne : https://agoyyaprod.github.io/GTR/balade/
+Il faut une clé Google Maps Platform avec « Map Tiles API » activée ; la clé est saisie dans la page et gardée dans le navigateur.
+Restreindre la clé dans Google Cloud : API « Map Tiles API » seulement, référents HTTP agoyyaprod.github.io/*.
+Source : src/main.js. Reconstruire balade.js :
+  npm i three@0.170.0 3d-tiles-renderer@0.5.4 three-mesh-bvh esbuild
+  npx esbuild src/main.js --bundle --minify --format=iife --outfile=balade.js
+Ce prototype est indépendant du jeu (index.html à la racine) : il ne touche ni aux missions ni aux tuiles.
