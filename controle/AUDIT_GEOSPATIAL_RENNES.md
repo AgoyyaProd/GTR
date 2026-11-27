@@ -159,13 +159,13 @@ Format `gtr-osm-routing-graph-v1` :
 - métadonnées : classe highway, nom, bridge, tunnel et layer ;
 - relations de restriction conservées avec membres from/via/to, variantes par mode et liste des références absentes.
 
-Masques actuels : piéton (1), voiture (2), vélo (4). Le générateur applique les sens uniques OSM, les exceptions vélo explicites et les règles d'accès de base. Les ways sans accès compatible sont écartées. Les nœuds partagés à des niveaux différents sont séparés ; bridge=yes et tunnel=yes donnent un niveau par défaut si `layer` n'est pas fourni.
+Masques actuels : piéton (1), voiture (2), vélo (4). Le générateur applique les sens uniques OSM, les exceptions vélo explicites et les règles d'accès de base. Les ways sans accès compatible sont écartées. Seuls les niveaux `layer` explicitement renseignés séparent les nœuds. Les tags bridge/tunnel sont conservés comme métadonnées, sans déduire un niveau : cette déduction déconnectait les extrémités partagées des ponts/tunnels avec les voies de raccordement. Les croisements à niveaux différents sans `layer` explicite restent à contrôler dans l'audit topologique.
 
 Limites connues à ce stade :
 - ce générateur est une première base de reconstruction, pas encore un moteur de routage certifié ;
 - les restrictions sont exportées, mais pas encore compilées en automate de transitions ni appliquées par A* ;
 - les accès conditionnels, horaires, exceptions complexes et toutes les subtilités de hiérarchie des tags OSM ne sont pas encore résolus ;
-- les raccordements de rampes aux extrémités de ponts/tunnels nécessitent une validation topologique dédiée ;
+- les ponts/tunnels sans `layer` explicite ne sont pas séparés automatiquement ; les croisements dénivelés mal tagués nécessitent une validation topologique dédiée ;
 - la sortie n'a pas encore été exécutée sur l'extrait rennais complété : les ways manquantes doivent d'abord être récupérées et l'audit strict doit réussir.
 
 Le test synthétique `tests/test_build_osm_graph.py` vérifie le CSR, la conservation des identifiants OSM, les sens uniques, les accès et la séparation des niveaux. Il est ajouté au job géospatial CI.
