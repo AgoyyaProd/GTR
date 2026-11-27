@@ -609,7 +609,7 @@ function weatherStep(dt) {
   const residualWet = WX.wetT > 0 ? 0.28 * (WX.wetT / 90) : 0;
   updateWetSurfaceBlend(Math.max(k, residualWet), MODE.night);
   rain.visible = k > 0.03 && !underRoof(player.x, player.y); rainGeo.setDrawRange(0, Math.round(RAIN * Math.min(1, 0.15 + k)) * 2); rain.material.opacity = 0.12 + 0.3 * k;
-  if (scene.fog) scene.fog.density = (MODE.night ? 0.0042 : 0.0026) + k * (MODE.night ? 0.0026 : 0.0028) + (WX.state === 'nuageux' ? 0.0006 : 0);
+  if (scene.fog) scene.fog.density = (MODE.night ? 0.0042 : 0.00095) + k * (MODE.night ? 0.0026 : 0.00045) + (WX.state === 'nuageux' ? 0.0002 : 0);
 }
 function applyMode(m) {
   if (m.auto) { WX.auto = true; m = wxMode(); WX.applied = m.id; }
@@ -619,7 +619,7 @@ function applyMode(m) {
   scene.background = night ? (m.rain ? SKY.nightRain : SKY.nightClear) : (m.rain ? SKY.dayRain : (ENV.sky_day || new THREE.Color(0x9ab8d8)));
   scene.environment = night ? ENV.env_night : ENV.env_day;
   const fogC = night ? (m.rain ? 0x1a2030 : 0x121828) : (m.rain ? 0x737f8a : 0x9eafbd);
-  scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0025 : 0.00145));
+  scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0014 : 0.00095));
   hemi.intensity = night ? 0.25 : (m.rain ? 0.52 : 0.36); hemi.color.set(night ? 0x5a6aa0 : 0xcfe0ff); hemi.groundColor.set(night ? 0x201810 : 0x5a5040);
   sun.color.set(night ? 0x8aa0ff : 0xfff0d8); sun.intensity = night ? 0.35 : (m.rain ? 0.6 : 2.6);
   sun.userData.dir = night ? new THREE.Vector3(-0.4, 0.8, 0.35) : new THREE.Vector3(-0.55, 0.62, 0.45);
@@ -630,7 +630,7 @@ function applyMode(m) {
   renderer.toneMappingExposure = 1.0;
   const wet = m.rain;
   for (const mt of allMats) {
-    mt.envMapIntensity = night ? 0.42 : 0.9;
+    mt.envMapIntensity = mt.userData.envCap ? Math.min(night ? 0.42 : 0.9, mt.userData.envCap) : (night ? 0.42 : 0.9);
     if (mt.userData.facade || mt === MAT.lampHead || (MAT.dormer && MAT.dormer.includes(mt)) || mt.userData.sign) mt.emissiveIntensity = night ? (mt === MAT.lampHead ? 3 : 1.15) : 0;
   }
   if (MAT.dormer) MAT.dormer[1].emissiveIntensity = night ? 1 : 0;
@@ -638,9 +638,9 @@ function applyMode(m) {
   for (const k of ground) {
     const mt = MAT[k]; if (!mt) continue;
     mt.userData.wetDryRoughness = 1;
-    mt.userData.wetRoughness = k === 'mark' ? 0.2 : (k === 'asphalt' || k === 'road' || k === 'highway' ? 0.34 : 0.48);
-    mt.userData.wetDryEnv = night ? 0.35 : 0.7;
-    mt.userData.wetEnv = night ? 0.82 : 1.05;
+    mt.userData.wetRoughness = night ? (k === 'mark' ? 0.62 : 0.72) : (k === 'mark' ? 0.2 : (k === 'asphalt' || k === 'road' || k === 'highway' ? 0.34 : 0.48));
+    mt.userData.wetDryEnv = night ? 0.22 : 0.7;
+    mt.userData.wetEnv = night ? 0.15 : 1.05;
     mt.roughness = mt.userData.wetDryRoughness;
     mt.envMapIntensity = mt.userData.wetDryEnv;
   }

@@ -482,7 +482,7 @@ function hallMat() {
   for (let y = y0; y < H; y += 9) for (let x = ((y - y0) / 9 % 2) * 13; x < 512; x += 26) { g.fillStyle = `hsl(${8 + Math.random() * 8},${45 + Math.random() * 15}%,${33 + Math.random() * 8}%)`; g.fillRect(x, y, 24, 7); }
   for (let cx = 32; cx < 512; cx += 64) for (let cy = y0 + 70; cy < H - 40; cy += 110) { g.fillStyle = Math.random() < 0.5 ? '#d8a848' : '#2a2420'; g.save(); g.translate(cx, cy); g.rotate(Math.PI / 4); g.fillRect(-14, -14, 28, 28); g.restore(); }
   g.fillStyle = '#cfc6b4'; g.fillRect(0, H - m * 0.5, 512, m * 0.5);
-  HALLM = M({ map: canvasTex(c, true), roughness: 0.75 }); HALLM.userData.perU = 6; HALLM.userData.perV = 12; HALLM.userData.avg = [0.5, 0.5, 0.5];
+  HALLM = M({ map: canvasTex(c, true), color: 0xe0d4c2, roughness: 0.9 }); HALLM.envMapIntensity = 0.55; HALLM.userData.envCap = 0.55; HALLM.userData.perU = 6; HALLM.userData.perV = 12; HALLM.userData.avg = [0.5, 0.5, 0.5];
   return HALLM;
 }
 /* ---------- Halles Martenot (the market halls of the Lices): open to walk in through their doors ---------- */
@@ -500,7 +500,7 @@ function hallInteriorMats() {
   const awn = [0xb8352a, 0x2f6a3a, 0x2a4f8a, 0xc98a1a, 0x7a2a5a].map(c => M({ color: c, roughness: 0.8, side: THREE.DoubleSide }));
   const prod = [0xd8402a, 0xe8a020, 0x6aa830, 0xf0e0b0, 0x8a3a8a, 0xc85a2a].map(c => M({ color: c, roughness: 0.7 }));
   HALLI = { awn, prod, wood: M({ ...MAT.groundTex.concrete, color: 0x8a6a48, roughness: 0.9 }), iron: M({ color: 0x2c3634, roughness: 0.5, metalness: 0.6 }),
-    ceil: M({ color: 0x46524f, roughness: 0.8, side: THREE.DoubleSide }), glass: M({ color: 0xbcd8e0, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false }), lantern: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#20282a'; g.fillRect(0, 0, 256, 128); for (let x = 0; x < 256; x += 32) for (let y = 0; y < 128; y += 64) { g.fillStyle = '#8fb0b8'; g.fillRect(x + 4, y + 6, 24, 52); } const tx = canvasTex(c, true); const m = M({ map: tx, emissive: 0xffd8a0, emissiveMap: tx, emissiveIntensity: 0, roughness: 0.15, metalness: 0.3 }); m.userData.sign = true; return m; })(), lamp: new THREE.MeshBasicMaterial({ color: 0xfff0c8 }), steel: M({ color: 0xb8bcc0, roughness: 0.35, metalness: 0.7 }) };
+    ceil: M({ color: 0x46524f, roughness: 0.8, side: THREE.DoubleSide }), glass: (() => { const m = M({ color: 0x9bb5bd, roughness: 0.22, metalness: 0.02, transparent: true, opacity: 0.24, depthWrite: false }); m.envMapIntensity = 0.3; m.userData.envCap = 0.3; return m; })(), lantern: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#20282a'; g.fillRect(0, 0, 256, 128); for (let x = 0; x < 256; x += 32) for (let y = 0; y < 128; y += 64) { g.fillStyle = '#8fb0b8'; g.fillRect(x + 4, y + 6, 24, 52); } const tx = canvasTex(c, true); const m = M({ map: tx, emissive: 0xffd8a0, emissiveMap: tx, emissiveIntensity: 0, roughness: 0.15, metalness: 0.3 }); m.userData.sign = true; return m; })(), lamp: new THREE.MeshBasicMaterial({ color: 0xfff0c8 }), steel: M({ color: 0xb8bcc0, roughness: 0.35, metalness: 0.7 }) };
   return HALLI;
 }
 function buildHall(gb, t, f0, h, hv = h) {

@@ -63,10 +63,13 @@ async function loadEnvironments(progress) {
   try {
     const results = await Promise.all([
       loadHDR('tex/hdr/jour_rue.hdr', 'tex/env_day.jpg', 'env_day'),
-      loadHDR('tex/hdr/nuit_rue.hdr', 'tex/env_night.jpg', 'env_night')
+      loadHDR('tex/hdr/nuit_ciel.hdr', 'tex/env_night.jpg', 'env_night'),
+      loadHDR('tex/hdr/jour_ciel.hdr', 'tex/sky_day.jpg', 'sky_horizon')
     ]);
     ENV.env_day = results[0];
     ENV.env_night = results[1];
+    horizonDay = hdrHorizonColor({ image: results[2] && results[2].image, type: results[2] && results[2].type });
+    if (results[2]) results[2].dispose();
     ENV.sky_day = await loadTex('tex/sky_day.jpg', true);
   } finally {
     pmrem.dispose();
@@ -97,18 +100,20 @@ function updatePhysicalSky(mode) {
   const direction = solarDirection(hour);
   const uniforms = physicalSky.material.uniforms;
   uniforms.sunPosition.value.copy(direction).multiplyScalar(450000);
-  uniforms.turbidity.value = mode.rain ? 8.5 : 4.2;
-  uniforms.rayleigh.value = mode.rain ? 1.25 : 2.1;
-  uniforms.mieCoefficient.value = mode.rain ? 0.012 : 0.005;
+  uniforms.turbidity.value = mode.rain ? 3.8 : 2.2;
+  uniforms.rayleigh.value = mode.rain ? 1.7 : 2.0;
+  uniforms.mieCoefficient.value = mode.rain ? 0.0035 : 0.0018;
   uniforms.mieDirectionalG.value = 0.82;
   physicalSky.visible = true;
   scene.background = null;
   sun.userData.dir = direction;
   /* Slightly restrain direct daylight; the HDR environment now supplies fill light. */
-  sun.intensity = mode.rain ? 0.48 : 1.75;
-  hemi.intensity = mode.rain ? 0.38 : 0.30;
+  sun.intensity = mode.rain ? 0.42 : 1.35;
+  hemi.intensity = mode.rain ? 0.34 : 0.28;
   if (scene.fog && horizonDay) {
-    const horizon = horizonDay.clone().multiplyScalar(0.42);
+    const horizon = horizonDay.clone().multiplyScalar(mode.rain ? 0.16 : 0.20);
+    horizon.clampScalar(0, 0.62);
+    if (mode.rain) horizon.lerp(new THREE.Color(0x687b8b), 0.28);
     scene.fog.color.copy(horizon);
   }
 }
