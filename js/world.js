@@ -1129,7 +1129,7 @@ function addRoad(gb0, t, r) {
           if (gap && ph >= dash) { s0 += per - ph; continue; }
           let s1 = gap ? Math.min(l, s0 + dash - ph) : l;
           if (!gap && s1 - s0 > 1.5) s1 = Math.min(s1, s0 + 1.5); // traits continus découpés pour s'arrêter aux carrefours
-          const mx = ax + ux * (s0 + s1) / 2, my = ay + uy * (s0 + s1) / 2;
+          const mx = ax + ux * (s0 + s1) / 2 + qx * off, my = ay + uy * (s0 + s1) / 2 + qy * off;
           if (inJunction(t, mx, my) || inCrossing(t, mx, my)) { s0 = s1 + 0.001; continue; }
           const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off;
           const x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
