@@ -17,6 +17,7 @@ import os
 import tempfile
 import urllib.parse
 import urllib.request
+from xml.sax.saxutils import quoteattr
 import xml.etree.ElementTree as ET
 
 
@@ -69,8 +70,9 @@ def parse_supplement(xml_bytes):
 def merge_osm(source, output, extra_nodes, extra_ways):
     """Écriture en flux : pas de chargement mémoire de l'extrait complet."""
     source_node_ids, source_way_ids = set(), set()
-    fd, temporary = tempfile.mkstemp(prefix="gtr-osm-", suffix=".xml",
-                                     dir=os.path.dirname(os.path.abspath(output)))
+    output_dir = os.path.dirname(os.path.abspath(output))
+    os.makedirs(output_dir, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix="gtr-osm-", suffix=".xml", dir=output_dir)
     os.close(fd)
     try:
         stack = []
@@ -83,7 +85,7 @@ def merge_osm(source, output, extra_nodes, extra_ways):
                     if len(stack) == 1:
                         root_attributes = dict(element.attrib)
                         attrs = " ".join(
-                            f'{key}="{value}"' for key, value in root_attributes.items()
+                            f"{key}={quoteattr(value)}" for key, value in root_attributes.items()
                         )
                         out.write(("<osm " + attrs + ">\n").encode("utf-8"))
                     continue
