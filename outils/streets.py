@@ -146,11 +146,85 @@ for (x, y), arms in node_arms.items():
 junction_union = unary_union(junction_polys) if junction_polys else Polygon()
 print('OSM junctions', len(junction_cores), flush=True)
 
+# Flèches directionnelles sur les approches de carrefours des axes multi-voies.
+# Les flèches sont générées depuis les voies OSM sources, jamais depuis d['r'].
+junction_nodes = set()
+for (x, y), arms in node_arms.items():
+    dirs = []
+    for ax, ay, width, road in arms:
+        if not any(ax*bx + ay*by > math.cos(math.radians(24)) for bx, by, _, _ in dirs):
+            dirs.append((ax, ay, width, road))
+    if len(dirs) >= 3:
+        junction_nodes.add((round(x, 2), round(y, 2)))
+arrow_records = {key: [] for key in tiles}
+def arrow_polygon(cx, cy, ux, uy, turn):
+    angle = turn
+    vx, vy = ux*math.cos(angle)-uy*math.sin(angle), ux*math.sin(angle)+uy*math.cos(angle)
+    nx, ny = -vy, vx
+    # Silhouette pleine : fût étroit et tête large, 4 m de long.
+    coords = [(-2.0,-0.22), (0.45,-0.22), (0.45,-0.72), (2.0,0.0),
+              (0.45,0.72), (0.45,0.22), (-2.0,0.22)]
+    return Polygon([(cx+ux0*vx+uy0*nx, cy+ux0*vy+uy0*ny) for ux0,uy0 in coords])
+for road in S.get('roads', []):
+    pts = road.get('pts', [])
+    if len(pts) < 2 or road.get('highway') in ('footway','path','cycleway','steps','pedestrian','track','bridleway','corridor','platform'):
+        continue
+    if road.get('bridge') not in (None,'','no') or road.get('tunnel') not in (None,'','no'):
+        continue
+    line = LineString(pts); length = line.length
+    if length < 22:
+        continue
+    try: total_lanes = max(1, int(float(road.get('lanes') or 0)))
+    except (ValueError, TypeError): total_lanes = 0
+    oneway = road.get('oneway') in ('yes','1','true')
+    reverse_only = road.get('oneway') == '-1'
+    if oneway or reverse_only:
+        per_dir = total_lanes
+    else:
+        per_dir = total_lanes // 2
+    if per_dir < 2:
+        continue
+    width = road_width(road)
+    lane_w = width / max(1, total_lanes or (per_dir if oneway else per_dir*2))
+    for forward in ([True] if oneway else [False] if reverse_only else [True, False]):
+        if forward:
+            end = pts[-1]; endpoint = (round(end[0],2), round(end[1],2))
+            if endpoint not in junction_nodes: continue
+            pos = line.interpolate(max(0.0, length-9.0)); a=line.interpolate(max(0.0,length-10.0)); b=line.interpolate(max(0.0,length-8.0))
+            dx,dy=b.x-a.x,b.y-a.y
+            lane_tags = road.get('turn_lanes_forward') or (road.get('turn_lanes') if oneway else None)
+        else:
+            start = pts[0]; endpoint = (round(start[0],2), round(start[1],2))
+            if endpoint not in junction_nodes: continue
+            pos = line.interpolate(min(length,9.0)); a=line.interpolate(min(length,10.0)); b=line.interpolate(min(length,8.0))
+            dx,dy=b.x-a.x,b.y-a.y
+            lane_tags = road.get('turn_lanes_backward')
+        ll=math.hypot(dx,dy)
+        if ll < 0.1: continue
+        ux,uy=dx/ll,dy/ll
+        # turn:lanes is ordered left-to-right in the direction of travel.
+        turns = [q.strip() for q in (lane_tags or '').split('|')] if lane_tags else []
+        if len(turns) != per_dir: turns = ['through'] * per_dir
+        # For backward traffic, use the opposite side of the OSM way's centreline.
+        nx,ny=-uy,ux
+        for li, turn_tag in enumerate(turns[:per_dir]):
+            if 'left' in turn_tag: turn = 0.42
+            elif 'right' in turn_tag: turn = -0.42
+            else: turn = 0.0
+            lateral = ((per_dir-1)/2-li) * lane_w
+            cx,cy=pos.x+nx*lateral,pos.y+ny*lateral
+            if any(math.hypot(cx-qx,cy-qy)<4.2 for qx,qy,_ in crossing_centres):
+                continue
+            pg=arrow_polygon(cx,cy,ux,uy,turn)
+            if pg.area > 0.1: arrow_records[tile_of(cx,cy)].append(pg)
+print('OSM approach arrows', sum(map(len, arrow_records.values())), flush=True)
+
 # Zébras : uniquement les nœuds OSM explicitement marqués. Rattachement à la
 # chaussée la plus proche et rejet des emprises qui se chevauchent.
 crossing_records = {key: [] for key in tiles}
 crossing_ramps = {key: [] for key in tiles}
 crossing_gaps = []
+crossing_centres = []
 marked_nodes = []
 for c in S.get('crossings', []):
     crossing = (c.get('crossing') or '').lower()
@@ -210,6 +284,7 @@ for c in sorted(marked_nodes, key=lambda q: str(q.get('id', ''))):
         continue
     accepted_footprints.append(footprint)
     accepted_centres.append((centre.x, centre.y))
+    crossing_centres.append((centre.x, centre.y, 3.4))
     accepted_count += 1
     for band in range(7):
         off = (band - 3) * 0.76
@@ -250,7 +325,15 @@ print('OSM marked crossings', accepted_count, 'zebra bars', sum(map(len, crossin
 for tk, d in tiles.items():
     ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
     d['jc'] = [[x, y, r] for x, y, r in junction_cores if ox0-r <= x <= ox0+T+r and oy0-r <= y <= oy0+T+r]
+    d['xc'] = [[x, y, r] for x, y, r in crossing_centres if ox0-r <= x <= ox0+T+r and oy0-r <= y <= oy0+T+r]
+    d['ar'] = []
     tilebox = box(ox0, oy0, ox0+T, oy0+T)
+    for pg in arrow_records.get(tk, []):
+        part = pg.intersection(tilebox)
+        parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
+        for ap in parts:
+            if ap.geom_type == 'Polygon' and ap.area > 0.05:
+                d['ar'].append([round(v,2) for xy in list(ap.exterior.coords)[:-1] for v in xy])
     d['xw'] = []
     for poly in crossing_records.get(tk, []):
         part = poly.intersection(tilebox)
@@ -261,11 +344,12 @@ for tk, d in tiles.items():
     d['dr'] = crossing_ramps.get(tk, [])
 
 # Îlots explicitement cartographiés : aucune médiane inventée entre deux voies.
-median_union_parts = []
+median_grass_parts = []
+median_paved_parts = []
 for m in S.get('medians', []):
     pts = m.get('pts', [])
     if m.get('kind') == 'node' and pts:
-        median_union_parts.append(Point(pts[0]).buffer(1.15, quad_segs=6))
+        (median_grass_parts if m.get('material') == 'grass' else median_paved_parts).append(Point(pts[0]).buffer(1.15, quad_segs=6))
     elif len(pts) >= 4 and pts[0] == pts[-1]:
         pg = Polygon(pts).buffer(0)
         if pg.area >= 1.0 and pg.area <= 1800:
@@ -274,16 +358,20 @@ for m in S.get('medians', []):
             short_side, long_side = min(sides), max(sides)
             tagged_island = bool(m.get('tagged'))
             if tagged_island or (long_side >= 5.0 and short_side <= 8.0 and long_side >= short_side * 2.5):
-                median_union_parts.append(pg)
-median_union = unary_union(median_union_parts) if median_union_parts else Polygon()
+                (median_grass_parts if m.get('material') == 'grass' else median_paved_parts).append(pg)
+median_grass = unary_union(median_grass_parts) if median_grass_parts else Polygon()
+median_paved = unary_union(median_paved_parts) if median_paved_parts else Polygon()
 for tk, d in tiles.items():
     ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
-    part = median_union.intersection(box(ox0, oy0, ox0+T, oy0+T))
-    d['md'] = []
-    parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
-    for pg in parts:
-        if pg.geom_type == 'Polygon' and pg.area > 0.5:
-            d['md'].append([round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
+    tilebox = box(ox0, oy0, ox0+T, oy0+T)
+    d['md'] = []  # îlots minéraux : pavés / dalles, jamais MAT.grass
+    d['mg'] = []  # uniquement landuse=grass ou surface=grass
+    for geom, key in ((median_paved, 'md'), (median_grass, 'mg')):
+        part = geom.intersection(tilebox)
+        parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
+        for pg in parts:
+            if pg.geom_type == 'Polygon' and pg.area > 0.5:
+                d[key].append([round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
 
 def living(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 5.5) < 0.01
 def pedestrian(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 7) < 0.01 and not r[2] & 2
