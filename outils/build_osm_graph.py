@@ -120,7 +120,11 @@ def parse_osm(path):
                     "except": tags.get("except"), "tags": tags,
                     "members": members
                 })
-        el.clear()
+        # Preserve child <tag>, <nd> and <member> elements until their
+        # enclosing OSM primitive has been parsed. Clearing every end-event
+        # silently erased way geometry and tags before the way event.
+        if el.tag in {"node", "way", "relation"}:
+            el.clear()
     return nodes, ways, restrictions
 
 
