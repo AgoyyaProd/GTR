@@ -1000,6 +1000,13 @@ function inJunction(t, x, y) {
   for (let i = 0; i < J.length; i++) { const dx = x - J[i][0], dy = y - J[i][1], rr = J[i][2] + 0.6; if (dx * dx + dy * dy < rr * rr) return true; }
   return false;
 }
+/* Comme inJunction, les zébras OSM définissent des zones où aucun trait axial
+   ni séparateur de voie ne doit être dessiné. */
+function inCrossing(t, x, y) {
+  const C = t.xc; if (!C) return false;
+  for (let i = 0; i < C.length; i++) { const dx=x-C[i][0], dy=y-C[i][1], rr=C[i][2]+0.45; if (dx*dx+dy*dy < rr*rr) return true; }
+  return false;
+}
 function addRoad(gb0, t, r) {
   const w = r[0], kind = r[1], flags = r[2], p = r.slice(4), bridge = !!(flags & 2 && r.bh);
   const gb = bridge ? new GB() : gb0;
@@ -1122,7 +1129,8 @@ function addRoad(gb0, t, r) {
           if (gap && ph >= dash) { s0 += per - ph; continue; }
           let s1 = gap ? Math.min(l, s0 + dash - ph) : l;
           if (!gap && s1 - s0 > 1.5) s1 = Math.min(s1, s0 + 1.5); // traits continus découpés pour s'arrêter aux carrefours
-          if (inJunction(t, ax + ux * (s0 + s1) / 2, ay + uy * (s0 + s1) / 2)) { s0 = s1 + 0.001; continue; }
+          const mx = ax + ux * (s0 + s1) / 2, my = ay + uy * (s0 + s1) / 2;
+          if (inJunction(t, mx, my) || inCrossing(t, mx, my)) { s0 = s1 + 0.001; continue; }
           const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off;
           const x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
           gb.quad(MAT.mark,
@@ -2027,7 +2035,9 @@ function* buildTile(t, data) {
       [0,0], [1,0], [1,1], [0,1], [0,1,0]);
   }
   /* Terre-pleins et îlots de circulation explicitement cartographiés dans OSM. */
-  for (const c of data.md || []) gbR.poly(MAT.grass, c, SW + 0.014, 4);
+  for (const c of data.md || []) gbR.poly(MAT.square, c, SW + 0.014, 3); // îlots minéraux
+  for (const c of data.mg || []) gbR.poly(MAT.grass, c, SW + 0.014, 4); // îlots engazonnés
+  for (const c of data.ar || []) gbR.poly(MAT.mark, c, 0.024, 1); // flèches de direction OSM
   for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
   for (const a of data.a) if (a[0] === 1) addPitchLines(gbR, a[1]); // parks, squares, car parks & gardens are painted on the ground (landcover)
   // Anciens passages piétons (points OSM, f[0] === 6) : remplacés par les zèbres xw quand la tuile en a, sinon on les doublerait.
