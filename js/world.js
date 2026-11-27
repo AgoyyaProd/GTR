@@ -1356,6 +1356,8 @@ function buildBarriers(gb, t, list) {
         gb.quad(MAT.stone,[A[0],rel(botA,...A),-A[1]],[B[0],rel(botB,...B),-B[1]],[B[0],rel(topB,...B),-B[1]],[A[0],rel(topA,...A),-A[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[nx,0,-ny]);
         gb.quad(MAT.stone,[C[0],rel(botA,...C),-C[1]],[D[0],rel(botB,...D),-D[1]],[D[0],rel(topB,...D),-D[1]],[C[0],rel(topA,...C),-C[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[-nx,0,ny]);
         gb.quad(MAT.stone,[A[0],rel(topA,...A),-A[1]],[B[0],rel(topB,...B),-B[1]],[C[0],rel(topB,...C),-C[1]],[D[0],rel(topA,...D),-D[1]],[0,0],[l/2,0],[l/2,0.25],[0,0.25],[0,1,0]);
+        const bb=[Math.min(...[A,B,C,D].map(v=>v[0])),Math.min(...[A,B,C,D].map(v=>v[1])),Math.max(...[A,B,C,D].map(v=>v[0])),Math.max(...[A,B,C,D].map(v=>v[1]))];
+        t.obs.add(bb[0],bb[1],bb[2],bb[3],{p:[...A,...B,...C,...D],b:bb,h:Math.max(topA,topB)-Math.min(botA,botB),low:true});
       } else if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
         /* wide enough to cover the metre on each side where the 2 m relief model still ramps between the two levels */
         if (!f._rw) { /* once per wall: which side is high, and mitred offsets at the joints */
