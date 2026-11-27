@@ -211,7 +211,12 @@ for road in S.get('roads', []):
             if 'left' in turn_tag: turn = 0.42
             elif 'right' in turn_tag: turn = -0.42
             else: turn = 0.0
-            lateral = ((per_dir-1)/2-li) * lane_w
+            if oneway or reverse_only:
+                lateral = width/2 - (li+0.5)*lane_w
+            else:
+                # Chaque sens occupe sa demi-chaussée ; la première voie est
+                # celle du côté médian, puis viennent les voies extérieures.
+                lateral = -width/2 + (per_dir-li-0.5)*lane_w
             cx,cy=pos.x+nx*lateral,pos.y+ny*lateral
             pg=arrow_polygon(cx,cy,ux,uy,turn)
             tk = tile_of(cx,cy)
@@ -283,7 +288,7 @@ for c in sorted(marked_nodes, key=lambda q: str(q.get('id', ''))):
         continue
     accepted_footprints.append(footprint)
     accepted_centres.append((centre.x, centre.y))
-    crossing_centres.append((centre.x, centre.y, 3.4))
+    crossing_centres.append((centre.x, centre.y, math.hypot(2.9, width/2 + 0.45)))
     accepted_count += 1
     for band in range(7):
         off = (band - 3) * 0.76
