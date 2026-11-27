@@ -76,6 +76,103 @@ if osm_road_tree is not None:
                 unmatched_named += 1
 print('OSM road profiles matched', profiled_ways, 'unmatched named tile roads', unmatched_named, flush=True)
 
+# ---- shared OSM nodes: real junction cores and approach zebra crossings ----
+# OSM ways share the exact projected coordinate of a common node. Count distinct
+# outward bearings (not merely ways) so a shaped bend is never mistaken for a junction.
+node_arms = {}
+for road in S.get('roads', []):
+    pts = road.get('pts', [])
+    if len(pts) < 2 or road.get('bridge') not in (None, '', 'no') or road.get('tunnel') not in (None, '', 'no'):
+        continue
+    width = road_width(road)
+    for k, (x, y) in enumerate(pts):
+        arms = []
+        if k > 0:
+            dx, dy = x - pts[k-1][0], y - pts[k-1][1]
+            ll = math.hypot(dx, dy)
+            if ll > 1: arms.append((dx/ll, dy/ll))
+        if k + 1 < len(pts):
+            dx, dy = pts[k+1][0] - x, pts[k+1][1] - y
+            ll = math.hypot(dx, dy)
+            if ll > 1: arms.append((dx/ll, dy/ll))
+        if arms:
+            node_arms.setdefault((round(x, 2), round(y, 2)), []).extend((a, b, width, road) for a, b in arms)
+junction_polys = []
+crossing_records = {key: [] for key in tiles}
+for (x, y), arms in node_arms.items():
+    # Merge near-identical bearings; opposite directions remain separate arms.
+    dirs = []
+    for ax, ay, width, road in arms:
+        if not any(ax*bx + ay*by > math.cos(math.radians(24)) for bx, by, _, _ in dirs):
+            dirs.append((ax, ay, width, road))
+    if len(dirs) < 3:
+        continue
+    radius = min(10.0, max(4.0, max(q[2] for q in dirs) * 0.72))
+    core = Point(x, y).buffer(radius, quad_segs=12)
+    approach = []
+    for ax, ay, width, road in dirs:
+        arm_len = radius + max(width, 4.0) * 0.8
+        centreline = LineString([(x, y), (x + ax*arm_len, y + ay*arm_len)])
+        approach.append(centreline.buffer(width/2 + 0.12, cap_style=2, join_style=2))
+        # Zebra crossing on each approach, outside the conflict area.
+        if road.get('highway') not in ('footway', 'path', 'cycleway', 'steps') and width >= 4.2:
+            cx, cy = x + ax*(radius + 1.25), y + ay*(radius + 1.25)
+            nx, ny = -ay, ax
+            half_w = min(width/2 - 0.25, 5.0)
+            if half_w >= 1.8:
+                # Seven 0.42 m bars with 0.34 m gaps, perpendicular to traffic.
+                for band in range(7):
+                    off = (band - 3) * 0.76
+                    bx, by = cx + ax*off, cy + ay*off
+                    poly = Polygon([
+                        (bx-ax*0.21-nx*half_w, by-ay*0.21-ny*half_w),
+                        (bx+ax*0.21-nx*half_w, by+ay*0.21-ny*half_w),
+                        (bx+ax*0.21+nx*half_w, by+ay*0.21+ny*half_w),
+                        (bx-ax*0.21+nx*half_w, by-ay*0.21+ny*half_w)])
+                    tk = tile_of(bx, by) if 'tile_of' in globals() else (int((bx-BX0)//T), int((by-BY0)//T))
+                    if tk in crossing_records:
+                        crossing_records[tk].append(poly)
+    # Union the actual carriageway edges, clipped to a compact node core.
+    footprint = unary_union(approach).intersection(core).buffer(0)
+    if not footprint.is_empty and footprint.area > 5:
+        junction_polys.append(footprint)
+junction_union = unary_union(junction_polys) if junction_polys else Polygon()
+print('OSM junctions', len(junction_polys), 'zebra bars', sum(map(len, crossing_records.values())), flush=True)
+
+# Clip ordinary road centre-lines at the junction edge. This also terminates
+# centre lines and lane markings because both are generated from the same records.
+if not junction_union.is_empty:
+    for d in tiles.values():
+        clipped = []
+        for r in d['r']:
+            if r[2] & 2 or r[1] not in (0, 3):
+                clipped.append(r); continue
+            pts = list(zip(r[4::2], r[5::2]))
+            if len(pts) < 2:
+                continue
+            line = LineString(pts)
+            if not line.intersects(junction_union):
+                clipped.append(r); continue
+            parts = line.difference(junction_union.buffer(0.08))
+            geoms = list(parts.geoms) if hasattr(parts, 'geoms') else [parts]
+            for part in geoms:
+                if part.geom_type == 'LineString' and part.length >= 1.2:
+                    rec = list(r[:4]) + [round(c, 2) for xy in part.coords for c in xy]
+                    clipped.append(rec)
+        d['r'] = clipped
+for tk, d in tiles.items():
+    ox, oy = BX0 + tk[0]*T, BY0 + tk[1]*T
+    tilebox = box(ox, oy, ox+T, oy+T)
+    d['xw'] = []
+    for poly in crossing_records.get(tk, []):
+        part = poly.intersection(tilebox)
+        ps = list(part.geoms) if hasattr(part, 'geoms') else [part]
+        for pg in ps:
+            if pg.geom_type == 'Polygon' and pg.area > 0.05:
+                coords = list(pg.exterior.coords)[:4]
+                if len(coords) == 4:
+                    d['xw'].append([round(c, 2) for xy in coords for c in xy])
+
 def living(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 5.5) < 0.01
 def pedestrian(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 7) < 0.01 and not r[2] & 2
 def lowered(r): return (r[1] in (0, 3) or living(r)) and not r[2] & 2
@@ -203,7 +300,7 @@ def rings_of(u):
         if p.geom_type != 'Polygon' or p.area < 1: continue
         p = orient(p, 1.0); out.append(LineString(p.exterior.coords)); out += [LineString(h.coords) for h in p.interiors]
     return out
-UA = merge_corridors(polys_a); US = merge_corridors(polys_s).difference(UA.buffer(0.01))
+UA = unary_union([merge_corridors(polys_a), junction_union]); US = merge_corridors(polys_s).difference(UA.buffer(0.01))
 U = unary_union([UA, US])
 water = unary_union([Polygon(list(zip(w[::2], w[1::2]))).buffer(0) for w in gd['water'] if len(w) >= 6]).buffer(0.8)
 # never into buildings
