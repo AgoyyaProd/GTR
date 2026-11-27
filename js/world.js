@@ -1011,10 +1011,11 @@ function addRoad(gb0, t, r) {
   const w = r[0], kind = r[1], flags = r[2], p = r.slice(4), bridge = !!(flags & 2 && r.bh);
   const gb = bridge ? new GB() : gb0;
   if (kind === 2 && !(flags & 2) && !lcGrass((p[0] + p[p.length - 2]) / 2, (p[1] + p[p.length - 1]) / 2)) return;
-  const [mat, y, s] = roadMat(r, p[0], p[1]);
+  const [mat, roadY, s] = roadMat(r, p[0], p[1]);
   const hw = w / 2, low = isLowered(r) && t.hasRP && !(flags & 2);
   if (t.hasRF && kind === 1 && (flags & 8) && Math.abs(w - 7) < 0.01 && !(flags & 2)) return;
   for (let i = 0; i < p.length - 2; i += 2) {
+    const y = bridge && r.bh && r.bh.length > i/2+1 ? (r.bh[i/2] + r.bh[i/2+1]) * 0.5 : roadY;
     const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1;
     const qx = -dy / l * hw, qy = dx / l * hw;
     const P = [[ax + qx, ay + qy], [bx + qx, by + qy], [bx - qx, by - qy], [ax - qx, ay - qy]];
@@ -1347,7 +1348,16 @@ function buildBarriers(gb, t, list) {
     for (let i = 0; i < p.length - 2; i += 2) {
       const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy); if (l < 0.2) continue;
       const nx = -dy / l, ny = dx / l, sv = (x, y) => SW;
-      if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
+      if (k === 5) { /* quai OSM : mur de maçonnerie, sans garde-corps inventé */
+        const hpA=th(ax+nx*1.6,ay+ny*1.6), hnA=th(ax-nx*1.6,ay-ny*1.6), hpB=th(bx+nx*1.6,by+ny*1.6), hnB=th(bx-nx*1.6,by-ny*1.6);
+        const topA=Math.max(hpA,hnA,th(ax,ay))+0.12, topB=Math.max(hpB,hnB,th(bx,by))+0.12;
+        const botA=Math.min(hpA,hnA,th(ax,ay))-Math.max(1.4,H||2.0), botB=Math.min(hpB,hnB,th(bx,by))-Math.max(1.4,H||2.0);
+        const rel=(z,x,y)=>z-th(x,y)+SW, half=0.28;
+        const A=[ax+nx*half,ay+ny*half],B=[bx+nx*half,by+ny*half],C=[bx-nx*half,by-ny*half],D=[ax-nx*half,ay-ny*half];
+        gb.quad(MAT.stone,[A[0],rel(botA,...A),-A[1]],[B[0],rel(botB,...B),-B[1]],[B[0],rel(topB,...B),-B[1]],[A[0],rel(topA,...A),-A[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[nx,0,-ny]);
+        gb.quad(MAT.stone,[C[0],rel(botA,...C),-C[1]],[D[0],rel(botB,...D),-D[1]],[D[0],rel(topB,...D),-D[1]],[C[0],rel(topA,...C),-C[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[-nx,0,ny]);
+        gb.quad(MAT.stone,[A[0],rel(topA,...A),-A[1]],[B[0],rel(topB,...B),-B[1]],[C[0],rel(topB,...C),-C[1]],[D[0],rel(topA,...D),-D[1]],[0,0],[l/2,0],[l/2,0.25],[0,0.25],[0,1,0]);
+      } else if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
         /* wide enough to cover the metre on each side where the 2 m relief model still ramps between the two levels */
         if (!f._rw) { /* once per wall: which side is high, and mitred offsets at the joints */
           let dsum = 0; const m = p.length / 2, sn = [];
