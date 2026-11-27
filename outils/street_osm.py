@@ -6,6 +6,7 @@ import math
 import pickle
 import collections
 import json
+from urban_osm import classify_node_feature, is_closed_area
 
 # Référentiel historique du jeu : compatible avec les tuiles existantes.
 LAT0 = (48.1055 + 48.1192) / 2
@@ -23,6 +24,9 @@ medians = []  # explicitly mapped traffic islands
 pedestrian_areas = []  # closed OSM pedestrian plazas / public squares
 water_areas = []  # closed OSM water polygons, used to clip urban ground
 waterway_lines = []  # OSM river / canal / stream axes
+urban_features = []
+outdoor_seating_areas = []
+bank_areas = []
 bollards = []
 barriers = []
 kerbs = []
@@ -42,6 +46,10 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         y = (float(el.get("lat")) - LAT0) * KY
         nodes[node_id] = (x, y)
         t = {c.get("k"): c.get("v") for c in el if c.tag == "tag"}
+        feature = classify_node_feature(t, x, y)
+        if feature:
+            feature["osm_id"] = node_id
+            urban_features.append(feature)
         if t.get("barrier") in ("bollard", "block"):
             bollards.append((round(x, 2), round(y, 2)))
         if t.get("barrier") == "kerb" or t.get("kerb"):
@@ -60,6 +68,10 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         refs = [c.get("ref") for c in el if c.tag == "nd"]
         pts = [nodes[r] for r in refs if r in nodes]
         if len(pts) >= 2 and len(pts) == len(refs):
+            if is_closed_area(refs, pts) and (t.get("outdoor_seating") in ("yes", "designated") or t.get("leisure") == "outdoor_seating" or t.get("amenity") == "outdoor_seating"):
+                outdoor_seating_areas.append({"pts": pts, "name": t.get("name"), "surface": t.get("surface")})
+            if is_closed_area(refs, pts) and (t.get("natural") == "bank" or t.get("landuse") == "grass"):
+                bank_areas.append({"pts": pts, "natural": t.get("natural"), "landuse": t.get("landuse")})
             if refs[0] == refs[-1] and (
                 t.get("natural") == "water" or t.get("waterway") == "riverbank" or
                 t.get("landuse") in ("reservoir", "basin")
@@ -165,7 +177,8 @@ with open(OUT_FILE, "wb") as f:
     pickle.dump({"steps": steps, "bollards": bollards, "barriers": barriers,
                  "sidewalks": sidewalks, "roads": roads, "crossings": crossings, "medians": medians,
                  "pedestrian_areas": pedestrian_areas, "water_areas": water_areas,
-                 "waterway_lines": waterway_lines,
+                 "waterway_lines": waterway_lines, "urban_features": urban_features,
+                 "outdoor_seating_areas": outdoor_seating_areas, "bank_areas": bank_areas,
                  "turn_restrictions": turn_restrictions},
                 f, protocol=pickle.HIGHEST_PROTOCOL)
 

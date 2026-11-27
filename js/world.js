@@ -1650,6 +1650,14 @@ function buildProps() {
     { geo: new THREE.CylinderGeometry(0.079, 0.079, 0.055, 12), m: MX(0, 0.66, 0) },
     { geo: new THREE.CylinderGeometry(0.078, 0.078, 0.055, 12), m: MX(0, 0.76, 0) }
   ]);
+  /* Fontaine publique en pierre : bassin, vasque et jet central. */
+  PROPS.fountain = mergeGeos([
+    { geo: new THREE.CylinderGeometry(1.05, 1.15, 0.22, 20), m: MX(0, 0.18, 0) },
+    { geo: new THREE.CylinderGeometry(0.92, 1.0, 0.16, 20, 1, true), m: MX(0, 0.36, 0) },
+    { geo: new THREE.CylinderGeometry(0.16, 0.24, 0.55, 12), m: MX(0, 0.56, 0) },
+    { geo: new THREE.CylinderGeometry(0.07, 0.12, 0.62, 10), m: MX(0, 0.92, 0) },
+    { geo: new THREE.SphereGeometry(0.12, 10, 8), m: MX(0, 1.25, 0) }
+  ]);
   PROPS.bin = mergeGeos([
     { geo: new THREE.CylinderGeometry(0.25, 0.22, 0.8, 16, 2, true), m: MX(0, 0.75, 0) },
     { geo: new THREE.CylinderGeometry(0.265, 0.265, 0.055, 16), m: MX(0, 1.17, 0) },
@@ -2048,6 +2056,14 @@ function* buildTile(t, data) {
   }
   /* Terre-pleins et îlots de circulation explicitement cartographiés dans OSM. */
   for (const c of data.md || []) gbR.poly(MAT.square, c, SW + 0.014, 3); // îlots minéraux
+  for (const c of data.bk || []) gbR.poly(MAT.grass, c, SW + 0.016, 4); // berges engazonnées OSM
+  for (const c of data.bs || []) if (c.length >= 8) {
+    gbR.quad(MAT.grass,
+      [c[0], -1.34, -c[1]], [c[2], -1.34, -c[3]],
+      [c[4], SW + 0.018, -c[5]], [c[6], SW + 0.018, -c[7]],
+      [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
+  } // faces en pente des berges OSM
+
   for (const c of data.mg || []) gbR.poly(MAT.grass, c, SW + 0.014, 4); // îlots engazonnés
   // Places et espaces piétons fermés dans OSM : dalles, pavés ou asphalte selon surface.
   for (const a of data.pa || []) gbR.poly(a[0] === 1 ? MAT.cobble : a[0] === 2 ? MAT.asphalt : MAT.square, a.slice(1), SW + 0.012, a[0] === 1 ? 2.2 : a[0] === 2 ? 7 : 3);
@@ -2059,8 +2075,9 @@ function* buildTile(t, data) {
   gbR.meshes(group, { cast: false });
   yield;
   /* sidewalks walk paths + parking spots + generated lamps & trees */
-  const grates = [], manholes = [], lampTall = [], lampStd = [], headsTall = [], headsStd = [], pools = [], trees = [], bollards = [], bins = [], benchW = [], benchM = [], shelters = [], tls = [], racks = [];
+  const grates = [], manholes = [], lampTall = [], lampStd = [], headsTall = [], headsStd = [], pools = [], trees = [], bollards = [], bins = [], benchW = [], benchM = [], shelters = [], tls = [], racks = [], fountains = [];
   const lampGrid = new Grid(10), treeGrid = new Grid(6);
+  const osmTreeGrid = new Grid(6); for (let i = 0; i < (data.t || []).length; i += 2) osmTreeGrid.add(data.t[i], data.t[i + 1], data.t[i], data.t[i + 1], 1);
   const okSpot = (x, y, r) => !insideBuilding(x, y) && !roadAtTile(t, x, y) && !inWaterQuick(x, y) && (r === undefined || true);
   const addLamp = (x, y, ang, tall) => {
     const near = new Set(); lampGrid.query(x - 9, y - 9, x + 9, y + 9, near); if (near.size) return;
@@ -2096,7 +2113,7 @@ function* buildTile(t, data) {
       /* boulevard trees (in metal tree grates) */
       if (kind === 0 && w >= 9 && !ped) for (let s = R() * 10; s < l; s += 11) for (const sg of [1, -1]) {
         const x = ax + ux * s + qx * sg * (w / 2 + 2.2), y = ay + uy * s + qy * sg * (w / 2 + 2.2);
-        const nb = new Set(); treeGrid.query(x - 5, y - 5, x + 5, y + 5, nb);
+        const nb = new Set(); treeGrid.query(x - 5, y - 5, x + 5, y + 5, nb); osmTreeGrid.query(x - 5, y - 5, x + 5, y + 5, nb);
         if (!nb.size && okSpot(x, y)) { treeGrid.add(x, y, x, y, 1); trees.push([x, y]); grates.push(MX(x, 0.004, -y, 0, Math.atan2(ux, uy), 0)); }
       }
       /* manhole covers */
@@ -2137,6 +2154,14 @@ function* buildTile(t, data) {
   t.trees = trees;
   t.parkSpots = t.parkSpots.filter(([x, y]) => { const nb = new Set(); lampGrid.query(x - 3, y - 3, x + 3, y + 3, nb); treeGrid.query(x - 3, y - 3, x + 3, y + 3, nb); return !nb.size && !insideBuilding(x, y); });
   /* furniture from OSM */
+  for (const f of data.fo || []) {
+    const [x, y] = f;
+    if (!insideBuilding(x, y) && !roadAtTile(t, x, y) && !inWaterQuick(x, y)) {
+      fountains.push(MX(x, 0, -y));
+      t.obs.add(x - 1.1, y - 1.1, x + 1.1, y + 1.1,
+        { p: [x-1,y-1,x+1,y-1,x+1,y+1,x-1,y+1], b: [x-1,y-1,x+1,y+1], h: 1.45, low: true });
+    }
+  }
   const signs = [];
   for (const f of data.f) {
     const [ty, x, y] = f;
@@ -2198,6 +2223,20 @@ function* buildTile(t, data) {
         chairs.push(MX(cx, 0, -cy, 0, Math.PI - h, 0)); t.seats.push({ x: cx, y: cy, h, taken: null, bar: sg.fam === 'bar', tile: t });
       }
       t.obs.add(x - 0.4, y - 0.4, x + 0.4, y + 0.4, { p: [x - 0.35, y - 0.35, x + 0.35, y - 0.35, x + 0.35, y + 0.35, x - 0.35, y + 0.35], b: [x - 0.35, y - 0.35, x + 0.35, y + 0.35], h: 1 });
+    }
+  }
+  /* Terrasses dont l'emprise est explicitement dessinée dans OSM. */
+  for (const poly of data.os || []) {
+    const b = polyBox(poly), step = 4.2;
+    let placed = 0;
+    for (let y = b[1] + step * 0.5; y < b[3] && placed < 24; y += step) {
+      for (let x = b[0] + step * 0.5; x < b[2] && placed < 24; x += step) {
+        if (!inPoly(poly, x, y) || insideBuilding(x, y) || onCarriageway(t, x, y, 1.8) || inWaterQuick(x, y)) continue;
+        tables.push(MX(x, 0, -y));
+        for (const sd of [-1, 1]) chairs.push(MX(x + sd * 0.68, 0, -y, 0, sd < 0 ? Math.PI/2 : -Math.PI/2, 0));
+        if (placed % 2 === 0) (placed % 4 === 0 ? parasolsA : parasolsB).push(MX(x, 0, -y));
+        placed++;
+      }
     }
   }
   const gbS = new GB();
@@ -2287,6 +2326,7 @@ function* buildTile(t, data) {
     eachInst(h, im => im.customDepthMaterial = MAT.leafDepth);
   }
   instanced(group, PROPS.bollard, MAT.bollard, bollards.concat(kerbBoll)); instanced(group, PROPS.grate, MAT.grate, grates); instanced(group, PROPS.bin, MAT.binGreen, bins);
+  instanced(group, PROPS.fountain, MAT.stone, fountains, true);
   instanced(group, PROPS.bistroTable, MAT.metal, tables, true); instanced(group, PROPS.chair, MAT.rattan, chairs, true);
   instanced(group, PROPS.parasol, MAT.parasolA, parasolsA, true); instanced(group, PROPS.parasol, MAT.parasolB, parasolsB, true); instanced(group, PROPS.parasolPole, MAT.metalLight, parasolsA.concat(parasolsB));
   instanced(group, PROPS.benchWood, MAT.wood, benchW); instanced(group, PROPS.benchMetal, MAT.metal, benchM); instanced(group, PROPS.bikeRack, MAT.metalLight, racks);
@@ -2407,12 +2447,7 @@ void main() {`).replace('tWP.y += terrainH(tWP.xz);', 'tWP.y += terrainH(tWP.xz)
     const p0 = ccw(w), p = [];
     for (let i = 0, n = p0.length / 2; i < n; i++) { const ax = p0[i * 2], ay = p0[i * 2 + 1], bx = p0[((i + 1) % n) * 2], by = p0[((i + 1) % n) * 2 + 1], k = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 12)); for (let q = 0; q < k; q++) p.push(ax + (bx - ax) * q / k, ay + (by - ay) * q / k); }
     gb.poly(MAT.water, p, -1.4, 1);
-    const n = p.length / 2;
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n, ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L, ny = (bx - ax) / L;
-      gb.quad(MAT.quay, [ax, -1.6, -ay], [bx, -1.6, -by], [bx, SW, -by], [ax, SW, -ay], [0, 0], [L / 3, 0], [L / 3, 0.55], [0, 0.55], [nx, 0, -ny]);
-    }
-  }
+    // Pas de mur automatique : les ouvrages verticaux viennent des barrières OSM explicites.\n  }
   const grp = new THREE.Group(); gb.meshes(grp, {}); scene.add(grp);
 }
 

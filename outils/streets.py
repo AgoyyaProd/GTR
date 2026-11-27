@@ -5,9 +5,10 @@ import json, glob, os, math, pickle, numpy as np
 import shapely
 from shapely.geometry import LineString, Polygon, Point, box, MultiPolygon, MultiLineString
 from shapely.geometry.polygon import orient
-from shapely.ops import unary_union
+from shapely.ops import unary_union, nearest_points
 from shapely.strtree import STRtree
 from street_geometry import merge_corridors
+from urban_osm import deduplicate_features, FURNITURE_CODES
 import mapbox_earcut as earcut
 
 G = os.environ.get('GTR_ROOT', '/home/claude/g2')
@@ -598,6 +599,103 @@ for b in S['barriers']:
     for a in range(0, len(pts) - 1, 12):  # chunks so long walls are split between tiles
         ch = pts[a:a + 13]; mx, my = ch[len(ch) // 2]; tk = tile_of(mx, my)
         if tk in tiles: tiles[tk]['fn'].append([k, round(h, 1)] + [round(c, 2) for p in ch for c in p])
+
+# ---- mobilier urbain OSM : positions réelles, dédoublonnées avec t/f ----
+urban_counts = {"extracted": len(S.get("urban_features", [])), "duplicates": 0, "exported": 0, "by_kind": {}}
+for (i, j), d in tiles.items():
+    d.setdefault("t", [])
+    d.setdefault("f", [])
+    ox, oy = BX0 + i * T, BY0 + j * T
+    local = [f for f in S.get("urban_features", []) if ox <= f["x"] < ox + T and oy <= f["y"] < oy + T]
+    kept, duplicates = deduplicate_features(local, d["t"], d["f"], radius=2.0)
+    urban_counts["duplicates"] += duplicates
+    for feature in kept:
+        kind, x, y = feature["kind"], round(feature["x"], 2), round(feature["y"], 2)
+        if kind == "tree":
+            d["t"].extend([x, y])
+        elif kind in FURNITURE_CODES:
+            d["f"].append([FURNITURE_CODES[kind], x, y])
+        elif kind == "fountain":
+            d.setdefault("fo", []).append([x, y])
+        urban_counts["exported"] += 1
+        urban_counts["by_kind"][kind] = urban_counts["by_kind"].get(kind, 0) + 1
+
+# Terrasses OSM fermées : seules les emprises explicitement cartographiées.
+for area in S.get("outdoor_seating_areas", []):
+    pts = area.get("pts", [])
+    if len(pts) < 4 or pts[0] != pts[-1]:
+        continue
+    try:
+        pg = Polygon(pts).buffer(0)
+        if pg.area < 4 or pg.area > 2500:
+            continue
+    except Exception:
+        continue
+    minx, miny, maxx, maxy = pg.bounds
+    for (i, j), d in tiles.items():
+        ox, oy = BX0 + i * T, BY0 + j * T
+        if maxx < ox or minx > ox + T or maxy < oy or miny > oy + T:
+            continue
+        part = pg.intersection(box(ox, oy, ox + T, oy + T))
+        for piece in (part.geoms if hasattr(part, "geoms") else [part]):
+            if piece.geom_type == "Polygon" and piece.area > 1:
+                d.setdefault("os", []).append([round(c, 2) for xy in list(piece.exterior.coords)[:-1] for c in xy])
+
+# Berges OSM natural=bank / landuse=grass, limitées au voisinage de l'eau.
+bank_parts = []
+for area in S.get("bank_areas", []):
+    pts = area.get("pts", [])
+    if len(pts) >= 4 and pts[0] == pts[-1]:
+        try:
+            pg = Polygon(pts).buffer(0)
+            if pg.area > 2:
+                bank_parts.append(pg)
+        except Exception:
+            pass
+bank_union = unary_union(bank_parts) if bank_parts else Polygon()
+near_water_banks = bank_union.intersection(water.buffer(12)) if not bank_union.is_empty and not water.is_empty else Polygon()
+bank_count = bank_slope_count = 0
+for (i, j), d in tiles.items():
+    ox, oy = BX0 + i * T, BY0 + j * T
+    part = near_water_banks.intersection(box(ox, oy, ox + T, oy + T))
+    for pg in (part.geoms if hasattr(part, "geoms") else [part]):
+        if pg.geom_type != "Polygon" or pg.area <= 1:
+            continue
+        d.setdefault("bk", []).append([round(c, 2) for xy in list(pg.exterior.coords)[:-1] for c in xy])
+        bank_count += 1
+        # Rampe de berge : face en pente entre la limite d'eau et le haut
+        # de la zone natural=bank / landuse=grass, jamais un mur vertical.
+        edge = shapely.segmentize(LineString(pg.exterior.coords), 3.0)
+        coords = list(edge.coords)
+        for a, b in zip(coords, coords[1:]):
+            seg = LineString([a, b])
+            if seg.length < 0.35 or seg.distance(water.boundary) > 10:
+                continue
+            wa = nearest_points(Point(a), water.boundary)[1]
+            wb = nearest_points(Point(b), water.boundary)[1]
+            if max(wa.distance(Point(a)), wb.distance(Point(b))) < 0.35:
+                continue
+            quad = Polygon([(wa.x, wa.y), (wb.x, wb.y), (b[0], b[1]), (a[0], a[1])]).buffer(0)
+            if quad.is_empty or quad.area < 0.08:
+                continue
+            d.setdefault("bs", []).append([round(c, 2) for xy in list(quad.exterior.coords)[:-1] for c in xy])
+            bank_slope_count += 1
+
+# Audit des tabliers : aucun changement à d['r'] ou à l'indexation de bh.
+bridge_total = bridge_with_bh = 0
+for d in tiles.values():
+    heights = d.get("bh") or {}
+    for ri, road in enumerate(d["r"]):
+        if len(road) > 2 and (road[2] & 2):
+            bridge_total += 1
+            has_bh = (bool(heights.get(str(ri)) or heights.get(ri))
+                      if isinstance(heights, dict)
+                      else (ri < len(heights) and bool(heights[ri])))
+            if has_bh:
+                bridge_with_bh += 1
+print("OSM urban features", urban_counts, "outdoor seating", sum(len(d.get("os", [])) for d in tiles.values()),
+      "bank polygons", bank_count, "bank slope faces", bank_slope_count, flush=True)
+print("Bridge deck audit", bridge_with_bh, "/", bridge_total, "records with bh", flush=True)
 
 for (i, j), d in tiles.items():
     ox, oy = BX0 + i * T, BY0 + j * T; bx = box(ox, oy, ox + T, oy + T)
