@@ -1,0 +1,9 @@
+Environnements HDR (Poly Haven, licence CC0) pour l'éclairage par image (IBL) et les reflets :
+- jour_rue.hdr : German Town Street (rue pavée européenne, jour)
+- jour_ciel.hdr : Citrus Orchard Road (ciel pur, jour)
+- nuit_rue.hdr : Cobblestone Street Night (rue pavée, nuit, lampadaires)
+- nuit_ciel.hdr : Qwantani Night (ciel de nuit)
+Charger avec THREE.RGBELoader (lib/ex/loaders/RGBELoader.js) puis PMREMGenerator.fromEquirectangular.
+Bibliothèques three.js r128 ajoutées (examples/js, non chargées par index.html tant qu'on ne les branche pas) :
+lib/ex/loaders/RGBELoader.js, lib/ex/objects/Sky.js, lib/ex/postprocessing/SAOPass.js,
+lib/ex/shaders/SAOShader.js, DepthLimitedBlurShader.js, UnpackDepthRGBAShader.js.
