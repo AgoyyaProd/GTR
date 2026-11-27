@@ -46,7 +46,7 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         if t.get("highway") == "crossing":
             crossings.append({"id": node_id, "x": x, "y": y, "crossing": t.get("crossing"), "markings": t.get("crossing:markings"), "kerb": t.get("kerb"), "lowered": t.get("kerb:lowered")})
         if t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island":
-            medians.append({"pts": [(x, y)], "kind": "node"})
+            medians.append({"pts": [(x, y)], "kind": "node", "surface": t.get("surface"), "landuse": t.get("landuse"), "material": "grass" if t.get("surface") == "grass" or t.get("landuse") == "grass" else "paved"})
         el.clear()
 
     elif el.tag == "way":
@@ -58,12 +58,13 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         pts = [nodes[r] for r in refs if r in nodes]
         if len(pts) >= 2 and len(pts) == len(refs):
             if refs[0] == refs[-1] and (t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island" or t.get("landuse") == "grass"):
-                medians.append({"pts": pts, "kind": "area", "tagged": t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island"})
+                medians.append({"pts": pts, "kind": "area", "tagged": t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island", "surface": t.get("surface"), "landuse": t.get("landuse"), "material": "grass" if t.get("surface") == "grass" or t.get("landuse") == "grass" else "paved"})
             hw = t.get("highway")
             if hw and hw != "steps":
                 roads.append({
                     "id": el.get("id"), "name": t.get("name"), "highway": hw,
                     "width": t.get("width"), "est_width": t.get("est_width"), "lanes": t.get("lanes"),
+                    "turn_lanes": t.get("turn:lanes"), "turn_lanes_forward": t.get("turn:lanes:forward"), "turn_lanes_backward": t.get("turn:lanes:backward"),
                     "sidewalk": t.get("sidewalk"), "sidewalk_left": t.get("sidewalk:left"),
                     "sidewalk_right": t.get("sidewalk:right"),
                     "sidewalk_left_width": t.get("sidewalk:left:width"), "sidewalk_right_width": t.get("sidewalk:right:width"),
