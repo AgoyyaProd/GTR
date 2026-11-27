@@ -55,3 +55,23 @@ Données © contributeurs OpenStreetMap (ODbL).
   highway=pedestrian + area=yes, place=square, landuse/leisure=plaza,
   amenity=marketplace). Le matériau suit surface : pavés, asphalte ou dalles ;
   les surfaces végétales sont exclues de cette couche minérale.
+
+
+ÉTAPE 3 — VILAINE, QUAIS ET PONTS (27/11/2026)
+================================================
+
+- Flèches : calcul sur chaque nœud OSM qui rejoint un cœur jc, y compris au
+  milieu d'une way ; une flèche par voie, tout droit par défaut si turn:lanes
+  manque.
+- Extraction des surfaces OSM natural=water / waterway=riverbank et des axes
+  river/canal/stream ; les surfaces d'eau complètent le masque de découpe des
+  chaussées et bordures.
+- Extraction man_made=quay et embankment comme murs de quai en pierre, avec
+  couronnement et sans garde-corps automatique. Les garde-corps OSM explicites
+  restent traités séparément.
+- Les marches highway=steps et murs retaining_wall déjà extraits sont
+  conservés ; les tabliers de pont utilisent les altitudes bh par segment.
+
+Régénérer : street_osm.py, streets.py, gates.py, dem_detail3.py. Contrôler les
+ponts de la Vilaine, les quais rive nord/sud et les escaliers descendant vers
+l'eau. Données © contributeurs OpenStreetMap (ODbL).
