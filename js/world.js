@@ -1019,19 +1019,21 @@ function addRoad(gb0, t, r) {
       gb.quad(MAT.rail, [ax + ox - rx, SW + 0.15, -(ay + oy - ry)], [bx + ox - rx, SW + 0.15, -(by + oy - ry)], [bx + ox + rx, SW + 0.15, -(by + oy + ry)], [ax + ox + rx, SW + 0.15, -(ay + oy + ry)], [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
     }
     if ((flags & 2) && kind !== 2 && kind !== 4) {
-      /* Bridge deck: thin soffit, visible edge fascia and pedestrian parapet. */
+      /* Bridge deck: thin soffit, visible edge fascia and pedestrian parapet.
+         (qx, qy) vaut déjà hw : on repasse par le vecteur unitaire (ux2, uy2). */
+      const ux2 = qx / hw, uy2 = qy / hw;
       const inner = Math.max(0.18, Math.min(0.32, w * 0.035));
       gb.quad(MAT.stone,
-        [ax + qx * (hw - inner), y - 0.48, -(ay + qy * (hw - inner))],
-        [bx + qx * (hw - inner), y - 0.48, -(by + qy * (hw - inner))],
-        [bx - qx * (hw - inner), y - 0.48, -(by - qy * (hw - inner))],
-        [ax - qx * (hw - inner), y - 0.48, -(ay - qy * (hw - inner))],
+        [ax + ux2 * (hw - inner), y - 0.48, -(ay + uy2 * (hw - inner))],
+        [bx + ux2 * (hw - inner), y - 0.48, -(by + uy2 * (hw - inner))],
+        [bx - ux2 * (hw - inner), y - 0.48, -(by - uy2 * (hw - inner))],
+        [ax - ux2 * (hw - inner), y - 0.48, -(ay - uy2 * (hw - inner))],
         [0, 0], [l / 3, 0], [l / 3, w / 3], [0, w / 3], [0, 1, 0]);
       for (const sg of [1, -1]) {
-        const ex = ax + qx * sg * hw, ey = ay + qy * sg * hw;
-        const fx = bx + qx * sg * hw, fy = by + qy * sg * hw;
-        const ix = ax + qx * sg * (hw - inner), iy = ay + qy * sg * (hw - inner);
-        const jx = bx + qx * sg * (hw - inner), jy = by + qy * sg * (hw - inner);
+        const ex = ax + ux2 * sg * hw, ey = ay + uy2 * sg * hw;
+        const fx = bx + ux2 * sg * hw, fy = by + uy2 * sg * hw;
+        const ix = ax + ux2 * sg * (hw - inner), iy = ay + uy2 * sg * (hw - inner);
+        const jx = bx + ux2 * sg * (hw - inner), jy = by + uy2 * sg * (hw - inner);
         const N = [qx * sg, 0, -qy * sg];
         gb.quad(MAT.stone,
           [ex, y - 0.48, -ey], [fx, y - 0.48, -fy],
@@ -1041,7 +1043,7 @@ function addRoad(gb0, t, r) {
           [ex, y, -ey], [fx, y, -fy],
           [fx, y + 1.05, -fy], [ex, y + 1.05, -ey],
           [0, 0], [l / 3, 0], [l / 3, 0.35], [0, 0.35], N);
-        const ox = qx * sg * 0.08, oy = qy * sg * 0.08;
+        const ox = ux2 * sg * 0.08, oy = uy2 * sg * 0.08;
         gb.quad(MAT.stone,
           [ex + ox, y + 1.05, -(ey + oy)], [fx + ox, y + 1.05, -(fy + oy)],
           [fx - ox, y + 1.05, -(fy - oy)], [ex - ox, y + 1.05, -(ey - oy)],
