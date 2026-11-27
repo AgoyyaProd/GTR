@@ -1977,6 +1977,7 @@ function* buildTile(t, data) {
   const gbB = new GB(), gbR = new GB();
   /* road segments index first (needed for shops & curbs) */
   t.jc = data.jc || [];
+  t.xc = data.xc || [];
   data.r.forEach((r, ri) => { if (data.bh && data.bh[ri]) r.bh = data.bh[ri]; });
   for (const r of data.r) {
     const p = r.slice(4);
