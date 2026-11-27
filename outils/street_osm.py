@@ -93,8 +93,7 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
                 if key.startswith("restriction:") and key != "restriction:conditional"
             }
             primary = (t.get("restriction") or t.get("restriction:motorcar")
-                       or t.get("restriction:motor_vehicle") or t.get("restriction:bicycle")
-                       or t.get("restriction:bus") or t.get("restriction:foot"))
+                       or t.get("restriction:motor_vehicle"))
             turn_restrictions.append({
                 "id": el.get("id"),
                 "restriction": primary,
