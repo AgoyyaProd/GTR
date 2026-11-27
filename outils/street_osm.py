@@ -84,9 +84,22 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
                 {"type": c.get("type"), "ref": c.get("ref"), "role": c.get("role")}
                 for c in el if c.tag == "member"
             ]
+            # Conserve chaque variante par mode : restriction:bicycle, :bus,
+            # :motorcar, :motor_vehicle, etc. Le champ historique "restriction"
+            # reste prioritaire pour les consommateurs existants.
+            restriction_by_mode = {
+                key[len("restriction:"):]: value
+                for key, value in t.items()
+                if key.startswith("restriction:") and key != "restriction:conditional"
+                and key != "restriction:conditional"
+            }
+            primary = (t.get("restriction") or t.get("restriction:motorcar")
+                       or t.get("restriction:motor_vehicle") or t.get("restriction:bicycle")
+                       or t.get("restriction:bus") or t.get("restriction:foot"))
             turn_restrictions.append({
                 "id": el.get("id"),
-                "restriction": t.get("restriction") or t.get("restriction:motorcar") or t.get("restriction:motor_vehicle"),
+                "restriction": primary,
+                "restriction_by_mode": restriction_by_mode,
                 "restriction_conditional": t.get("restriction:conditional"),
                 "except": t.get("except"),
                 "tags": t,
