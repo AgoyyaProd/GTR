@@ -35,7 +35,7 @@ unmatched_named = 0
 if osm_road_tree is not None:
     for d in tiles.values():
         for r in d['r']:
-            if r[1] not in (0, 1, 3) or len(r) < 8:
+            if r[1] not in (0, 3) or len(r) < 8:
                 continue
             pts = list(zip(r[4::2], r[5::2]))
             if len(pts) < 2:
@@ -81,6 +81,36 @@ print('buildings', len(bpolys), flush=True)
 bedges = [p.exterior for p in bpolys]
 btree = STRtree(bedges)
 swl = [LineString(s['pts']) for s in S['sidewalks'] if len(s['pts']) >= 2]
+# Explicit sidewalk=* on a road is a centreline offset from the carriageway edge.
+# Only mapped sides are generated; "separate" is handled by the dedicated footway.
+for road in S.get('roads', []):
+    pts = road.get('pts', [])
+    if len(pts) < 2:
+        continue
+    common = road.get('sidewalk')
+    sides = (road.get('sidewalk_left', common), road.get('sidewalk_right', common))
+    if not any(v not in (None, 'no', 'none', 'separate') for v in sides):
+        continue
+    line = LineString(pts)
+    try:
+        width = float(road.get('width') or road.get('est_width') or 0)
+    except ValueError:
+        width = 0
+    try:
+        lanes = float(road.get('lanes') or 0)
+    except ValueError:
+        lanes = 0
+    half = width / 2 if width > 0 else (lanes * 1.4 if lanes > 0 else 2.5)
+    offset = half + 1.5
+    for side, value in zip(('left', 'right'), sides):
+        if value in (None, 'no', 'none', 'separate'):
+            continue
+        try:
+            shifted = line.parallel_offset(offset, side, join_style='mitre')
+            parts = list(shifted.geoms) if hasattr(shifted, 'geoms') else [shifted]
+            swl.extend(g for g in parts if g.geom_type == 'LineString' and g.length > 1)
+        except Exception:
+            pass
 swtree = STRtree(swl)
 print('sidewalk lines', len(swl), flush=True)
 
