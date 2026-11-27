@@ -30,9 +30,9 @@ def main():
     assert all(0 <= n < g["stats"]["nodes"] for n in c["to"])
     assert set(c["way_id"]) == {"10", "11"}
     # One-way residential: only forward edges, all modes allowed there.
-    for i, way in enumerate(c["way_id"]):
-        if way == "10":
-            assert c["mask"][i] & MOD.CAR
+    way10_masks = [c["mask"][i] for i, way in enumerate(c["way_id"]) if way == "10"]
+    assert any(mask & MOD.CAR for mask in way10_masks)
+    assert any(not (mask & MOD.CAR) for mask in way10_masks)  # reverse foot-only arcs
     # Layer split means node 2 appears twice.
     assert sum(1 for n in g["nodes"]["osm_id"] if n == "2") == 2
     assert "12" not in c["way_id"]
