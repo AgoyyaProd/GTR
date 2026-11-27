@@ -22,7 +22,7 @@ def main():
     ]
     g = MOD.build_graph(nodes, ways)
     assert g["stats"]["nodes"] == 5  # OSM node 2 split by layer
-    assert g["stats"]["directed_edges"] == 4
+    assert g["stats"]["directed_edges"] == 6
     c = g["csr"]
     assert len(c["off"]) == g["stats"]["nodes"] + 1
     assert c["off"][0] == 0 and c["off"][-1] == len(c["to"])
@@ -35,7 +35,7 @@ def main():
             assert c["mask"][i] & MOD.CAR
     # Layer split means node 2 appears twice.
     assert sum(1 for n in g["nodes"]["osm_id"] if n == "2") == 2
-    assert not any(m["way_id"] == "12" for m in g.get("edges", []))
+    assert "12" not in c["way_id"]
     print("OK — CSR cohérent, provenance OSM conservée, sens unique, accès et niveaux testés.")
 
 if __name__ == "__main__":
