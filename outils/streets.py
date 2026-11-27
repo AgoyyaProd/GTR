@@ -9,13 +9,13 @@ from shapely.ops import unary_union
 from shapely.strtree import STRtree
 import mapbox_earcut as earcut
 
-G = '/home/claude/g2'
+G = os.environ.get('GTR_ROOT', '/home/claude/g2')
 gd = json.load(open(f'{G}/global.json'))
 BX0, BY0, BX1, BY1 = gd['bounds']; T = gd['tile']
 tiles = {}
 for f in sorted(glob.glob(f'{G}/tiles/t*.json')):
     i, j = map(int, os.path.basename(f)[1:-5].split('_')); tiles[(i, j)] = json.load(open(f))
-S = pickle.load(open('/home/claude/tools/street_osm.pkl', 'rb'))
+S = pickle.load(open(os.environ.get('GTR_STREET_OSM_PICKLE', '/home/claude/tools/street_osm.pkl'), 'rb'))
 from street_profiles import road_width
 # Match simplified tile centerlines back to their source OSM way. A name match
 # is required: nearest geometry alone can silently assign a parallel street's width.
