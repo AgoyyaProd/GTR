@@ -191,7 +191,7 @@ for road in S.get('roads', []):
             if len(turns) != per_dir: turns = ['through'] * per_dir
             for li,turn_tag in enumerate(turns[:per_dir]):
                 turn = 0.42 if 'left' in turn_tag else -0.42 if 'right' in turn_tag else 0.0
-                lateral = width/2-(li+0.5)*lane_w if oneway or reverse_only else -width/2+(per_dir-li-0.5)*lane_w
+                lateral = width/2-(li+0.5)*lane_w if oneway or reverse_only else -(li+0.5)*lane_w
                 cx,cy=pos.x+nx*lateral,pos.y+ny*lateral
                 if any(math.hypot(cx-qx,cy-qy)<radius+1.0 for qx,qy,radius in crossing_centres): continue
                 pg=arrow_polygon(cx,cy,ux,uy,turn); tk=tile_of(cx,cy)
