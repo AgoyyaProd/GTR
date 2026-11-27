@@ -68,6 +68,8 @@ def main():
         assert by_id["9002"]["missing_members"] == [{"type": "way", "ref": "999", "role": "to"}]
         assert any(m["role"] == "via" and m["type"] == "way" for m in by_id["9003"]["members"])
         assert by_id["9004"]["tags"]["restriction:bicycle"] == "only_straight_on"
+        assert by_id["9004"]["restriction"] == "only_straight_on"
+        assert by_id["9004"]["restriction_by_mode"] == {"bicycle": "only_straight_on"}
         assert pkl.exists()
     print("OK — 4 restrictions extraites, relation incomplète signalée, via-way et restriction vélo conservés.")
 
