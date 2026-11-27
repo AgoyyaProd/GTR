@@ -213,10 +213,9 @@ for road in S.get('roads', []):
             else: turn = 0.0
             lateral = ((per_dir-1)/2-li) * lane_w
             cx,cy=pos.x+nx*lateral,pos.y+ny*lateral
-            if any(math.hypot(cx-qx,cy-qy)<4.2 for qx,qy,_ in crossing_centres):
-                continue
             pg=arrow_polygon(cx,cy,ux,uy,turn)
-            if pg.area > 0.1: arrow_records[tile_of(cx,cy)].append(pg)
+            tk = tile_of(cx,cy)
+            if pg.area > 0.1 and tk in arrow_records: arrow_records[tk].append(pg)
 print('OSM approach arrows', sum(map(len, arrow_records.values())), flush=True)
 
 # Zébras : uniquement les nœuds OSM explicitement marqués. Rattachement à la
@@ -329,6 +328,9 @@ for tk, d in tiles.items():
     d['ar'] = []
     tilebox = box(ox0, oy0, ox0+T, oy0+T)
     for pg in arrow_records.get(tk, []):
+        # Un zébra prime sur une flèche : ne jamais superposer les deux marquages.
+        if any(pg.distance(Point(x, y)) < radius + 0.8 for x, y, radius in crossing_centres):
+            continue
         part = pg.intersection(tilebox)
         parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
         for ap in parts:
