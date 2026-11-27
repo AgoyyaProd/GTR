@@ -43,7 +43,12 @@ async function loadEnvironments(progress) {
     try {
       const hdr = await hdrLoader.loadAsync(file);
       hdr.mapping = THREE.EquirectangularReflectionMapping;
-      if (key === 'env_day') horizonDay = hdrHorizonColor(hdr);
+      if (key === 'sky_horizon') {
+        horizonDay = hdrHorizonColor(hdr);
+        hdr.dispose();
+        progress && progress(key);
+        return null;
+      }
       const target = pmrem.fromEquirectangular(hdr);
       hdr.dispose();
       progress && progress(key);
@@ -68,8 +73,6 @@ async function loadEnvironments(progress) {
     ]);
     ENV.env_day = results[0];
     ENV.env_night = results[1];
-    horizonDay = hdrHorizonColor({ image: results[2] && results[2].image, type: results[2] && results[2].type });
-    if (results[2]) results[2].dispose();
     ENV.sky_day = await loadTex('tex/sky_day.jpg', true);
   } finally {
     pmrem.dispose();
