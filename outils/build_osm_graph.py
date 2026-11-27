@@ -61,17 +61,14 @@ def mode_allowed(tags, mode):
 
 
 def layer_of(tags):
-    # Explicit OSM layer wins. bridge/tunnel defaults prevent false junctions
-    # where a crossing has no shared topological connection in the source.
+    # Only explicit OSM layer values split vertices. Inferring a level from
+    # bridge/tunnel=yes disconnects shared endpoints from adjoining ramp/road
+    # ways; bridge/tunnel remain metadata for later topology validation.
     try:
         if "layer" in tags:
             return int(tags["layer"])
     except ValueError:
         pass
-    if tags.get("bridge") not in (None, "no", "false", "0"):
-        return 1
-    if tags.get("tunnel") not in (None, "no", "false", "0"):
-        return -1
     return 0
 
 
