@@ -1018,13 +1018,34 @@ function addRoad(gb0, t, r) {
       const ox = -dy / l * o, oy = dx / l * o, rx = -dy / l * 0.04, ry = dx / l * 0.04;
       gb.quad(MAT.rail, [ax + ox - rx, SW + 0.15, -(ay + oy - ry)], [bx + ox - rx, SW + 0.15, -(by + oy - ry)], [bx + ox + rx, SW + 0.15, -(by + oy + ry)], [ax + ox + rx, SW + 0.15, -(ay + oy + ry)], [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
     }
-    if ((flags & 2) && kind !== 2 && kind !== 4) { // bridge parapets + deck side
+    if ((flags & 2) && kind !== 2 && kind !== 4) {
+      /* Bridge deck: thin soffit, visible edge fascia and pedestrian parapet. */
+      const inner = Math.max(0.18, Math.min(0.32, w * 0.035));
+      gb.quad(MAT.stone,
+        [ax + qx * (hw - inner), y - 0.48, -(ay + qy * (hw - inner))],
+        [bx + qx * (hw - inner), y - 0.48, -(by + qy * (hw - inner))],
+        [bx - qx * (hw - inner), y - 0.48, -(by - qy * (hw - inner))],
+        [ax - qx * (hw - inner), y - 0.48, -(ay - qy * (hw - inner))],
+        [0, 0], [l / 3, 0], [l / 3, w / 3], [0, w / 3], [0, 1, 0]);
       for (const sg of [1, -1]) {
-        const ex = ax + qx * sg, ey = ay + qy * sg, fx = bx + qx * sg, fy = by + qy * sg, N = [qx * sg, 0, -qy * sg];
-        gb.quad(MAT.stone, [ex, -1.0, -ey], [fx, -1.0, -fy], [fx, 1.0, -fy], [ex, 1.0, -ey], [0, 0], [l / 3, 0], [l / 3, 0.6], [0, 0.6], N);
-        const ix = ex - qx / hw * 0.3 * sg, iy = ey - qy / hw * 0.3 * sg, jx = fx - qx / hw * 0.3 * sg, jy = fy - qy / hw * 0.3 * sg;
-        gb.quad(MAT.stone, [ex, 1.0, -ey], [fx, 1.0, -fy], [jx, 1.0, -jy], [ix, 1.0, -iy], [0, 0], [l / 3, 0], [l / 3, 0.1], [0, 0.1], [0, 1, 0]);
-        gb.quad(MAT.stone, [ix, y, -iy], [jx, y, -jy], [jx, 1.0, -jy], [ix, 1.0, -iy], [0, 0], [l / 3, 0], [l / 3, 0.3], [0, 0.3], [-N[0], 0, -N[2]]);
+        const ex = ax + qx * sg * hw, ey = ay + qy * sg * hw;
+        const fx = bx + qx * sg * hw, fy = by + qy * sg * hw;
+        const ix = ax + qx * sg * (hw - inner), iy = ay + qy * sg * (hw - inner);
+        const jx = bx + qx * sg * (hw - inner), jy = by + qy * sg * (hw - inner);
+        const N = [qx * sg, 0, -qy * sg];
+        gb.quad(MAT.stone,
+          [ex, y - 0.48, -ey], [fx, y - 0.48, -fy],
+          [fx, y, -fy], [ex, y, -ey],
+          [0, 0], [l / 3, 0], [l / 3, 0.24], [0, 0.24], N);
+        gb.quad(MAT.stone,
+          [ex, y, -ey], [fx, y, -fy],
+          [fx, y + 1.05, -fy], [ex, y + 1.05, -ey],
+          [0, 0], [l / 3, 0], [l / 3, 0.35], [0, 0.35], N);
+        const ox = qx * sg * 0.08, oy = qy * sg * 0.08;
+        gb.quad(MAT.stone,
+          [ex + ox, y + 1.05, -(ey + oy)], [fx + ox, y + 1.05, -(fy + oy)],
+          [fx - ox, y + 1.05, -(fy - oy)], [ex - ox, y + 1.05, -(ey - oy)],
+          [0, 0], [l / 3, 0], [l / 3, 0.12], [0, 0.12], [0, 1, 0]);
       }
     }
   }

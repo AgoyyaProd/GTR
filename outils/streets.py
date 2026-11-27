@@ -48,10 +48,25 @@ if osm_road_tree is not None:
             for ci in candidates:
                 source = osm_road_records[int(ci)]
                 dist = osm_road_lines[int(ci)].distance(mid)
-                same_name = bool(r[3] and source.get('name') == r[3])
-                if not same_name or dist > 12:
+                source_name = source.get('name')
+                same_name = bool(r[3] and source_name == r[3])
+                # Named roads must agree. Unnamed roads may be matched only at
+                # very close range and with a clear geometric winner; this avoids
+                # borrowing the width of a parallel carriageway.
+                if r[3] and not same_name:
                     continue
-                score = dist
+                if dist > (12 if same_name else 3.0):
+                    continue
+                source_line = osm_road_lines[int(ci)]
+                source_coords = list(source_line.coords)
+                def heading(coords):
+                    ax, ay = coords[0]; bx, by = coords[-1]
+                    return math.atan2(by - ay, bx - ax)
+                delta = abs((heading(pts) - heading(source_coords) + math.pi) % (2 * math.pi) - math.pi)
+                alignment = min(delta, abs(math.pi - delta))
+                if alignment > math.radians(22):
+                    continue
+                score = dist + (0 if same_name else 1.5) + alignment * 2
                 if score < best_score:
                     best, best_score = source, score
             if best is not None:
