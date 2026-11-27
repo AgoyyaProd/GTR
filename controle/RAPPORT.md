@@ -1,6 +1,6 @@
 # Contrôle automatique — OK avec réserves
 
-Commit `c31c2eb` · 2026-11-26 16:22 UTC · chargement 83 s · 0.286 images/s en rendu logiciel
+Commit `4616e66` · 2026-11-27 17:50 UTC · chargement 70 s · 0.305 images/s en rendu logiciel
 
 ## Réserves
 - Rue Saint-Michel, jour : image délavée (luminosité moyenne 0.611, saturation 0.184 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
@@ -8,7 +8,8 @@ Commit `c31c2eb` · 2026-11-26 16:22 UTC · chargement 83 s · 0.286 images/s en
 - Halles des Lices, jour : image délavée (luminosité moyenne 0.649, saturation 0.159 ; une photo de rue en plein jour tourne autour de 0,40-0,50 de luminosité et 0,20-0,30 de saturation).
 
 ## Rendu
-Images par seconde : 0.286 sur une machine de vitesse 12.171 (référence en construction, 1/3 contrôles).
+Images par seconde : 0.305 sur une machine de vitesse 11.619 (référence en construction, 2/3 contrôles).
+**Changement visuel : limité.** 1 vue(s) sur 6 changent nettement (plus de 10 % de l'image).
 
 ## Missions
 | Mission | Résultat |
@@ -34,12 +35,21 @@ Changement = part de l’image qui change nettement par rapport au contrôle pr�
 
 | Vue | Changement | Luminosité | Contraste | Saturation | Quasi blanc |
 |---|---|---|---|---|---|
-| Rue Maréchal Joffre, jour | — | 0.519 | 0.233 | 0.268 | 4 % |
-| Rue Saint-Michel, jour | — | 0.611 | 0.193 | 0.184 | 10 % |
-| Place des Lices, escalier, jour | — | 0.631 | 0.155 | 0.172 | 8 % |
-| Halles des Lices, jour | — | 0.649 | 0.181 | 0.159 | 17 % |
-| Place des Lices, nuit sous la pluie | — | 0.217 | 0.141 | 0.354 | 0 % |
-| Toits du centre vus d’en haut | — | 0.666 | 0.149 | 0.152 | 4 % |
+| Rue Maréchal Joffre, jour | 15 % | 0.518 (-0.001) | 0.226 (-0.007) | 0.272 (+0.004) | 4 % |
+| Rue Saint-Michel, jour | 0 % | 0.611 (+0.0) | 0.193 (+0.0) | 0.184 (+0.0) | 10 % |
+| Place des Lices, escalier, jour | 0 % | 0.631 (+0.0) | 0.155 (+0.0) | 0.172 (+0.0) | 8 % |
+| Halles des Lices, jour | 0 % | 0.649 (+0.0) | 0.181 (+0.0) | 0.159 (+0.0) | 17 % |
+| Place des Lices, nuit sous la pluie | 3 % | 0.217 (+0.0) | 0.141 (+0.0) | 0.354 (+0.0) | 0 % |
+| Toits du centre vus d’en haut | 0 % | 0.666 (+0.0) | 0.149 (+0.0) | 0.152 (+0.0) | 4 % |
+
+Comparaisons avant (en haut) / après (en bas) :
+
+![halles.jpg](comparaison/halles.jpg)
+![joffre.jpg](comparaison/joffre.jpg)
+![lices.jpg](comparaison/lices.jpg)
+![lices_nuit.jpg](comparaison/lices_nuit.jpg)
+![saint_michel.jpg](comparaison/saint_michel.jpg)
+![toits.jpg](comparaison/toits.jpg)
 
 Captures actuelles :
 
