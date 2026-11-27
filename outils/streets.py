@@ -368,11 +368,44 @@ for m in S.get('medians', []):
                 (median_grass_parts if m.get('material') == 'grass' else median_paved_parts).append(pg)
 median_grass = unary_union(median_grass_parts) if median_grass_parts else Polygon()
 median_paved = unary_union(median_paved_parts) if median_paved_parts else Polygon()
+
+# Places et espaces piétons explicitement fermés dans OSM (pas de polygones
+# déduits des rues). Les tags surface déterminent le revêtement rendu.
+pedestrian_area_geoms = {0: [], 1: [], 2: []}  # dalles, pavés, asphalte
+for area in S.get('pedestrian_areas', []):
+    pts = area.get('pts', [])
+    if len(pts) < 4 or pts[0] != pts[-1]:
+        continue
+    surface = (area.get('surface') or '').lower()
+    if surface in ('grass', 'earth', 'dirt', 'mud', 'sand') or area.get('landuse') == 'grass':
+        continue  # ne pas transformer un espace vert en place minérale
+    try:
+        pg = Polygon(pts).buffer(0)
+        if pg.area < 20 or pg.area > 60000:
+            continue
+        if surface in ('sett', 'cobblestone', 'unhewn_cobblestone', 'cobble'):
+            code = 1
+        elif surface in ('asphalt', 'chipseal'):
+            code = 2
+        else:
+            code = 0  # paving_stones, concrete, granite ou surface non renseignée
+        pedestrian_area_geoms[code].append(pg)
+    except Exception:
+        continue
+print('OSM pedestrian plazas', sum(map(len, pedestrian_area_geoms.values())), flush=True)
 for tk, d in tiles.items():
     ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
     tilebox = box(ox0, oy0, ox0+T, oy0+T)
     d['md'] = []  # îlots minéraux : pavés / dalles, jamais MAT.grass
     d['mg'] = []  # uniquement landuse=grass ou surface=grass
+    d['pa'] = []  # polygones de places piétonnes OSM : [matériau, coordonnées]
+    for code, geoms in pedestrian_area_geoms.items():
+        for geom in geoms:
+            part = geom.intersection(tilebox)
+            parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
+            for pg in parts:
+                if pg.geom_type == 'Polygon' and pg.area > 1.0:
+                    d['pa'].append([code] + [round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
     for geom, key in ((median_paved, 'md'), (median_grass, 'mg')):
         part = geom.intersection(tilebox)
         parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
