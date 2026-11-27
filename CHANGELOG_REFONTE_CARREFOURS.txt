@@ -1,0 +1,31 @@
+REFONTE URBAINE — CARREFOURS OSM
+=================================
+
+Cette étape ajoute une première topologie de carrefours à partir des nœuds
+OSM partagés par au moins trois bras de voies. Les chaussées carrossables
+sont interrompues au cœur du carrefour ; les marquages sont donc interrompus
+avec elles. Des bandes de passage piéton sont générées sur les approches
+carrossables, puis rendues dans les tuiles Three.js.
+
+Le calcul exclut les voies explicitement sur pont ou en tunnel afin de ne pas
+créer de jonctions au niveau des croisements dénivelés. Les profils de largeur
+continuent d'utiliser les largeurs OSM et les défauts par catégorie routière.
+
+Points de contrôle (coordonnées métriques du jeu, X / Y, approximatives) :
+- Rue Joffre : (-145, -175)
+- Place Sainte-Anne : (-290, 270)
+- Place Hoche : (125, 350)
+- Rue d'Antrain : (-35, 470)
+- Place de la République : (-185, -555)
+
+Données cartographiques : © contributeurs OpenStreetMap (ODbL).
+
+Limites de cette passe :
+- Les bateaux de trottoir et les rampes PMR ne sont pas encore générés comme
+  géométrie dédiée ; les bordures existantes restent issues des contours
+  des chaussées profilées.
+- Les voies matérialisées reposent encore sur les largeurs disponibles et les
+  règles de marquage du moteur ; les terre-pleins OSM explicites demandent une
+  passe de traitement dédiée.
+- La validation visuelle et la régénération des tuiles restent à effectuer
+  dans l'environnement disposant de l'extrait OSM complet et du navigateur.
