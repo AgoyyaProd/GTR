@@ -161,17 +161,13 @@ if not junction_union.is_empty:
                     clipped.append(rec)
         d['r'] = clipped
 for tk, d in tiles.items():
-    ox, oy = BX0 + tk[0]*T, BY0 + tk[1]*T
-    tilebox = box(ox, oy, ox+T, oy+T)
     d['xw'] = []
     for poly in crossing_records.get(tk, []):
-        part = poly.intersection(tilebox)
-        ps = list(part.geoms) if hasattr(part, 'geoms') else [part]
-        for pg in ps:
-            if pg.geom_type == 'Polygon' and pg.area > 0.05:
-                coords = list(pg.exterior.coords)[:4]
-                if len(coords) == 4:
-                    d['xw'].append([round(c, 2) for xy in coords for c in xy])
+        # Keep the original four-corner stripe: clipping it at a tile edge can
+        # create a 5+ vertex polygon which cannot be represented by GB.quad.
+        coords = list(poly.exterior.coords)[:4]
+        if len(coords) == 4 and poly.area > 0.05:
+            d['xw'].append([round(c, 2) for xy in coords for c in xy])
 
 def living(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 5.5) < 0.01
 def pedestrian(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 7) < 0.01 and not r[2] & 2
