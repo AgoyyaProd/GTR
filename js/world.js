@@ -2030,7 +2030,8 @@ function* buildTile(t, data) {
   for (const c of data.md || []) gbR.poly(MAT.grass, c, SW + 0.014, 4);
   for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
   for (const a of data.a) if (a[0] === 1) addPitchLines(gbR, a[1]); // parks, squares, car parks & gardens are painted on the ground (landcover)
-  for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbR, t, f[1], f[2]);
+  // Anciens passages piétons (points OSM, f[0] === 6) : remplacés par les zèbres xw quand la tuile en a, sinon on les doublerait.
+  if (!(data.xw && data.xw.length)) for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbR, t, f[1], f[2]);
   gbR.meshes(group, { cast: false });
   yield;
   /* sidewalks walk paths + parking spots + generated lamps & trees */
