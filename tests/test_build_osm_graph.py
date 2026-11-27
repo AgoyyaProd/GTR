@@ -36,7 +36,22 @@ def main():
     # Layer split means node 2 appears twice.
     assert sum(1 for n in g["nodes"]["osm_id"] if n == "2") == 2
     assert "12" not in c["way_id"]
-    print("OK — CSR cohérent, provenance OSM conservée, sens unique, accès et niveaux testés.")
+
+    # bridge=yes without explicit layer must preserve shared endpoint topology.
+    bridge_graph = MOD.build_graph(
+        {"1": (-1.68, 48.115), "2": (-1.679, 48.115), "3": (-1.678, 48.115)},
+        [
+            {"id": "20", "refs": ["1", "2"],
+             "tags": {"highway": "residential", "bridge": "yes"}},
+            {"id": "21", "refs": ["2", "3"],
+             "tags": {"highway": "residential"}},
+        ],
+    )
+    assert bridge_graph["stats"]["nodes"] == 3
+    assert bridge_graph["stats"]["directed_edges"] == 4
+    assert any(meta["bridge"] == "yes" for meta in bridge_graph["edge_metadata"])
+
+    print("OK — CSR, provenance, sens unique, accès, niveaux explicites et raccords de pont testés.")
 
 if __name__ == "__main__":
     main()
