@@ -178,15 +178,28 @@ for road in S.get('roads', []):
     except (ValueError, TypeError): total_lanes = 0
     oneway = road.get('oneway') in ('yes','1','true')
     reverse_only = road.get('oneway') == '-1'
+    f_tags = road.get('turn_lanes_forward') or ''
+    b_tags = road.get('turn_lanes_backward') or ''
+    generic_tags = road.get('turn_lanes') or ''
+    f_count = len(f_tags.split('|')) if f_tags else 0
+    b_count = len(b_tags.split('|')) if b_tags else 0
+    generic_count = len(generic_tags.split('|')) if generic_tags else 0
     if oneway or reverse_only:
-        per_dir = total_lanes
-    else:
+        per_dir = total_lanes or generic_count
+        directions = [True] if oneway else [False]
+    elif total_lanes:
         per_dir = total_lanes // 2
-    if per_dir < 2:
+        directions = [True, False]
+    else:
+        # Sans lanes=, les tags directionnels suffisent à identifier les sens
+        # réellement cartographiés ; ne pas inventer la chaussée opposée.
+        per_dir = max(f_count, b_count)
+        directions = ([True] if f_count >= 2 else []) + ([False] if b_count >= 2 else [])
+    if per_dir < 2 or not directions:
         continue
     width = road_width(road)
     lane_w = width / max(1, total_lanes or (per_dir if oneway else per_dir*2))
-    for forward in ([True] if oneway else [False] if reverse_only else [True, False]):
+    for forward in directions:
         if forward:
             end = pts[-1]; endpoint = (round(end[0],2), round(end[1],2))
             if endpoint not in junction_nodes: continue
