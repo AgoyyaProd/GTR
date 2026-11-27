@@ -3,6 +3,7 @@
 import importlib.util
 import pathlib
 import tempfile
+import os
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("build_osm_graph", ROOT / "outils" / "build_osm_graph.py")
@@ -51,7 +52,32 @@ def main():
     assert bridge_graph["stats"]["directed_edges"] == 4
     assert any(meta["bridge"] == "yes" for meta in bridge_graph["edge_metadata"])
 
-    print("OK — CSR, provenance, sens unique, accès, niveaux explicites et raccords de pont testés.")
+    # XML parser must retain child tags, nd refs and relation members until
+    # the enclosing primitive has been consumed.
+    xml = """<osm version="0.6">
+      <node id="1" lon="-1.68" lat="48.115"/>
+      <node id="2" lon="-1.679" lat="48.115"/>
+      <way id="30"><nd ref="1"/><nd ref="2"/>
+        <tag k="highway" v="residential"/><tag k="name" v="Rue XML"/>
+      </way>
+      <relation id="40"><member type="way" ref="30" role="from"/>
+        <tag k="type" v="restriction"/><tag k="restriction" v="no_left_turn"/>
+      </relation>
+    </osm>"""
+    with tempfile.NamedTemporaryFile("w", suffix=".osm", delete=False, encoding="utf-8") as f:
+        f.write(xml)
+        xml_path = f.name
+    try:
+        parsed_nodes, parsed_ways, parsed_restrictions = MOD.parse_osm(xml_path)
+    finally:
+        os.unlink(xml_path)
+    assert len(parsed_nodes) == 2
+    assert parsed_ways[0]["refs"] == ["1", "2"]
+    assert parsed_ways[0]["tags"]["name"] == "Rue XML"
+    assert parsed_restrictions[0]["members"][0]["ref"] == "30"
+    assert parsed_restrictions[0]["restriction"] == "no_left_turn"
+
+    print("OK — CSR, provenance, sens unique, accès, couches, ponts et parsing XML testés.")
 
 if __name__ == "__main__":
     main()
