@@ -1066,26 +1066,40 @@ function addRoad(gb0, t, r) {
       accPatch += count;
     }
   }
-  /* markings */
+  /* Markings routiers : lignes axiales, séparateurs de voies et rives.
+     Les tirets conservent leur phase d'un segment au suivant. */
   const ped = flags & 8;
-  if ((kind === 0 && w >= 6 && !ped) || kind === 3) {
-    const oneway = flags & 1;
-    const lines = [];
-    if (kind === 3) { lines.push([hw - 0.45, 0, 0.18]); lines.push([-(hw - 0.45), 0, 0.18]); if (w >= 6.5) lines.push([0, 10, 0.15]); }
-    else if (!oneway) lines.push([0, w >= 9 ? 3 : 4, 0.13]);
-    else if (w >= 8) lines.push([0, 10, 0.13]);
+  if ((kind === 0 && w >= 5.5 && !ped) || kind === 3) {
+    const oneway = !!(flags & 1), lines = [];
+    if (kind === 3) {
+      lines.push([-(hw - 0.42), 0, 0.16], [hw - 0.42, 0, 0.16]);
+      if (w >= 7) lines.push([0, 3, 0.13]);
+    } else {
+      if (oneway) { if (w >= 7.2) lines.push([0, 3, 0.12]); }
+      else lines.push([0, 3, 0.13]);
+      if (w >= 8.2) lines.push([-(hw - 0.38), 0, 0.10], [hw - 0.38, 0, 0.10]);
+      if (w >= 10.2) { const laneOffset = w / 6; lines.push([-laneOffset, 3, 0.10], [laneOffset, 3, 0.10]); }
+    }
     for (const [off, gap, lw] of lines) {
       let acc = 0;
       for (let i = 0; i < p.length - 2; i += 2) {
-        const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, qx = -uy, qy = ux;
-        const dash = 3, per = gap ? dash + gap : 1e9;
+        const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3];
+        const dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1;
+        const ux = dx / l, uy = dy / l, qx = -uy, qy = ux;
+        const dash = gap ? 3 : l, per = gap ? dash + gap : l + 1;
         let s0 = 0;
-        while (s0 < l) {
-          const ph = (acc + s0) % per; let s1;
+        while (s0 < l - 0.001) {
+          const ph = gap ? (acc + s0) % per : 0;
           if (gap && ph >= dash) { s0 += per - ph; continue; }
-          s1 = gap ? Math.min(l, s0 + dash - ph) : Math.min(l, s0 + 4);
-          const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off, x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
-          gb.quad(MAT.mark, [x0 + qx * lw, y + 0.012, -(y0 + qy * lw)], [x1 + qx * lw, y + 0.012, -(y1 + qy * lw)], [x1 - qx * lw, y + 0.012, -(y1 - qy * lw)], [x0 - qx * lw, y + 0.012, -(y0 - qy * lw)], [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
+          const s1 = gap ? Math.min(l, s0 + dash - ph) : l;
+          const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off;
+          const x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
+          gb.quad(MAT.mark,
+            [x0 + qx * lw, y + 0.014, -(y0 + qy * lw)],
+            [x1 + qx * lw, y + 0.014, -(y1 + qy * lw)],
+            [x1 - qx * lw, y + 0.014, -(y1 - qy * lw)],
+            [x0 - qx * lw, y + 0.014, -(y0 - qy * lw)],
+            [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
           s0 = s1 + 0.001;
         }
         acc += l;

@@ -27,8 +27,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Installer Shapely pour les tests de géométrie
+        run: pip install shapely
       - name: Tester les profils routiers OSM
         run: python tests/test_street_profiles.py
+      - name: Tester la fusion polygonale des carrefours
+        run: python tests/test_street_geometry.py
       - name: Tester l'extraction des restrictions OSM
         run: python tests/test_osm_restrictions.py
       - name: Tester le complément OSM sans réseau

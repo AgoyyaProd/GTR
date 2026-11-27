@@ -7,6 +7,7 @@ from shapely.geometry import LineString, Polygon, Point, box, MultiPolygon, Mult
 from shapely.geometry.polygon import orient
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
+from street_geometry import merge_corridors
 import mapbox_earcut as earcut
 
 G = os.environ.get('GTR_ROOT', '/home/claude/g2')
@@ -187,14 +188,13 @@ def rings_of(u):
         if p.geom_type != 'Polygon' or p.area < 1: continue
         p = orient(p, 1.0); out.append(LineString(p.exterior.coords)); out += [LineString(h.coords) for h in p.interiors]
     return out
-def close(u): return u.buffer(2.0, quad_segs=4).buffer(-2.0, quad_segs=4).simplify(0.05)
-UA = close(unary_union(polys_a)); US = close(unary_union(polys_s)).difference(UA.buffer(0.01))
+UA = merge_corridors(polys_a); US = merge_corridors(polys_s).difference(UA.buffer(0.01))
 U = unary_union([UA, US])
 water = unary_union([Polygon(list(zip(w[::2], w[1::2]))).buffer(0) for w in gd['water'] if len(w) >= 6]).buffer(0.8)
 # never into buildings
 BU = unary_union(bpolys).buffer(0.6)
 UA = UA.difference(BU); US = US.difference(BU); U = unary_union([UA, US])
-UF = close(unary_union(polys_f)).difference(BU).difference(U.buffer(0.3))
+UF = merge_corridors(polys_f).difference(BU).difference(U.buffer(0.3))
 OLD = Point(-330, 40).buffer(900)
 bedge = shapely.segmentize(MultiLineString(rings_of(UF.intersection(OLD))).difference(U.buffer(1.0)), 4.0) if not UF.is_empty else MultiLineString([])
 UA = shapely.segmentize(UA, 4.0); US = shapely.segmentize(US, 4.0)
