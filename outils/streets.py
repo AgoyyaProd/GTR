@@ -211,7 +211,7 @@ for road in S.get('roads', []):
             if endpoint not in junction_nodes: continue
             pos = line.interpolate(min(length,9.0)); a=line.interpolate(min(length,10.0)); b=line.interpolate(min(length,8.0))
             dx,dy=b.x-a.x,b.y-a.y
-            lane_tags = road.get('turn_lanes_backward')
+            lane_tags = road.get('turn_lanes_backward') or (road.get('turn_lanes') if reverse_only else None)
         ll=math.hypot(dx,dy)
         if ll < 0.1: continue
         ux,uy=dx/ll,dy/ll
