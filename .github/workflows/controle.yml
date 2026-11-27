@@ -20,6 +20,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  geospatial:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Tester l'extraction des restrictions OSM
+        run: python tests/test_osm_restrictions.py
+
   partie:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -48,7 +58,7 @@ jobs:
           if-no-files-found: warn
 
   rapport:
-    needs: partie
+    needs: [partie, geospatial]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
