@@ -20,6 +20,7 @@ steps = []
 roads = []  # complete OSM highway ways for visible street profiles
 crossings = []  # OSM marked crossing nodes
 medians = []  # explicitly mapped traffic islands
+pedestrian_areas = []  # closed OSM pedestrian plazas / public squares
 bollards = []
 barriers = []
 kerbs = []
@@ -57,6 +58,13 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         refs = [c.get("ref") for c in el if c.tag == "nd"]
         pts = [nodes[r] for r in refs if r in nodes]
         if len(pts) >= 2 and len(pts) == len(refs):
+            if refs[0] == refs[-1] and (
+                t.get("area:highway") == "pedestrian" or
+                (t.get("highway") == "pedestrian" and t.get("area") == "yes") or
+                t.get("place") == "square" or t.get("landuse") == "plaza" or
+                t.get("leisure") == "plaza" or t.get("amenity") == "marketplace"
+            ):
+                pedestrian_areas.append({"pts": pts, "name": t.get("name"), "surface": t.get("surface"), "landuse": t.get("landuse"), "kind": t.get("area:highway") or t.get("highway") or t.get("place") or t.get("landuse") or t.get("leisure") or t.get("amenity")})
             if refs[0] == refs[-1] and (t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island" or t.get("landuse") == "grass"):
                 medians.append({"pts": pts, "kind": "area", "tagged": t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island", "surface": t.get("surface"), "landuse": t.get("landuse"), "material": "grass" if t.get("surface") == "grass" or t.get("landuse") == "grass" else "paved"})
             hw = t.get("highway")
@@ -144,6 +152,7 @@ os.makedirs(os.path.dirname(OUT_FILE) or '.', exist_ok=True)
 with open(OUT_FILE, "wb") as f:
     pickle.dump({"steps": steps, "bollards": bollards, "barriers": barriers,
                  "sidewalks": sidewalks, "roads": roads, "crossings": crossings, "medians": medians,
+                 "pedestrian_areas": pedestrian_areas,
                  "turn_restrictions": turn_restrictions},
                 f, protocol=pickle.HIGHEST_PROTOCOL)
 
