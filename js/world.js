@@ -1007,9 +1007,9 @@ function inCrossing(t, x, y) {
   for (let i = 0; i < C.length; i++) { const dx=x-C[i][0], dy=y-C[i][1], rr=C[i][2]+0.45; if (dx*dx+dy*dy < rr*rr) return true; }
   return false;
 }
-function addRoad(gb0, t, r) {
+function addRoad(gb0, t, r, markGb) {
   const w = r[0], kind = r[1], flags = r[2], p = r.slice(4), bridge = !!(flags & 2 && r.bh);
-  const gb = bridge ? new GB() : gb0;
+  const gb = bridge ? new GB() : gb0, mg = markGb || gb;
   if (kind === 2 && !(flags & 2) && !lcGrass((p[0] + p[p.length - 2]) / 2, (p[1] + p[p.length - 1]) / 2)) return;
   const [mat, y, s] = roadMat(r, p[0], p[1]);
   const hw = w / 2, low = isLowered(r) && t.hasRP && !(flags & 2);
@@ -1133,7 +1133,7 @@ function addRoad(gb0, t, r) {
           if (inJunction(t, mx, my) || inCrossing(t, mx, my)) { s0 = s1 + 0.001; continue; }
           const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off;
           const x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
-          gb.quad(MAT.mark,
+          mg.quad(MAT.mark,
             [x0 + qx * lw, y + 0.014, -(y0 + qy * lw)],
             [x1 + qx * lw, y + 0.014, -(y1 + qy * lw)],
             [x1 - qx * lw, y + 0.014, -(y1 - qy * lw)],
@@ -2000,7 +2000,7 @@ function* buildTile(t, data) {
   const R = srand(t.i * 7919 + t.j * 104729);
   let group = new THREE.Group(); group.matrixAutoUpdate = false;
   t.group = group; t.obs = new Grid(20); t.seg = new Grid(16); t.lights = []; t.walk = []; t.parkSpots = []; t.trees = []; t.shops = []; t.seats = [];
-  const gbB = new GB(), gbR = new GB();
+  const gbB = new GB(), gbR = new GB(), gbM = new GB();
   /* road segments index first (needed for shops & curbs) */
   t.jc = data.jc || [];
   t.xc = data.xc || [];
@@ -2074,12 +2074,15 @@ function* buildTile(t, data) {
   for (const c of data.mg || []) gbR.poly(MAT.grass, c, SW + 0.014, 4); // îlots engazonnés
   // Places et espaces piétons fermés dans OSM : dalles, pavés ou asphalte selon surface.
   for (const a of data.pa || []) gbR.poly(a[0] === 1 ? MAT.cobble : a[0] === 2 ? MAT.asphalt : MAT.square, a.slice(1), SW + 0.012, a[0] === 1 ? 2.2 : a[0] === 2 ? 7 : 3);
-  for (const c of data.ar || []) gbR.poly(MAT.mark, c, 0.024, 1); // flèches de direction OSM
-  for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
+  for (const c of data.ar || []) gbM.poly(MAT.mark, c, 0.024, 1); // flèches de direction OSM
+  for (const r of data.r) { addRoad(gbR, t, r, gbM); if (++k % 80 === 0) yield; }
   for (const a of data.a) if (a[0] === 1) addPitchLines(gbR, a[1]); // parks, squares, car parks & gardens are painted on the ground (landcover)
   // Anciens passages piétons (points OSM, f[0] === 6) : remplacés par les zèbres xw quand la tuile en a, sinon on les doublerait.
-  if (!(data.xw && data.xw.length)) for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbR, t, f[1], f[2]);
+  if (!(data.xw && data.xw.length)) for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbM, t, f[1], f[2]);
   gbR.meshes(group, { cast: false });
+  const markGroup = new THREE.Group(); markGroup.matrixAutoUpdate = false;
+  gbM.meshes(markGroup, { cast: false }); group.add(markGroup); t.markGroup = markGroup;
+  markGroup.visible = t.d < 150;
   yield;
   /* sidewalks walk paths + parking spots + generated lamps & trees */
   const grates = [], manholes = [], lampTall = [], lampStd = [], headsTall = [], headsStd = [], pools = [], trees = [], bollards = [], bins = [], benchW = [], benchM = [], shelters = [], tls = [], racks = [], fountains = [];
@@ -2343,6 +2346,19 @@ function* buildTile(t, data) {
   group = G0;
   group.updateMatrixWorld(true);
   scene.add(group);
+  const tileStats = { triangles: 0, drawCalls: 0, markingTriangles: 0, markingDrawCalls: 0 };
+  const countMeshes = (root, triKey, callKey) => root.traverse(o => {
+    if (!o.isMesh || !o.geometry) return;
+    const g = o.geometry, pos = g.getAttribute && g.getAttribute('position');
+    if (!pos) return;
+    const tri = Math.floor((g.index ? g.index.count : pos.count) / 3) * (o.isInstancedMesh ? o.count : 1);
+    tileStats[triKey] += tri;
+    tileStats[callKey] += Math.max(1, g.groups && g.groups.length ? g.groups.length : 1);
+  });
+  countMeshes(group, 'triangles', 'drawCalls');
+  countMeshes(markGroup, 'markingTriangles', 'markingDrawCalls');
+  t.metrics = tileStats;
+  if (window.__GTR_TILE_METRICS__) console.info('[GTR tile metrics]', t.i, t.j, tileStats);
   t.built = true;
 }
 function inWaterQuick(x, y) { const s = new Set(); waterGrid.query(x, y, x, y, s); for (const w of s) if (inPoly(w.p, x, y)) return true; return false; }
@@ -2362,7 +2378,7 @@ function updateTiles(px, py) {
       tiles.set(key, nt);
       fetch(`tiles/t${i}_${j}.json`).then(r => r.json()).then(data => { nt.data = data; buildQueue.push(nt); }).catch(() => { });
     } else if (t && d > UNLOAD_R && t.built) unloadTile(t);
-    if (t) { t.d = d; if (t.group) t.group.visible = d < FAR_R; if (t.props) { t.props.visible = d < 300; t.props.traverse(o => { if (o.userData.bs) { const dd = Math.hypot(o.userData.bs.center.x - px, -o.userData.bs.center.z - py) - o.userData.bs.radius; o.visible = dd < (o.userData.cast ? 260 : 110); o.castShadow = o.userData.cast && dd < 70; } }); } }
+    if (t) { t.d = d; if (t.group) t.group.visible = d < FAR_R; if (t.markGroup) t.markGroup.visible = d < 150; if (t.props) { t.props.visible = d < 300; t.props.traverse(o => { if (o.userData.bs) { const dd = Math.hypot(o.userData.bs.center.x - px, -o.userData.bs.center.z - py) - o.userData.bs.radius; o.visible = dd < (o.userData.cast ? 260 : 110); o.castShadow = o.userData.cast && dd < 70; } }); } }
   }
 }
 function unloadTile(t) {

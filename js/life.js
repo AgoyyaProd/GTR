@@ -1015,7 +1015,7 @@ async function initMetro() {
     const kind = e.kind || 'stairs', line = e.line === 'b' ? 'b' : 'a';
     const integrated = !!e.integrated;
     const L = clamp(Number(e.length) || (kind === 'elevator' ? 2.4 : 5.2), 2.5, 14);
-    const Wd = clamp(Number(e.width) || (kind === 'elevator' ? 2.2 : 2.0), 1.35, 4.0);
+    const Wd = clamp(Number(e.width) || (kind === 'elevator' ? 2.2 : 2.0), 1.35, 8.0);
     const a = Number.isFinite(Number(e.angle)) ? Number(e.angle) : 0;
     const fx = integrated && Number.isFinite(Number(e.facade_x)) ? Number(e.facade_x) : x;
     const fy = integrated && Number.isFinite(Number(e.facade_y)) ? Number(e.facade_y) : y;

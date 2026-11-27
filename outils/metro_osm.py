@@ -187,6 +187,97 @@ def footprint_block_reason(x,y,angle,length,width,buildings,roads,crossings,star
     return None
 
 
+
+def _angle_delta(a,b):
+    return abs((a-b+math.pi)%(2*math.pi)-math.pi)
+
+
+def merge_nearby_stairs(entries, distance=10.0, angle_limit=math.radians(25)):
+    """Fusionne les accès proches partageant une way ou un axe presque identique."""
+    stairs=[e for e in entries if e.get("kind")=="stairs" and e.get("angle") is not None]
+    parent={id(e):id(e) for e in stairs}
+    def root(k):
+        while parent[k]!=k:
+            parent[k]=parent[parent[k]]
+            k=parent[k]
+        return k
+    for i,a in enumerate(stairs):
+        for b in stairs[i+1:]:
+            if a.get("station")!=b.get("station"): continue
+            if math.hypot(a["x"]-b["x"],a["y"]-b["y"])>distance: continue
+            same_way=bool(a.get("source_way") and a.get("source_way")==b.get("source_way"))
+            if not same_way and _angle_delta(float(a["angle"]),float(b["angle"]))>angle_limit: continue
+            ra,rb=root(id(a)),root(id(b))
+            if ra!=rb: parent[rb]=ra
+    groups=defaultdict(list)
+    for e in stairs: groups[root(id(e))].append(e)
+    replacements={}
+    for group in groups.values():
+        if len(group)<2: continue
+        base=float(group[0]["angle"])
+        aligned=[]
+        for e in group:
+            a=float(e["angle"])
+            if math.cos(a-base)<0: a += math.pi
+            aligned.append(a)
+        angle=math.atan2(sum(math.sin(a) for a in aligned),sum(math.cos(a) for a in aligned))
+        x=sum(e["x"] for e in group)/len(group)
+        y=sum(e["y"] for e in group)/len(group)
+        ca,sa=math.cos(angle),math.sin(angle)
+        half_width=max(e.get("width",2.0)/2 + abs((e["x"]-x)*sa-(e["y"]-y)*ca) for e in group)
+        length=max(float(e.get("length",0))+abs((e["x"]-x)*ca+(e["y"]-y)*sa) for e in group)
+        merged=dict(group[0])
+        merged.update({"x":round(x,2),"y":round(y,2),"angle":round(angle,6),
+                       "length":round(max(2.5,min(14.0,length)),2),
+                       "width":round(max(1.0,min(8.0,half_width*2)),2),
+                       "osm_ids":[e["osm_id"] for e in group],"merged_count":len(group)})
+        merged["safe"]=all(e.get("safe",True) for e in group)
+        blocked=next((e.get("blocked_reason") for e in group if e.get("blocked_reason")),None)
+        if blocked: merged["blocked_reason"]=blocked
+        replacements[id(group[0])]=merged
+        for e in group[1:]: replacements[id(e)]=None
+    return [replacements.get(id(e),e) for e in entries if replacements.get(id(e),e) is not None]
+
+
+def _trench_corners(e):
+    angle=float(e["angle"])
+    length=float(e.get("length",0))+(2.0 if e.get("line")=="b" else 0.8)
+    width=float(e.get("width",2.0))+0.6
+    ca,sa=math.cos(angle),math.sin(angle)
+    return [(e["x"]+ca*along+sa*side*width/2,
+             e["y"]+sa*along-ca*side*width/2)
+            for along,side in ((0,-1),(length,-1),(length,1),(0,1))]
+
+
+def trench_rectangles_intersect(a,b):
+    """Test SAT exact entre deux rectangles orientés de trémie."""
+    pa,pb=_trench_corners(a),_trench_corners(b)
+    for poly in (pa,pb):
+        for i in range(2):
+            p1,p2=poly[i],poly[i+1]
+            axis=(-(p2[1]-p1[1]),p2[0]-p1[0])
+            ll=math.hypot(*axis) or 1.0
+            axis=(axis[0]/ll,axis[1]/ll)
+            aa=[p[0]*axis[0]+p[1]*axis[1] for p in pa]
+            bb=[p[0]*axis[0]+p[1]*axis[1] for p in pb]
+            if max(aa)<=min(bb)+1e-6 or max(bb)<=min(aa)+1e-6: return False
+    return True
+
+
+def reject_overlapping_trenches(entries):
+    """Rejette toute emprise de trémie qui chevauche une emprise déjà retenue."""
+    accepted=[]
+    for e in entries:
+        if (e.get("kind")!="stairs" or e.get("angle") is None or
+                e.get("integrated") or not e.get("safe",True)):
+            continue
+        if any(trench_rectangles_intersect(a,e) for a in accepted):
+            e["safe"]=False
+            e["blocked_reason"]="overlap"
+        else:
+            accepted.append(e)
+    return entries
+
 def build_entrances(nodes,ways,metro):
     stations=metro.get("stations",[])
     if not stations: raise ValueError("metro.json ne contient aucune station")
@@ -268,6 +359,8 @@ def build_entrances(nodes,ways,metro):
             item["safe"]=False
             item["blocked_reason"]=reason
         result.append(item)
+    result=merge_nearby_stairs(result)
+    result=reject_overlapping_trenches(result)
     result.sort(key=lambda e:(e["station"],e["kind"],e["osm_id"]))
     return result
 
@@ -290,7 +383,7 @@ def extract(osm_path,metro):
 
 
 def main():
-    root=os.environ.get("GTR_ROOT","/home/claude/g2")
+    root=os.environ.get("GTR_ROOT",os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     osm_file=os.environ.get("GTR_OSM_FILE","/mnt/user-data/uploads/map")
     metro_file=os.environ.get("GTR_METRO_JSON",os.path.join(root,"metro.json"))
     if not os.path.isfile(osm_file): raise SystemExit("Extrait OSM introuvable : "+osm_file)

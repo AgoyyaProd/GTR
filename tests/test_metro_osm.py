@@ -51,6 +51,40 @@ def main():
     building_ways = [{"id":"b1","refs":["a","b","c","d","a"],"tags":{"building":"yes"}}]
     integrated = build_entrances(building_nodes,building_ways,metro)
     assert integrated[0]["integrated"] and integrated[0]["safe"]
+
+    # Deux accès proches et parallèles deviennent une trémie unique, centrée.
+    paired_nodes = {
+        "p1": (0.0, 0.0, {"railway":"subway_entrance","station":"République"}),
+        "p1b": (14.0, 0.0, {}),
+        "p2": (6.0, 1.0, {"railway":"subway_entrance","station":"République"}),
+        "p2b": (20.0, 1.0, {}),
+    }
+    paired_ways = [
+        {"id":"w1","refs":["p1","p1b"],"tags":{"highway":"steps","incline":"down"}},
+        {"id":"w2","refs":["p2","p2b"],"tags":{"highway":"steps","incline":"down"}},
+    ]
+    paired = build_entrances(paired_nodes, paired_ways, metro)
+    merged = [e for e in paired if e["kind"]=="stairs"]
+    assert len(merged)==1 and merged[0]["merged_count"]==2
+    assert abs(merged[0]["x"]-3.0)<1e-6 and abs(merged[0]["y"]-0.5)<1e-6
+    assert merged[0]["width"]>2.0
+
+    # Deux trémies non fusionnables mais sécantes : une seule reste active.
+    overlap_nodes = {
+        "o1": (0.0, 0.0, {"railway":"subway_entrance","station":"République"}),
+        "o1b": (14.0, 0.0, {}),
+        "o2": (11.0, 0.0, {"railway":"subway_entrance","station":"République"}),
+        "o2b": (25.0, 4.0, {}),
+    }
+    overlap_ways = [
+        {"id":"ow1","refs":["o1","o1b"],"tags":{"highway":"steps","incline":"down"}},
+        {"id":"ow2","refs":["o2","o2b"],"tags":{"highway":"steps","incline":"down"}},
+    ]
+    overlaps = build_entrances(overlap_nodes, overlap_ways, metro)
+    rejected = [e for e in overlaps if e.get("blocked_reason")=="overlap"]
+    assert len(rejected)==1
+    assert sum(e["safe"] for e in overlaps if e["kind"]=="stairs")==1
+
     print("Métro OSM : extraction, orientation, accessibilité et emprises OK")
 
 
