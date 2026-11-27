@@ -146,57 +146,6 @@ for (x, y), arms in node_arms.items():
 junction_union = unary_union(junction_polys) if junction_polys else Polygon()
 print('OSM junctions', len(junction_cores), flush=True)
 
-# Flèches directionnelles : chaque branche OSM qui arrive à un cœur jc reçoit
-# une flèche par voie. Sans turn:lanes, toutes sont "tout droit". Les carrefours
-# peuvent être des nœuds intérieurs d'une way : on les parcourt tous.
-junction_nodes = {(round(x, 2), round(y, 2)) for x, y, _ in junction_cores}
-arrow_records = {key: [] for key in tiles}
-def arrow_polygon(cx, cy, ux, uy, turn):
-    vx, vy = ux*math.cos(turn)-uy*math.sin(turn), ux*math.sin(turn)+uy*math.cos(turn)
-    nx, ny = -vy, vx
-    coords = [(-2.0,-0.22), (0.45,-0.22), (0.45,-0.72), (2.0,0.0), (0.45,0.72), (0.45,0.22), (-2.0,0.22)]
-    return Polygon([(cx+a*vx+b*nx, cy+a*vy+b*ny) for a,b in coords])
-for road in S.get('roads', []):
-    pts = road.get('pts', [])
-    if len(pts) < 2 or road.get('highway') in ('footway','path','cycleway','steps','pedestrian','track','bridleway','corridor','platform'): continue
-    if road.get('bridge') not in (None,'','no') or road.get('tunnel') not in (None,'','no'): continue
-    try: total_lanes = max(0, int(float((road.get('lanes') or '0').split(';')[0])))
-    except (ValueError, TypeError): total_lanes = 0
-    oneway = road.get('oneway') in ('yes','1','true'); reverse_only = road.get('oneway') == '-1'
-    f_tags, b_tags, generic_tags = road.get('turn_lanes_forward') or '', road.get('turn_lanes_backward') or '', road.get('turn_lanes') or ''
-    f_count = len(f_tags.split('|')) if f_tags else 0; b_count = len(b_tags.split('|')) if b_tags else 0
-    generic_count = len(generic_tags.split('|')) if generic_tags else 0
-    if oneway or reverse_only:
-        per_dir = total_lanes or generic_count; directions = [True] if oneway else [False]
-    elif total_lanes >= 4:
-        per_dir = total_lanes // 2; directions = [True, False]
-    else:
-        per_dir = max(f_count, b_count); directions = ([True] if f_count >= 2 else []) + ([False] if b_count >= 2 else [])
-    if per_dir < 2 or not directions: continue
-    width = road_width(road); lane_w = width / max(1, total_lanes or (per_dir if oneway or reverse_only else per_dir*2))
-    for ni, node in enumerate(pts):
-        if (round(node[0],2), round(node[1],2)) not in junction_nodes: continue
-        for forward in directions:
-            if forward and ni == 0: continue
-            if not forward and ni == len(pts)-1: continue
-            path = pts[:ni+1] if forward else list(reversed(pts[ni:]))
-            approach = LineString(path); length = approach.length
-            if length < 11: continue
-            pos = approach.interpolate(max(0.0,length-8.0)); pa = approach.interpolate(max(0.0,length-9.0)); pb = approach.interpolate(max(0.0,length-7.0))
-            dx,dy = pb.x-pa.x,pb.y-pa.y; ll=math.hypot(dx,dy)
-            if ll < 0.1: continue
-            ux,uy=dx/ll,dy/ll; nx,ny=-uy,ux
-            lane_tags = (f_tags if forward else b_tags) or (generic_tags if oneway or reverse_only else '')
-            turns = [q.strip() for q in lane_tags.split('|')] if lane_tags else []
-            if len(turns) != per_dir: turns = ['through'] * per_dir
-            for li,turn_tag in enumerate(turns[:per_dir]):
-                turn = 0.42 if 'left' in turn_tag else -0.42 if 'right' in turn_tag else 0.0
-                lateral = width/2-(li+0.5)*lane_w if oneway or reverse_only else -(li+0.5)*lane_w
-                cx,cy=pos.x+nx*lateral,pos.y+ny*lateral
-                if any(math.hypot(cx-qx,cy-qy)<radius+1.0 for qx,qy,radius in crossing_centres): continue
-                pg=arrow_polygon(cx,cy,ux,uy,turn); tk=tile_of(cx,cy)
-                if pg.area>0.1 and tk in arrow_records: arrow_records[tk].append(pg)
-print('OSM approach arrows',sum(map(len,arrow_records.values())),flush=True)
 
 # Zébras : uniquement les nœuds OSM explicitement marqués. Rattachement à la
 # chaussée la plus proche et rejet des emprises qui se chevauchent.
@@ -309,6 +258,59 @@ for c in sorted(marked_nodes, key=lambda q: str(q.get('id', ''))):
                 round(centre.x+ux*0.95+nx*d1,2), round(centre.y+uy*0.95+ny*d1,2),
                 round(centre.x-ux*0.95+nx*d1,2), round(centre.y-uy*0.95+ny*d1,2)])
 print('OSM marked crossings', accepted_count, 'zebra bars', sum(map(len, crossing_records.values())), flush=True)
+
+# (déplacé après les zèbres : les flèches évitent crossing_centres, qui doit exister)
+# Flèches directionnelles : chaque branche OSM qui arrive à un cœur jc reçoit
+# une flèche par voie. Sans turn:lanes, toutes sont "tout droit". Les carrefours
+# peuvent être des nœuds intérieurs d'une way : on les parcourt tous.
+junction_nodes = {(round(x, 2), round(y, 2)) for x, y, _ in junction_cores}
+arrow_records = {key: [] for key in tiles}
+def arrow_polygon(cx, cy, ux, uy, turn):
+    vx, vy = ux*math.cos(turn)-uy*math.sin(turn), ux*math.sin(turn)+uy*math.cos(turn)
+    nx, ny = -vy, vx
+    coords = [(-2.0,-0.22), (0.45,-0.22), (0.45,-0.72), (2.0,0.0), (0.45,0.72), (0.45,0.22), (-2.0,0.22)]
+    return Polygon([(cx+a*vx+b*nx, cy+a*vy+b*ny) for a,b in coords])
+for road in S.get('roads', []):
+    pts = road.get('pts', [])
+    if len(pts) < 2 or road.get('highway') in ('footway','path','cycleway','steps','pedestrian','track','bridleway','corridor','platform'): continue
+    if road.get('bridge') not in (None,'','no') or road.get('tunnel') not in (None,'','no'): continue
+    try: total_lanes = max(0, int(float((road.get('lanes') or '0').split(';')[0])))
+    except (ValueError, TypeError): total_lanes = 0
+    oneway = road.get('oneway') in ('yes','1','true'); reverse_only = road.get('oneway') == '-1'
+    f_tags, b_tags, generic_tags = road.get('turn_lanes_forward') or '', road.get('turn_lanes_backward') or '', road.get('turn_lanes') or ''
+    f_count = len(f_tags.split('|')) if f_tags else 0; b_count = len(b_tags.split('|')) if b_tags else 0
+    generic_count = len(generic_tags.split('|')) if generic_tags else 0
+    if oneway or reverse_only:
+        per_dir = total_lanes or generic_count; directions = [True] if oneway else [False]
+    elif total_lanes >= 4:
+        per_dir = total_lanes // 2; directions = [True, False]
+    else:
+        per_dir = max(f_count, b_count); directions = ([True] if f_count >= 2 else []) + ([False] if b_count >= 2 else [])
+    if per_dir < 2 or not directions: continue
+    width = road_width(road); lane_w = width / max(1, total_lanes or (per_dir if oneway or reverse_only else per_dir*2))
+    for ni, node in enumerate(pts):
+        if (round(node[0],2), round(node[1],2)) not in junction_nodes: continue
+        for forward in directions:
+            if forward and ni == 0: continue
+            if not forward and ni == len(pts)-1: continue
+            path = pts[:ni+1] if forward else list(reversed(pts[ni:]))
+            approach = LineString(path); length = approach.length
+            if length < 11: continue
+            pos = approach.interpolate(max(0.0,length-8.0)); pa = approach.interpolate(max(0.0,length-9.0)); pb = approach.interpolate(max(0.0,length-7.0))
+            dx,dy = pb.x-pa.x,pb.y-pa.y; ll=math.hypot(dx,dy)
+            if ll < 0.1: continue
+            ux,uy=dx/ll,dy/ll; nx,ny=-uy,ux
+            lane_tags = (f_tags if forward else b_tags) or (generic_tags if oneway or reverse_only else '')
+            turns = [q.strip() for q in lane_tags.split('|')] if lane_tags else []
+            if len(turns) != per_dir: turns = ['through'] * per_dir
+            for li,turn_tag in enumerate(turns[:per_dir]):
+                turn = 0.42 if 'left' in turn_tag else -0.42 if 'right' in turn_tag else 0.0
+                lateral = width/2-(li+0.5)*lane_w if oneway or reverse_only else -(li+0.5)*lane_w
+                cx,cy=pos.x+nx*lateral,pos.y+ny*lateral
+                if any(math.hypot(cx-qx,cy-qy)<radius+1.0 for qx,qy,radius in crossing_centres): continue
+                pg=arrow_polygon(cx,cy,ux,uy,turn); tk=tile_of(cx,cy)
+                if pg.area>0.1 and tk in arrow_records: arrow_records[tk].append(pg)
+print('OSM approach arrows',sum(map(len,arrow_records.values())),flush=True)
 
 # Ne jamais toucher à d['r'] : les indices sont partagés avec bh, t.seg,
 # la conduite et l'IA. Les métadonnées topologiques sont exportées séparément.
