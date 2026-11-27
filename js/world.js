@@ -1388,7 +1388,7 @@ function buildBarriers(gb, t, list) {
         for (const [e0, e1, sg] of [[c[0], c[1], 1], [c[2], c[3], -1]]) gb.quad(m, [e0[0], SW - 0.3, -e0[1]], [e1[0], SW - 0.3, -e1[1]], [e1[0], SW + H, -e1[1]], [e0[0], SW + H, -e0[1]], [0, 0], [l / 2, 0], [l / 2, H / 2], [0, H / 2], [nx * sg, 0, -ny * sg]);
         gb.quad(m, ...c.map(v => [v[0], SW + H, -v[1]]), [0, 0], [l / 2, 0], [l / 2, 0.2], [0, 0.2], [0, 1, 0]);
         t.obs.add(Math.min(ax, bx) - hw, Math.min(ay, by) - hw, Math.max(ax, bx) + hw, Math.max(ay, by) + hw, { p: c.flat(), b: [Math.min(...c.map(v => v[0])), Math.min(...c.map(v => v[1])), Math.max(...c.map(v => v[0])), Math.max(...c.map(v => v[1]))], h: H, low: true });
-      } else { /* fence / railing: top rail, bottom rail, bars */
+      } else if (k !== 5) { /* fence / railing: top rail, bottom rail, bars */
         for (const z of k === 1 ? [0.12, H] : [0.1, H - 0.05]) gb.quad(MAT.fence, [ax, SW + z - 0.03, -ay], [bx, SW + z - 0.03, -by], [bx, SW + z + 0.03, -by], [ax, SW + z + 0.03, -ay], [0, 0], [1, 0], [1, 1], [0, 1], [nx, 0, -ny]);
         const nb = Math.max(1, Math.round(l / (Math.hypot(ax - CENTER.x, ay - CENTER.y) > 1500 ? 0.6 : k === 1 ? 0.14 : 0.2)));
         for (let q = 0; q <= nb; q += 1) { const x = ax + dx * q / nb, y = ay + dy * q / nb, ex = dx / l * 0.012, ey = dy / l * 0.012; gb.quad(MAT.fence, [x - ex, SW, -(y - ey)], [x + ex, SW, -(y + ey)], [x + ex, SW + H, -(y + ey)], [x - ex, SW + H, -(y - ey)], [0, 0], [1, 0], [1, 1], [0, 1], [nx, 0, -ny]); }
