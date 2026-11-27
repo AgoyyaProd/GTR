@@ -91,7 +91,6 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
                 key[len("restriction:"):]: value
                 for key, value in t.items()
                 if key.startswith("restriction:") and key != "restriction:conditional"
-                and key != "restriction:conditional"
             }
             primary = (t.get("restriction") or t.get("restriction:motorcar")
                        or t.get("restriction:motor_vehicle") or t.get("restriction:bicycle")
