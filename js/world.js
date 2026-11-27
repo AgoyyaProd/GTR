@@ -2447,7 +2447,8 @@ void main() {`).replace('tWP.y += terrainH(tWP.xz);', 'tWP.y += terrainH(tWP.xz)
     const p0 = ccw(w), p = [];
     for (let i = 0, n = p0.length / 2; i < n; i++) { const ax = p0[i * 2], ay = p0[i * 2 + 1], bx = p0[((i + 1) % n) * 2], by = p0[((i + 1) % n) * 2 + 1], k = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 12)); for (let q = 0; q < k; q++) p.push(ax + (bx - ax) * q / k, ay + (by - ay) * q / k); }
     gb.poly(MAT.water, p, -1.4, 1);
-    // Pas de mur automatique : les ouvrages verticaux viennent des barrières OSM explicites.\n  }
+    // Pas de mur automatique : les ouvrages verticaux viennent des barrières OSM explicites.
+  }
   const grp = new THREE.Group(); gb.meshes(grp, {}); scene.add(grp);
 }
 
