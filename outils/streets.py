@@ -228,6 +228,12 @@ for c in sorted(marked_nodes, key=lambda q: str(q.get('id', ''))):
         line = osm_road_lines[int(ci)]
         dist = line.distance(point)
         limit = max(8.0, road_width(source) * 0.5 + 5.0)
+        # Le nœud highway=crossing appartient à la voie qu'il traverse : si l'un des
+        # sommets de cette voie est le nœud lui-même, elle gagne toujours (sinon, près
+        # d'un carrefour, la rue perpendiculaire voisine peut être choisie et le zèbre
+        # part dans le mauvais sens).
+        if min(math.hypot(px - c['x'], py - c['y']) for px, py in line.coords) < 0.05:
+            dist = -1.0
         if dist <= limit and dist < best_dist:
             best, best_dist = (source, line), dist
     if best is None:
@@ -265,14 +271,19 @@ for c in sorted(marked_nodes, key=lambda q: str(q.get('id', ''))):
     accepted_centres.append((centre.x, centre.y))
     crossing_centres.append((centre.x, centre.y, math.hypot(2.9, width/2 + 0.45)))
     accepted_count += 1
-    for band in range(7):
-        off = (band - 3) * 0.76
-        bx, by = centre.x + ux*off, centre.y + uy*off
+    # Passage piéton à la française : bandes de 0,50 m, PARALLÈLES à la circulation,
+    # longues de 2,50 m dans le sens de la rue, répétées en travers de la chaussée
+    # (pas de 1,00 m : 0,50 m peint, 0,50 m vide).
+    n_bars = max(2, int((2 * half + 0.5) // 1.0))
+    start = -(n_bars - 1) * 0.5
+    for band in range(n_bars):
+        off = start + band * 1.0
+        bx, by = centre.x + nx*off, centre.y + ny*off
         poly = Polygon([
-            (bx-ux*0.21-nx*half, by-uy*0.21-ny*half),
-            (bx+ux*0.21-nx*half, by+uy*0.21-ny*half),
-            (bx+ux*0.21+nx*half, by+uy*0.21+ny*half),
-            (bx-ux*0.21+nx*half, by-uy*0.21+ny*half)])
+            (bx-ux*1.25-nx*0.25, by-uy*1.25-ny*0.25),
+            (bx+ux*1.25-nx*0.25, by+uy*1.25-ny*0.25),
+            (bx+ux*1.25+nx*0.25, by+uy*1.25+ny*0.25),
+            (bx-ux*1.25+nx*0.25, by-uy*1.25+ny*0.25)])
         minx, miny, maxx, maxy = poly.bounds
         ix0, iy0 = tile_of(minx, miny)
         ix1, iy1 = tile_of(maxx, maxy)
