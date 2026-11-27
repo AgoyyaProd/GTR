@@ -173,10 +173,22 @@ async function loadGroundMaterials() {
   await Promise.all(names.map(async n => {
     g[n] = { map: await loadTex(`tex/${n}_d.jpg`, true), normalMap: await loadTex(`tex/${n}_n.jpg`), roughnessMap: await loadTex(`tex/${n}_r.jpg`) };
   }));
-  MAT.asphalt = M({ ...g.asphalt, roughnessMap: null, color: 0x9a9a9a, roughness: 1 });
+  /* Micro-variation de rugosité : grain et zones polies, sans ajouter de géométrie ni de draw call. */
+  const asphaltRoughCanvas = document.createElement('canvas'); asphaltRoughCanvas.width = asphaltRoughCanvas.height = 256;
+  const asphaltRoughCtx = asphaltRoughCanvas.getContext('2d'), asphaltRoughData = asphaltRoughCtx.createImageData(256, 256);
+  for (let yy = 0; yy < 256; yy++) for (let xx = 0; xx < 256; xx++) {
+    const i = (yy * 256 + xx) * 4;
+    const grain = Math.sin(xx * 1.73 + Math.sin(yy * 0.19) * 2.4) * 7 + Math.sin(yy * 2.11 + Math.sin(xx * 0.13)) * 5;
+    const wear = Math.sin(xx * 0.045 + Math.sin(yy * 0.031) * 2) * Math.sin(yy * 0.038) * 13;
+    const v = Math.max(112, Math.min(232, 184 + grain + wear));
+    asphaltRoughData.data[i] = asphaltRoughData.data[i + 1] = asphaltRoughData.data[i + 2] = v; asphaltRoughData.data[i + 3] = 255;
+  }
+  asphaltRoughCtx.putImageData(asphaltRoughData, 0, 0);
+  const asphaltRoughMap = new THREE.CanvasTexture(asphaltRoughCanvas); asphaltRoughMap.wrapS = asphaltRoughMap.wrapT = THREE.RepeatWrapping; asphaltRoughMap.repeat.set(3, 3); asphaltRoughMap.anisotropy = 4;
+  MAT.asphalt = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x929292, roughness: 0.98 });
   /* Reprises d'enrobé : même famille de texture, teinte et rugosité légèrement différentes. */
-  MAT.asphaltRepair = M({ ...g.asphalt, roughnessMap: null, color: 0x777875, roughness: 0.96 });
-  MAT.highway = M({ ...g.asphalt, roughnessMap: null, color: 0x7c7c7c, roughness: 1 });
+  MAT.asphaltRepair = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x777875, roughness: 0.96 });
+  MAT.highway = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x777979, roughness: 0.99 });
   MAT.pave = M({ ...g.pave, roughnessMap: null, color: 0x807b73, roughness: 1 });
   MAT.cobble = M({ ...g.cobble, roughnessMap: null, color: 0x807b73, roughness: 1 });
   MAT.square = M({ ...g.square, roughnessMap: null, color: 0x807b73, roughness: 1 });
@@ -189,7 +201,7 @@ async function loadGroundMaterials() {
   MAT.mark = M({ color: 0xe8e8e0, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
   MAT.curb = M({ ...g.sw, roughnessMap: null, color: 0xa7a39b, roughness: 0.8 });
   /* lowered carriageway: writes stencil 1 so the raised sidewalk plane skips it */
-  MAT.road = M({ ...g.asphalt, roughnessMap: null, color: 0x9a9a9a, roughness: 1 });
+  MAT.road = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x929292, roughness: 0.98 });
   MAT.sett = M({ ...g.cobble, roughnessMap: null, color: 0x827c74, roughness: 1 }); /* cobbled carriageway of the old town's living streets */
   MAT.stair = M({ ...g.slab, roughnessMap: null, color: 0x99938a, roughness: 0.8 }); MAT.stairNose = M({ color: 0x8a857c, roughness: 0.7 });
   MAT.fence = M({ color: 0x2a3a34, roughness: 0.5, metalness: 0.6 }); MAT.wallLow = M({ ...g.slab, roughnessMap: null, color: 0x8e877b, roughness: 0.9 }); MAT.hedge = M({ color: 0x3c5a2a, roughness: 1 });
@@ -203,6 +215,7 @@ async function loadGroundMaterials() {
   MAT.slateT = M({ ...g.slate, color: 0xffffff, roughness: 0.72, vertexColors: true }); MAT.tileRoofT = MAT.slateT;
   MAT.flatT = M({ ...g.concrete, color: 0xffffff, roughness: 1, vertexColors: true });
   MAT.metal = M({ color: 0x2a2d33, roughness: 0.45, metalness: 0.8 });
+  MAT.castIron = M({ color: 0x171a1b, roughness: 0.62, metalness: 0.72 });
   MAT.metalLight = M({ color: 0x9aa0a8, roughness: 0.35, metalness: 0.9 });
   MAT.rail = M({ color: 0x8a8a8a, roughness: 0.3, metalness: 1 });
   MAT.lampHead = M({ color: 0xfff1d0, emissive: 0xffc070, emissiveIntensity: 2 });
@@ -219,8 +232,10 @@ async function loadGroundMaterials() {
   const hgt = new Float32Array(256 * 256); for (let k = 0; k < 40; k++) { const fx = rnd(1, 6) | 0, fy = rnd(1, 6) | 0, ph = rnd(0, 6), a = rnd(0.3, 1) / (fx + fy); for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) hgt[y * 256 + x] += Math.sin((x * fx + y * fy) / 256 * Math.PI * 2 + ph) * a; }
   for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) { const dx = hgt[y * 256 + ((x + 1) & 255)] - hgt[y * 256 + ((x + 255) & 255)], dy = hgt[((y + 1) & 255) * 256 + x] - hgt[((y + 255) & 255) * 256 + x]; const o = (y * 256 + x) * 4; id.data[o] = 128 + dx * 300; id.data[o + 1] = 128 + dy * 300; id.data[o + 2] = 255; id.data[o + 3] = 255; }
   wg.putImageData(id, 0, 0);
-  MAT.water = M({ color: 0x0e1c22, roughness: 0.06, metalness: 0.1, normalMap: canvasTex(wn), normalScale: new THREE.Vector2(0.6, 0.6) });
-  MAT.water.normalMap.repeat.set(1 / 14, 1 / 14);
+  MAT.water = M({ color: 0x102b29, roughness: 0.12, metalness: 0.16, normalMap: canvasTex(wn), normalScale: new THREE.Vector2(0.82, 0.82) });
+  MAT.water.normalMap.wrapS = MAT.water.normalMap.wrapT = THREE.RepeatWrapping;
+  MAT.water.normalMap.repeat.set(1 / 11, 1 / 11);
+  MAT.waterEdge = M({ color: 0x1a3b35, roughness: 0.3, metalness: 0.08 });
   MAT.groundMat = MAT.pave;
 }
 
@@ -575,6 +590,10 @@ function updateWetSurfaceBlend(amount, night) {
 function wxNight() { const h = (typeof gameMin !== 'undefined' ? gameMin : 23 * 60) / 60; return h < 8 || h >= 17.5; }
 function wxMode() { const wet = WX.k > 0.08 || WX.wetT > 0, n = wxNight(); return { id: (n ? 'nuit' : 'jour') + (wet ? '-pluie' : ''), label: '', night: n, rain: wet, wx: true }; }
 function weatherStep(dt) {
+  if (MAT.water && MAT.water.normalMap) {
+    MAT.water.normalMap.offset.x = (MAT.water.normalMap.offset.x + dt * 0.00042) % 1;
+    MAT.water.normalMap.offset.y = (MAT.water.normalMap.offset.y + dt * 0.00016) % 1;
+  }
   if (!WX.auto) return;
   WX.t -= dt;
   if (WX.t <= 0) {
