@@ -1,6 +1,6 @@
 # GTR — audit géospatial et plan de validation Rennes
 
-## État du dépôt au 26 novembre 2026
+## État du dépôt au 27 novembre 2026
 
 - Dépôt : https://github.com/AgoyyaProd/GTR
 - Branche de travail : `refonte-01`, issue de `main` au commit `0c2f5b9837af0c49f1cf6507bfc402e514145641`.
@@ -45,12 +45,39 @@ python tests/geospatial_osm.py --input map --strict
 ```
 Le mode strict doit échouer sur le fichier fourni tant que les membres de frontières manquants ne sont pas récupérés.
 
+### Restrictions de virage : constat et extraction
+
+Le même extrait contient 618 relations `type=restriction` :
+- 610 relations dont tous les membres `from/via/to` sont présents ;
+- 8 relations incomplètes ;
+- 14 références de membres absentes, correspondant à 12 IDs de ways distincts.
+
+Ces 12 IDs sont distincts des 23 IDs de ways absents des relations de quartiers/sous-quartiers : 35 IDs distincts sont donc à récupérer au total. Les relations peuvent utiliser un nœud ou une way comme membre `via` ; l'extraction conserve les deux formes, les tags de restriction par mode, les exceptions et les restrictions conditionnelles.
+
+`outils/street_osm.py` écrit les relations dans le pickle des détails OSM et dans un sidecar JSON. Un test synthétique vérifie les restrictions classiques, les `via-way`, les restrictions vélo et le signalement des membres manquants.
+
+Un outil de complément ciblé a été ajouté : `outils/complete_osm_extract.py`. Il lit les rapports d'audit, interroge Overpass uniquement pour les ways absents et leurs nœuds, vérifie que toutes les voies demandées sont revenues, puis écrit un nouvel extrait sans modifier `map`.
+
+Exécution depuis un shell Bash, avec le fichier OSM original dans le dossier courant :
+```bash
+python tests/geospatial_osm.py --input map --output controle/osm-audit.json
+GTR_OSM_FILE=map GTR_STREET_OSM_PICKLE=controle/street_osm.pkl python outils/street_osm.py
+python outils/complete_osm_extract.py --input map \
+  --audit controle/osm-audit.json \
+  --restrictions controle/street_osm.restrictions.json \
+  --output map-complete.osm
+python tests/geospatial_osm.py --input map-complete.osm --strict
+```
+
+Le complément n'a pas encore été récupéré depuis Overpass dans cet environnement ; les tests locaux et CI valident le mécanisme de fusion, pas la disponibilité externe du service ni la validité finale des multipolygones.
+
 ## Architecture du jeu observée
 
 - `js/core.js` contient le graphe global `GD.g.xy/off/nb/fl`, l'index spatial des nœuds et A*.
 - Les tuiles de 200 m contiennent le réseau de rues et ses segments pour collisions, circulation et noms de rues.
 - `js/world.js` construit les bâtiments, chaussées, trottoirs, escaliers, murs et géométries depuis `tiles/t*.json`.
-- `outils/street_osm.py` ajoute escaliers, barrières, bollards et trottoirs ; il ne construit pas le graphe routier principal ni les quartiers.
+- `outils/street_osm.py` ajoute escaliers, barrières, bollards et trottoirs, et extrait maintenant les relations de restriction ; il ne construit pas le graphe routier principal ni les quartiers.
+- `outils/complete_osm_extract.py` prépare un extrait OSM complété à partir des rapports, sans écraser la source.
 - `outils/streets.py` dimensionne chaussées et trottoirs à partir des routes déjà préconstruites, des bâtiments et des lignes de trottoir OSM.
 - `global.json` contient le graphe global et la transformation métrique ; son contenu volumineux n'a pas été exposé par l'API de lecture de fichier utilisée ici.
 - `controle/RAPPORT.md` du 26 novembre signale un chargement de 83 s, 0.286 FPS en rendu logiciel et des vues diurnes délavées. Le contrôle existant valide les missions, pas la complétude du graphe OSM ni les frontières des quartiers.
@@ -112,4 +139,4 @@ Ces corrections ont été relues depuis GitHub. Elles doivent encore passer la s
 
 ## Limites restantes
 
-Le fichier OSM joint a été parcouru intégralement et le script d'audit a été exécuté localement. En revanche, le pipeline de génération des tuiles n'a pas été relancé et le navigateur de test du dépôt n'a pas encore été exécuté sur la branche. Les frontières des quartiers ne sont pas encore intégrées au jeu. La PR reste en brouillon jusqu'à validation réelle.
+Le fichier OSM joint a été parcouru intégralement et les audits de quartiers et restrictions ont été exécutés localement. Les tests synthétiques de l'extraction et du complément OSM passent dans la CI. Le complément Overpass réel, le mode strict sur l'extrait complété, la génération des tuiles et l'intégration des frontières au runtime restent à faire. La provenance des ways n'est pas conservée dans `global.json` ; les restrictions ne sont donc pas encore appliquées par A*. La PR reste en brouillon jusqu'à validation réelle.
