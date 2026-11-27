@@ -21,6 +21,8 @@ roads = []  # complete OSM highway ways for visible street profiles
 crossings = []  # OSM marked crossing nodes
 medians = []  # explicitly mapped traffic islands
 pedestrian_areas = []  # closed OSM pedestrian plazas / public squares
+water_areas = []  # closed OSM water polygons, used to clip urban ground
+waterway_lines = []  # OSM river / canal / stream axes
 bollards = []
 barriers = []
 kerbs = []
@@ -59,6 +61,13 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         pts = [nodes[r] for r in refs if r in nodes]
         if len(pts) >= 2 and len(pts) == len(refs):
             if refs[0] == refs[-1] and (
+                t.get("natural") == "water" or t.get("waterway") == "riverbank" or
+                t.get("landuse") in ("reservoir", "basin")
+            ):
+                water_areas.append({"pts": pts, "name": t.get("name"), "water": t.get("water"), "natural": t.get("natural")})
+            if t.get("waterway") in ("river", "canal", "stream", "ditch", "drain") and len(pts) >= 2:
+                waterway_lines.append({"pts": pts, "name": t.get("name"), "waterway": t.get("waterway"), "width": t.get("width")})
+            if refs[0] == refs[-1] and (
                 t.get("area:highway") == "pedestrian" or
                 (t.get("highway") == "pedestrian" and t.get("area") == "yes") or
                 t.get("place") == "square" or t.get("landuse") == "plaza" or
@@ -95,6 +104,9 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
                     "mat": t.get("material") or t.get("fence_type")
                 })
                 cnt["b_" + barrier_kind] += 1
+            if t.get("man_made") == "quay" or t.get("embankment") in ("yes", "quay"):
+                barriers.append({"k": "quay", "pts": pts, "h": t.get("height"), "mat": t.get("material") or "stone"})
+                cnt["b_quay"] += 1
             if hw and (t.get("width") or t.get("est_width")):
                 cnt["width"] += 1
             if hw and any(k.startswith("sidewalk") for k in t):
@@ -152,7 +164,8 @@ os.makedirs(os.path.dirname(OUT_FILE) or '.', exist_ok=True)
 with open(OUT_FILE, "wb") as f:
     pickle.dump({"steps": steps, "bollards": bollards, "barriers": barriers,
                  "sidewalks": sidewalks, "roads": roads, "crossings": crossings, "medians": medians,
-                 "pedestrian_areas": pedestrian_areas,
+                 "pedestrian_areas": pedestrian_areas, "water_areas": water_areas,
+                 "waterway_lines": waterway_lines,
                  "turn_restrictions": turn_restrictions},
                 f, protocol=pickle.HIGHEST_PROTOCOL)
 

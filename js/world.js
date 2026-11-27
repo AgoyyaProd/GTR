@@ -1347,7 +1347,18 @@ function buildBarriers(gb, t, list) {
     for (let i = 0; i < p.length - 2; i += 2) {
       const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy); if (l < 0.2) continue;
       const nx = -dy / l, ny = dx / l, sv = (x, y) => SW;
-      if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
+      if (k === 5) { /* quai OSM : mur de maçonnerie, sans garde-corps inventé */
+        const hpA=th(ax+nx*1.6,ay+ny*1.6), hnA=th(ax-nx*1.6,ay-ny*1.6), hpB=th(bx+nx*1.6,by+ny*1.6), hnB=th(bx-nx*1.6,by-ny*1.6);
+        const topA=Math.max(hpA,hnA,th(ax,ay))+0.12, topB=Math.max(hpB,hnB,th(bx,by))+0.12;
+        const botA=Math.min(hpA,hnA,th(ax,ay))-Math.max(1.4,H||2.0), botB=Math.min(hpB,hnB,th(bx,by))-Math.max(1.4,H||2.0);
+        const rel=(z,x,y)=>z-th(x,y)+SW, half=0.28;
+        const A=[ax+nx*half,ay+ny*half],B=[bx+nx*half,by+ny*half],C=[bx-nx*half,by-ny*half],D=[ax-nx*half,ay-ny*half];
+        gb.quad(MAT.stone,[A[0],rel(botA,...A),-A[1]],[B[0],rel(botB,...B),-B[1]],[B[0],rel(topB,...B),-B[1]],[A[0],rel(topA,...A),-A[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[nx,0,-ny]);
+        gb.quad(MAT.stone,[C[0],rel(botA,...C),-C[1]],[D[0],rel(botB,...D),-D[1]],[D[0],rel(topB,...D),-D[1]],[C[0],rel(topA,...C),-C[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[-nx,0,ny]);
+        gb.quad(MAT.stone,[A[0],rel(topA,...A),-A[1]],[B[0],rel(topB,...B),-B[1]],[C[0],rel(topB,...C),-C[1]],[D[0],rel(topA,...D),-D[1]],[0,0],[l/2,0],[l/2,0.25],[0,0.25],[0,1,0]);
+        const bb=[Math.min(...[A,B,C,D].map(v=>v[0])),Math.min(...[A,B,C,D].map(v=>v[1])),Math.max(...[A,B,C,D].map(v=>v[0])),Math.max(...[A,B,C,D].map(v=>v[1]))];
+        t.obs.add(bb[0],bb[1],bb[2],bb[3],{p:[...A,...B,...C,...D],b:bb,h:Math.max(topA,topB)-Math.min(botA,botB),low:true});
+      } else if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
         /* wide enough to cover the metre on each side where the 2 m relief model still ramps between the two levels */
         if (!f._rw) { /* once per wall: which side is high, and mitred offsets at the joints */
           let dsum = 0; const m = p.length / 2, sn = [];
@@ -1379,7 +1390,7 @@ function buildBarriers(gb, t, list) {
         for (const [e0, e1, sg] of [[c[0], c[1], 1], [c[2], c[3], -1]]) gb.quad(m, [e0[0], SW - 0.3, -e0[1]], [e1[0], SW - 0.3, -e1[1]], [e1[0], SW + H, -e1[1]], [e0[0], SW + H, -e0[1]], [0, 0], [l / 2, 0], [l / 2, H / 2], [0, H / 2], [nx * sg, 0, -ny * sg]);
         gb.quad(m, ...c.map(v => [v[0], SW + H, -v[1]]), [0, 0], [l / 2, 0], [l / 2, 0.2], [0, 0.2], [0, 1, 0]);
         t.obs.add(Math.min(ax, bx) - hw, Math.min(ay, by) - hw, Math.max(ax, bx) + hw, Math.max(ay, by) + hw, { p: c.flat(), b: [Math.min(...c.map(v => v[0])), Math.min(...c.map(v => v[1])), Math.max(...c.map(v => v[0])), Math.max(...c.map(v => v[1]))], h: H, low: true });
-      } else { /* fence / railing: top rail, bottom rail, bars */
+      } else if (k !== 5) { /* fence / railing: top rail, bottom rail, bars */
         for (const z of k === 1 ? [0.12, H] : [0.1, H - 0.05]) gb.quad(MAT.fence, [ax, SW + z - 0.03, -ay], [bx, SW + z - 0.03, -by], [bx, SW + z + 0.03, -by], [ax, SW + z + 0.03, -ay], [0, 0], [1, 0], [1, 1], [0, 1], [nx, 0, -ny]);
         const nb = Math.max(1, Math.round(l / (Math.hypot(ax - CENTER.x, ay - CENTER.y) > 1500 ? 0.6 : k === 1 ? 0.14 : 0.2)));
         for (let q = 0; q <= nb; q += 1) { const x = ax + dx * q / nb, y = ay + dy * q / nb, ex = dx / l * 0.012, ey = dy / l * 0.012; gb.quad(MAT.fence, [x - ex, SW, -(y - ey)], [x + ex, SW, -(y + ey)], [x + ex, SW + H, -(y + ey)], [x - ex, SW + H, -(y - ey)], [0, 0], [1, 0], [1, 1], [0, 1], [nx, 0, -ny]); }
