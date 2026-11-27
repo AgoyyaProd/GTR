@@ -1076,7 +1076,7 @@ function addRoad(gb0, t, r) {
   /* Reprises d'enrobé irrégulières : petites plaques de réparation intégrées
      à la chaussée. Le placement est hashé sur les coordonnées, indépendant du
      RNG global et stable entre deux reconstructions de tuiles. */
-  if (kind === 0 && w >= 5.2 && !bridge && MAT.asphaltRepair) {
+  if ((kind === 0 || kind === 1) && w >= 5.2 && !(flags & 8) && !bridge && MAT.asphaltRepair) {
     let accPatch = 0;
     for (let i = 0; i < p.length - 2; i += 2) {
       const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3];
@@ -1086,11 +1086,11 @@ function addRoad(gb0, t, r) {
       for (let q = 0; q < count; q++) {
         const seed = Math.sin((ax + bx) * 12.9898 + (ay + by) * 78.233 + (q + accPatch) * 37.719) * 43758.5453;
         const rnd = seed - Math.floor(seed);
-        if (rnd > 0.36) continue;
+        if (rnd > 0.46) continue;
         const along = 4.5 + (q + rnd) * 15, lateral = (Math.sin(seed * 4.17) * 0.5) * Math.max(0, hw - 1.1);
         if (along > len - 1.8) continue;
         const cx = ax + ux * along + nx * lateral, cy = ay + uy * along + ny * lateral;
-        if (Math.hypot(cx - CENTER.x, cy - CENTER.y) > 850) continue;
+        if (Math.hypot(cx - CENTER.x, cy - CENTER.y) > 1200 || inJunction(t, cx, cy) || inCrossing(t, cx, cy)) continue;
         const plen = 0.75 + rnd * 1.25, pw = 0.45 + (1 - rnd) * 0.5;
         const skew = Math.sin(seed * 2.3) * 0.18;
         const A = [cx - ux * plen - nx * (pw + skew), y + 0.018, -(cy - uy * plen - ny * (pw + skew))];
@@ -1419,8 +1419,10 @@ function addKerb(gb, t, c, boll, bollGrid) {
   for (let i = 0; i < n - 1; i++) {
     const ax = c[i * 2], ay = c[i * 2 + 1], bx = c[i * 2 + 2], by = c[i * 2 + 3], na = nv[i], nb = nv[i + 1], s1 = s + seg[i][2];
     const N = [-seg[i][1], 0, -seg[i][0]];
-    gb.quad(MAT.curb, [ax, -0.02, -ay], [bx, -0.02, -by], [bx, TOP, -by], [ax, TOP, -ay], [s / 1.2, 0], [s1 / 1.2, 0], [s1 / 1.2, 0.15], [s / 1.2, 0.15], N);
-    gb.quad(MAT.curb, [ax, TOP, -ay], [bx, TOP, -by], [bx - nb[0] * KW, TOP, -(by - nb[1] * KW)], [ax - na[0] * KW, TOP, -(ay - na[1] * KW)], [s / 1.2, 0.2], [s1 / 1.2, 0.2], [s1 / 1.2, 0.45], [s / 1.2, 0.45], [0, 1, 0]);
+    gb.quad(MAT.curb, [ax, -0.02, -ay], [bx, -0.02, -by], [bx, TOP - 0.035, -by], [ax, TOP - 0.035, -ay], [s / 1.2, 0], [s1 / 1.2, 0], [s1 / 1.2, 0.15], [s / 1.2, 0.15], N);
+    // Arête supérieure chanfreinée : le granit accroche la lumière au lieu de former une lame plate.
+    gb.quad(MAT.curb, [ax, TOP - 0.035, -ay], [bx, TOP - 0.035, -by], [bx - nb[0] * 0.055, TOP, -(by - nb[1] * 0.055)], [ax - na[0] * 0.055, TOP, -(ay - na[1] * 0.055)], [s / 1.2, 0.15], [s1 / 1.2, 0.15], [s1 / 1.2, 0.205], [s / 1.2, 0.205], [N[0], 0.7, N[2]]);
+    gb.quad(MAT.curb, [ax - na[0] * 0.055, TOP, -(ay - na[1] * 0.055)], [bx - nb[0] * 0.055, TOP, -(by - nb[1] * 0.055)], [bx - nb[0] * KW, TOP, -(by - nb[1] * KW)], [ax - na[0] * KW, TOP, -(ay - na[1] * KW)], [s / 1.2, 0.205], [s1 / 1.2, 0.205], [s1 / 1.2, 0.45], [s / 1.2, 0.45], [0, 1, 0]);
     /* Joints de pose du granit : fines coupes verticales dans la face du
        bordure, visibles seulement dans le centre dense. Elles suivent la
        longueur cumulée du fil OSM et restent hors du dessus de bordure. */
@@ -1630,6 +1632,9 @@ function buildProps() {
   PROPS.lampPole = mergeGeos([
     { geo: new THREE.CylinderGeometry(0.055, 0.12, 4.2, 12), m: MX(0, 2.1, 0) },
     { geo: new THREE.CylinderGeometry(0.17, 0.17, 0.24, 12), m: MX(0, 0.12, 0) },
+    { geo: new THREE.TorusGeometry(0.145, 0.025, 6, 16), m: MX(0, 0.34, 0, Math.PI / 2) },
+    ...Array.from({ length: 6 }, (_, k) => ({ geo: new THREE.CylinderGeometry(0.012, 0.016, 2.35, 5), m: MX(Math.cos(k * Math.PI / 3) * 0.087, 2.65, Math.sin(k * Math.PI / 3) * 0.087) })),
+    { geo: new THREE.TorusGeometry(0.105, 0.022, 6, 16), m: MX(0, 4.18, 0, Math.PI / 2) },
     { geo: new THREE.CylinderGeometry(0.09, 0.19, 0.22, 10), m: MX(0, 4.91, 0) },
     { geo: new THREE.CylinderGeometry(0.22, 0.12, 0.12, 10), m: MX(0, 4.3, 0) },
     { geo: new THREE.TorusGeometry(0.105, 0.018, 6, 12), m: MX(0, 4.72, 0, Math.PI/2) },
@@ -1679,6 +1684,8 @@ function buildProps() {
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.BoxGeometry(0.05, 0.5, 0.05), m: MX(x, 0.7, 0.26) })),
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.CylinderGeometry(0.025, 0.025, 0.48, 8), m: MX(x, 0.73, 0.02, Math.PI / 2, 0, 0) })),
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.CylinderGeometry(0.025, 0.025, 0.48, 8), m: MX(x, 0.48, -0.18, 0, 0, Math.PI / 2) })),
+    ...[-0.75, 0.75].flatMap(x => [-0.08, 0.08].map(z => ({ geo: new THREE.CylinderGeometry(0.018, 0.024, 0.34, 6), m: MX(x, 0.67, z) }))),
+    ...[-0.75, 0.75].map(x => ({ geo: new THREE.TorusGeometry(0.11, 0.022, 6, 12, Math.PI), m: MX(x, 0.83, 0.05, Math.PI / 2) })),
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.BoxGeometry(0.12, 0.045, 0.58), m: MX(x, 0.045, 0) }))
   ]);
   PROPS.shelterFrame = mergeGeos([
@@ -2317,7 +2324,7 @@ function* buildTile(t, data) {
   const props = new THREE.Group(); props.position.y = SW; props.matrixAutoUpdate = false; props.updateMatrix(); group.add(props); t.props = props;
   const G0 = group; group = props;
   instanced(group, PROPS.lampTallPole, MAT.metal, lampTall, true); instanced(group, PROPS.lampTallHead, MAT.lampHead, headsTall);
-  instanced(group, PROPS.lampPole, MAT.metal, lampStd, true); instanced(group, PROPS.lampHead, MAT.lampHead, headsStd);
+  instanced(group, PROPS.lampPole, MAT.castIron || MAT.metal, lampStd, true); instanced(group, PROPS.lampHead, MAT.lampHead, headsStd);
   t.pools = instanced(group, POOLGEO, poolMat, pools); eachInst(t.pools, im => im.receiveShadow = false);
   instanced(group, PROPS.trunk, MAT.trunk, trunks, true);
   const crownGeometries = [PROPS.crownA, PROPS.crownB, PROPS.crownC, PROPS.crownD, PROPS.crownE, PROPS.crownF];
@@ -2325,11 +2332,11 @@ function* buildTile(t, data) {
     const h = instanced(group, crownGeometries[i], MAT.leaves, crownSets[i], true);
     eachInst(h, im => im.customDepthMaterial = MAT.leafDepth);
   }
-  instanced(group, PROPS.bollard, MAT.bollard, bollards.concat(kerbBoll)); instanced(group, PROPS.grate, MAT.grate, grates); instanced(group, PROPS.bin, MAT.binGreen, bins);
+  instanced(group, PROPS.bollard, MAT.castIron || MAT.bollard, bollards.concat(kerbBoll)); instanced(group, PROPS.grate, MAT.grate, grates); instanced(group, PROPS.bin, MAT.binGreen, bins);
   instanced(group, PROPS.fountain, MAT.stone, fountains, true);
   instanced(group, PROPS.bistroTable, MAT.metal, tables, true); instanced(group, PROPS.chair, MAT.rattan, chairs, true);
   instanced(group, PROPS.parasol, MAT.parasolA, parasolsA, true); instanced(group, PROPS.parasol, MAT.parasolB, parasolsB, true); instanced(group, PROPS.parasolPole, MAT.metalLight, parasolsA.concat(parasolsB));
-  instanced(group, PROPS.benchWood, MAT.wood, benchW); instanced(group, PROPS.benchMetal, MAT.metal, benchM); instanced(group, PROPS.bikeRack, MAT.metalLight, racks);
+  instanced(group, PROPS.benchWood, MAT.wood, benchW); instanced(group, PROPS.benchMetal, MAT.castIron || MAT.metal, benchM); instanced(group, PROPS.bikeRack, MAT.metalLight, racks);
   instanced(group, PROPS.shelterFrame, MAT.metalLight, shelters, true); instanced(group, PROPS.shelterGlass, MAT.glassBus, shelters); instanced(group, PROPS.busSign, MAT.busSign, shelters);
   const tlm = tls.map(o => o.m); instanced(group, PROPS.tlPole, MAT.metal, tlm, true);
   t.tl = [0, 1].map(ph => { const ms = tls.filter(o => o.ph === ph).map(o => o.m); return { r: instanced(group, PROPS.tlRed, MAT.tl.r, ms), a: instanced(group, PROPS.tlAmb, MAT.tl.a, ms), g: instanced(group, PROPS.tlGrn, MAT.tl.g, ms) }; });
@@ -2447,6 +2454,15 @@ void main() {`).replace('tWP.y += terrainH(tWP.xz);', 'tWP.y += terrainH(tWP.xz)
     const p0 = ccw(w), p = [];
     for (let i = 0, n = p0.length / 2; i < n; i++) { const ax = p0[i * 2], ay = p0[i * 2 + 1], bx = p0[((i + 1) % n) * 2], by = p0[((i + 1) % n) * 2 + 1], k = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 12)); for (let q = 0; q < k; q++) p.push(ax + (bx - ax) * q / k, ay + (by - ay) * q / k); }
     gb.poly(MAT.water, p, -1.4, 1);
+    // Ligne d'humidité au contact du quai : ruban fin dans l'eau, regroupé dans le bucket global.
+    for (let i = 0, n = p.length / 2; i < n; i++) {
+      const j = (i + 1) % n, ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, band = 0.18;
+      gb.quad(MAT.waterEdge || MAT.water,
+        [ax, -1.382, -ay], [bx, -1.382, -by],
+        [bx + nx * band, -1.382, -(by + ny * band)], [ax + nx * band, -1.382, -(ay + ny * band)],
+        [0, 0], [len, 0], [len, band], [0, band], [0, 1, 0]);
+    }
     // Pas de mur automatique : les ouvrages verticaux viennent des barrières OSM explicites.
   }
   const grp = new THREE.Group(); gb.meshes(grp, {}); scene.add(grp);
