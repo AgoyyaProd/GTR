@@ -17,6 +17,7 @@ nodes = {}
 way_ids = set()
 turn_restrictions = []
 steps = []
+roads = []  # complete OSM highway ways for visible street profiles
 bollards = []
 barriers = []
 kerbs = []
@@ -51,6 +52,15 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         pts = [nodes[r] for r in refs if r in nodes]
         if len(pts) >= 2 and len(pts) == len(refs):
             hw = t.get("highway")
+            if hw and hw != "steps":
+                roads.append({
+                    "id": el.get("id"), "name": t.get("name"), "highway": hw,
+                    "width": t.get("width"), "est_width": t.get("est_width"), "lanes": t.get("lanes"),
+                    "sidewalk": t.get("sidewalk"), "sidewalk_left": t.get("sidewalk:left"),
+                    "sidewalk_right": t.get("sidewalk:right"), "surface": t.get("surface"),
+                    "oneway": t.get("oneway"), "layer": t.get("layer"),
+                    "bridge": t.get("bridge"), "tunnel": t.get("tunnel"), "pts": pts,
+                })
             if hw == "steps":
                 steps.append({
                     "pts": pts, "n": t.get("step_count"), "inc": t.get("incline"),
@@ -122,7 +132,7 @@ print(len(turn_restrictions), "turn restrictions;", sum(not r["complete"] for r 
 os.makedirs(os.path.dirname(OUT_FILE) or '.', exist_ok=True)
 with open(OUT_FILE, "wb") as f:
     pickle.dump({"steps": steps, "bollards": bollards, "barriers": barriers,
-                 "sidewalks": sidewalks, "turn_restrictions": turn_restrictions},
+                 "sidewalks": sidewalks, "roads": roads, "turn_restrictions": turn_restrictions},
                 f, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Sidecar JSON lisible : le graphe runtime devra encore conserver les way IDs

@@ -16,6 +16,49 @@ tiles = {}
 for f in sorted(glob.glob(f'{G}/tiles/t*.json')):
     i, j = map(int, os.path.basename(f)[1:-5].split('_')); tiles[(i, j)] = json.load(open(f))
 S = pickle.load(open('/home/claude/tools/street_osm.pkl', 'rb'))
+from street_profiles import road_width
+# Match simplified tile centerlines back to their source OSM way. A name match
+# is required: nearest geometry alone can silently assign a parallel street's width.
+osm_road_lines = []
+osm_road_records = []
+for road in S.get('roads', []):
+    if len(road.get('pts', [])) < 2:
+        continue
+    line = LineString(road['pts'])
+    if line.length < 1:
+        continue
+    osm_road_lines.append(line)
+    osm_road_records.append(road)
+osm_road_tree = STRtree(osm_road_lines) if osm_road_lines else None
+profiled_ways = 0
+unmatched_named = 0
+if osm_road_tree is not None:
+    for d in tiles.values():
+        for r in d['r']:
+            if r[1] not in (0, 1, 3) or len(r) < 8:
+                continue
+            pts = list(zip(r[4::2], r[5::2]))
+            if len(pts) < 2:
+                continue
+            mid = LineString(pts).interpolate(0.5, normalized=True)
+            candidates = osm_road_tree.query(mid.buffer(18))
+            best = None
+            best_score = float('inf')
+            for ci in candidates:
+                source = osm_road_records[int(ci)]
+                dist = osm_road_lines[int(ci)].distance(mid)
+                same_name = bool(r[3] and source.get('name') == r[3])
+                if not same_name or dist > 12:
+                    continue
+                score = dist
+                if score < best_score:
+                    best, best_score = source, score
+            if best is not None:
+                r[0] = round(road_width(best), 2)
+                profiled_ways += 1
+            elif r[3]:
+                unmatched_named += 1
+print('OSM road profiles matched', profiled_ways, 'unmatched named tile roads', unmatched_named, flush=True)
 
 def living(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 5.5) < 0.01
 def pedestrian(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 7) < 0.01 and not r[2] & 2

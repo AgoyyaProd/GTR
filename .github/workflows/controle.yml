@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Tester les profils routiers OSM
+        run: python tests/test_street_profiles.py
       - name: Tester l'extraction des restrictions OSM
         run: python tests/test_osm_restrictions.py
       - name: Tester le complément OSM sans réseau
