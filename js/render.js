@@ -173,10 +173,22 @@ async function loadGroundMaterials() {
   await Promise.all(names.map(async n => {
     g[n] = { map: await loadTex(`tex/${n}_d.jpg`, true), normalMap: await loadTex(`tex/${n}_n.jpg`), roughnessMap: await loadTex(`tex/${n}_r.jpg`) };
   }));
-  MAT.asphalt = M({ ...g.asphalt, roughnessMap: null, color: 0x9a9a9a, roughness: 1 });
+  /* Micro-variation de rugosité : grain et zones polies, sans ajouter de géométrie ni de draw call. */
+  const asphaltRoughCanvas = document.createElement('canvas'); asphaltRoughCanvas.width = asphaltRoughCanvas.height = 256;
+  const asphaltRoughCtx = asphaltRoughCanvas.getContext('2d'), asphaltRoughData = asphaltRoughCtx.createImageData(256, 256);
+  for (let yy = 0; yy < 256; yy++) for (let xx = 0; xx < 256; xx++) {
+    const i = (yy * 256 + xx) * 4;
+    const grain = Math.sin(xx * 1.73 + Math.sin(yy * 0.19) * 2.4) * 7 + Math.sin(yy * 2.11 + Math.sin(xx * 0.13)) * 5;
+    const wear = Math.sin(xx * 0.045 + Math.sin(yy * 0.031) * 2) * Math.sin(yy * 0.038) * 13;
+    const v = Math.max(112, Math.min(232, 184 + grain + wear));
+    asphaltRoughData.data[i] = asphaltRoughData.data[i + 1] = asphaltRoughData.data[i + 2] = v; asphaltRoughData.data[i + 3] = 255;
+  }
+  asphaltRoughCtx.putImageData(asphaltRoughData, 0, 0);
+  const asphaltRoughMap = new THREE.CanvasTexture(asphaltRoughCanvas); asphaltRoughMap.wrapS = asphaltRoughMap.wrapT = THREE.RepeatWrapping; asphaltRoughMap.repeat.set(3, 3); asphaltRoughMap.anisotropy = 4;
+  MAT.asphalt = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x929292, roughness: 0.98 });
   /* Reprises d'enrobé : même famille de texture, teinte et rugosité légèrement différentes. */
-  MAT.asphaltRepair = M({ ...g.asphalt, roughnessMap: null, color: 0x777875, roughness: 0.96 });
-  MAT.highway = M({ ...g.asphalt, roughnessMap: null, color: 0x7c7c7c, roughness: 1 });
+  MAT.asphaltRepair = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x777875, roughness: 0.96 });
+  MAT.highway = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x777979, roughness: 0.99 });
   MAT.pave = M({ ...g.pave, roughnessMap: null, color: 0x807b73, roughness: 1 });
   MAT.cobble = M({ ...g.cobble, roughnessMap: null, color: 0x807b73, roughness: 1 });
   MAT.square = M({ ...g.square, roughnessMap: null, color: 0x807b73, roughness: 1 });
@@ -189,7 +201,7 @@ async function loadGroundMaterials() {
   MAT.mark = M({ color: 0xe8e8e0, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
   MAT.curb = M({ ...g.sw, roughnessMap: null, color: 0xa7a39b, roughness: 0.8 });
   /* lowered carriageway: writes stencil 1 so the raised sidewalk plane skips it */
-  MAT.road = M({ ...g.asphalt, roughnessMap: null, color: 0x9a9a9a, roughness: 1 });
+  MAT.road = M({ ...g.asphalt, roughnessMap: asphaltRoughMap, color: 0x929292, roughness: 0.98 });
   MAT.sett = M({ ...g.cobble, roughnessMap: null, color: 0x827c74, roughness: 1 }); /* cobbled carriageway of the old town's living streets */
   MAT.stair = M({ ...g.slab, roughnessMap: null, color: 0x99938a, roughness: 0.8 }); MAT.stairNose = M({ color: 0x8a857c, roughness: 0.7 });
   MAT.fence = M({ color: 0x2a3a34, roughness: 0.5, metalness: 0.6 }); MAT.wallLow = M({ ...g.slab, roughnessMap: null, color: 0x8e877b, roughness: 0.9 }); MAT.hedge = M({ color: 0x3c5a2a, roughness: 1 });
@@ -203,6 +215,7 @@ async function loadGroundMaterials() {
   MAT.slateT = M({ ...g.slate, color: 0xffffff, roughness: 0.72, vertexColors: true }); MAT.tileRoofT = MAT.slateT;
   MAT.flatT = M({ ...g.concrete, color: 0xffffff, roughness: 1, vertexColors: true });
   MAT.metal = M({ color: 0x2a2d33, roughness: 0.45, metalness: 0.8 });
+  MAT.castIron = M({ color: 0x171a1b, roughness: 0.62, metalness: 0.72 });
   MAT.metalLight = M({ color: 0x9aa0a8, roughness: 0.35, metalness: 0.9 });
   MAT.rail = M({ color: 0x8a8a8a, roughness: 0.3, metalness: 1 });
   MAT.lampHead = M({ color: 0xfff1d0, emissive: 0xffc070, emissiveIntensity: 2 });
@@ -219,8 +232,10 @@ async function loadGroundMaterials() {
   const hgt = new Float32Array(256 * 256); for (let k = 0; k < 40; k++) { const fx = rnd(1, 6) | 0, fy = rnd(1, 6) | 0, ph = rnd(0, 6), a = rnd(0.3, 1) / (fx + fy); for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) hgt[y * 256 + x] += Math.sin((x * fx + y * fy) / 256 * Math.PI * 2 + ph) * a; }
   for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) { const dx = hgt[y * 256 + ((x + 1) & 255)] - hgt[y * 256 + ((x + 255) & 255)], dy = hgt[((y + 1) & 255) * 256 + x] - hgt[((y + 255) & 255) * 256 + x]; const o = (y * 256 + x) * 4; id.data[o] = 128 + dx * 300; id.data[o + 1] = 128 + dy * 300; id.data[o + 2] = 255; id.data[o + 3] = 255; }
   wg.putImageData(id, 0, 0);
-  MAT.water = M({ color: 0x0e1c22, roughness: 0.06, metalness: 0.1, normalMap: canvasTex(wn), normalScale: new THREE.Vector2(0.6, 0.6) });
-  MAT.water.normalMap.repeat.set(1 / 14, 1 / 14);
+  MAT.water = M({ color: 0x102b29, roughness: 0.12, metalness: 0.16, normalMap: canvasTex(wn), normalScale: new THREE.Vector2(0.82, 0.82) });
+  MAT.water.normalMap.wrapS = MAT.water.normalMap.wrapT = THREE.RepeatWrapping;
+  MAT.water.normalMap.repeat.set(1 / 11, 1 / 11);
+  MAT.waterEdge = M({ color: 0x1a3b35, roughness: 0.3, metalness: 0.08 });
   MAT.groundMat = MAT.pave;
 }
 
@@ -575,6 +590,10 @@ function updateWetSurfaceBlend(amount, night) {
 function wxNight() { const h = (typeof gameMin !== 'undefined' ? gameMin : 23 * 60) / 60; return h < 8 || h >= 17.5; }
 function wxMode() { const wet = WX.k > 0.08 || WX.wetT > 0, n = wxNight(); return { id: (n ? 'nuit' : 'jour') + (wet ? '-pluie' : ''), label: '', night: n, rain: wet, wx: true }; }
 function weatherStep(dt) {
+  if (MAT.water && MAT.water.normalMap) {
+    MAT.water.normalMap.offset.x = (MAT.water.normalMap.offset.x + dt * 0.00042) % 1;
+    MAT.water.normalMap.offset.y = (MAT.water.normalMap.offset.y + dt * 0.00016) % 1;
+  }
   if (!WX.auto) return;
   WX.t -= dt;
   if (WX.t <= 0) {
@@ -590,7 +609,7 @@ function weatherStep(dt) {
   const residualWet = WX.wetT > 0 ? 0.28 * (WX.wetT / 90) : 0;
   updateWetSurfaceBlend(Math.max(k, residualWet), MODE.night);
   rain.visible = k > 0.03 && !underRoof(player.x, player.y); rainGeo.setDrawRange(0, Math.round(RAIN * Math.min(1, 0.15 + k)) * 2); rain.material.opacity = 0.12 + 0.3 * k;
-  if (scene.fog) scene.fog.density = (MODE.night ? 0.0042 : 0.0026) + k * (MODE.night ? 0.0026 : 0.0028) + (WX.state === 'nuageux' ? 0.0006 : 0);
+  if (scene.fog) scene.fog.density = (MODE.night ? 0.0042 : 0.00095) + k * (MODE.night ? 0.0026 : 0.00045) + (WX.state === 'nuageux' ? 0.0002 : 0);
 }
 function applyMode(m) {
   if (m.auto) { WX.auto = true; m = wxMode(); WX.applied = m.id; }
@@ -600,7 +619,7 @@ function applyMode(m) {
   scene.background = night ? (m.rain ? SKY.nightRain : SKY.nightClear) : (m.rain ? SKY.dayRain : (ENV.sky_day || new THREE.Color(0x9ab8d8)));
   scene.environment = night ? ENV.env_night : ENV.env_day;
   const fogC = night ? (m.rain ? 0x1a2030 : 0x121828) : (m.rain ? 0x737f8a : 0x9eafbd);
-  scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0025 : 0.00145));
+  scene.fog = new THREE.FogExp2(fogC, night ? (m.rain ? 0.0062 : 0.0042) : (m.rain ? 0.0014 : 0.00095));
   hemi.intensity = night ? 0.25 : (m.rain ? 0.52 : 0.36); hemi.color.set(night ? 0x5a6aa0 : 0xcfe0ff); hemi.groundColor.set(night ? 0x201810 : 0x5a5040);
   sun.color.set(night ? 0x8aa0ff : 0xfff0d8); sun.intensity = night ? 0.35 : (m.rain ? 0.6 : 2.6);
   sun.userData.dir = night ? new THREE.Vector3(-0.4, 0.8, 0.35) : new THREE.Vector3(-0.55, 0.62, 0.45);
@@ -611,7 +630,7 @@ function applyMode(m) {
   renderer.toneMappingExposure = 1.0;
   const wet = m.rain;
   for (const mt of allMats) {
-    mt.envMapIntensity = night ? 0.42 : 0.9;
+    mt.envMapIntensity = mt.userData.envCap ? Math.min(night ? 0.42 : 0.9, mt.userData.envCap) : (night ? 0.42 : 0.9);
     if (mt.userData.facade || mt === MAT.lampHead || (MAT.dormer && MAT.dormer.includes(mt)) || mt.userData.sign) mt.emissiveIntensity = night ? (mt === MAT.lampHead ? 3 : 1.15) : 0;
   }
   if (MAT.dormer) MAT.dormer[1].emissiveIntensity = night ? 1 : 0;
@@ -619,9 +638,9 @@ function applyMode(m) {
   for (const k of ground) {
     const mt = MAT[k]; if (!mt) continue;
     mt.userData.wetDryRoughness = 1;
-    mt.userData.wetRoughness = k === 'mark' ? 0.2 : (k === 'asphalt' || k === 'road' || k === 'highway' ? 0.34 : 0.48);
-    mt.userData.wetDryEnv = night ? 0.35 : 0.7;
-    mt.userData.wetEnv = night ? 0.82 : 1.05;
+    mt.userData.wetRoughness = night ? (k === 'mark' ? 0.62 : 0.72) : (k === 'mark' ? 0.2 : (k === 'asphalt' || k === 'road' || k === 'highway' ? 0.34 : 0.48));
+    mt.userData.wetDryEnv = night ? 0.22 : 0.7;
+    mt.userData.wetEnv = night ? 0.15 : 1.05;
     mt.roughness = mt.userData.wetDryRoughness;
     mt.envMapIntensity = mt.userData.wetDryEnv;
   }

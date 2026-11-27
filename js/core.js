@@ -59,7 +59,7 @@ function initGlobal(gd) {
   for (const w of gd.water) { const b = polyBox(w); const o = { p: w, b }; waterList.push(o); waterGrid.add(b[0], b[1], b[2], b[3], o); }
 }
 const nx = i => GXY[i * 2], ny = i => GXY[i * 2 + 1];
-function outEdges(i, mask) { const r = []; for (let k = GOFF[i]; k < GOFF[i + 1]; k++) if (GFL[k] & mask) r.push(k); return r; }
+function outEdges(i, mask) { const r = []; if (!Number.isInteger(i) || i < 0 || i >= NN) return r; for (let k = GOFF[i]; k < GOFF[i + 1]; k++) if (GFL[k] & mask) r.push(k); return r; }
 function nearestNode(x, y, mask) {
   const s = new Set();
   for (let rad = 60; rad <= 960; rad *= 2) {
@@ -68,10 +68,11 @@ function nearestNode(x, y, mask) {
     for (const i of s) { if (mask && !outEdges(i, mask).length) continue; const d = Math.hypot(nx(i) - x, ny(i) - y); if (d < bd) { bd = d; best = i; } }
     if (best >= 0) return best;
   }
-  return 0;
+  return -1; // aucun nœud compatible dans le rayon : ne jamais rabattre vers le nœud 0 (faux point d'ancrage)
 }
 /* A* with binary heap; mask filters edges */
 function astar(s, g, mask, limit) {
+  if (!Number.isInteger(s) || !Number.isInteger(g) || s < 0 || g < 0 || s >= NN || g >= NN) return null;
   if (s === g) return [g];
   const gx = nx(g), gy = ny(g);
   const cost = new Map([[s, 0]]), came = new Map([[s, -1]]);

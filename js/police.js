@@ -33,6 +33,7 @@ function syncCops() {
     let best = -1;
     for (let q = 0; q < 60; q++) { const a = Math.random() * 6.28, r = rnd(120, 230), i = nearestNode(pl.x + Math.cos(a) * r, pl.y + Math.sin(a) * r, 1); const d = Math.hypot(nx(i) - pl.x, ny(i) - pl.y); if (d > 100 && d < 270) { best = i; break; } }
     if (best < 0) best = nearestNode(pl.x + 150, pl.y, 1);
+    if (best < 0) break; // aucun point routier valide : ne pas placer de patrouille au nœud 0
     const e = outEdges(best, 2); const b = e.length ? GNB[e[0]] : best;
     const c = addCar(nx(best), ny(best), Math.atan2(nx(b) - nx(best), ny(b) - ny(best)), Object.assign({ ai: 'cop', kind: 'cop', keep: true }, copSpec(wanted, k++)));
     copCars.push(c);

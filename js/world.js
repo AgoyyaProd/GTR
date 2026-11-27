@@ -295,6 +295,14 @@ function addBuilding(gb, t, h, code, p, R) {
       const dx = m1[0] - m0[0], dy = m1[1] - m0[1], rl = Math.hypot(dx, dy) || 1, rw = 0.10;
       const nx = -dy / rl * rw, ny = dx / rl * rw;
       gb.quad(MAT.slate, [m0[0]+nx,rid+0.035,-(m0[1]+ny)], [m1[0]+nx,rid+0.035,-(m1[1]+ny)], [m1[0]-nx,rid+0.035,-(m1[1]-ny)], [m0[0]-nx,rid+0.035,-(m0[1]-ny)], [0,0], [rl,0], [rl,0.2], [0,0.2], [0,1,0]);
+      // Cheminée sur le faîtage réel, avec solin et chaperon maçonné.
+      if (style <= 3 && R() < 0.72) {
+        const tx = (m0[0] + m1[0]) * 0.5, ty = (m0[1] + m1[1]) * 0.5;
+        const cw = 0.58, cd = 0.68, ch = 1.75, rot = Math.atan2(dy, dx);
+        addBox(gb, MAT.coping, tx, ty, rid - 0.12, cw + 0.16, cd + 0.16, 0.12, rot);
+        addBox(gb, MAT.chimney, tx, ty, rid - 0.02, cw, cd, ch, rot);
+        addBox(gb, MAT.coping, tx, ty, rid + ch - 0.02, cw + 0.18, cd + 0.18, 0.13, rot);
+      }
       gableBuilt = true;
     }
   }
@@ -474,7 +482,7 @@ function hallMat() {
   for (let y = y0; y < H; y += 9) for (let x = ((y - y0) / 9 % 2) * 13; x < 512; x += 26) { g.fillStyle = `hsl(${8 + Math.random() * 8},${45 + Math.random() * 15}%,${33 + Math.random() * 8}%)`; g.fillRect(x, y, 24, 7); }
   for (let cx = 32; cx < 512; cx += 64) for (let cy = y0 + 70; cy < H - 40; cy += 110) { g.fillStyle = Math.random() < 0.5 ? '#d8a848' : '#2a2420'; g.save(); g.translate(cx, cy); g.rotate(Math.PI / 4); g.fillRect(-14, -14, 28, 28); g.restore(); }
   g.fillStyle = '#cfc6b4'; g.fillRect(0, H - m * 0.5, 512, m * 0.5);
-  HALLM = M({ map: canvasTex(c, true), roughness: 0.75 }); HALLM.userData.perU = 6; HALLM.userData.perV = 12; HALLM.userData.avg = [0.5, 0.5, 0.5];
+  HALLM = M({ map: canvasTex(c, true), color: 0xe0d4c2, roughness: 0.9 }); HALLM.envMapIntensity = 0.55; HALLM.userData.envCap = 0.55; HALLM.userData.perU = 6; HALLM.userData.perV = 12; HALLM.userData.avg = [0.5, 0.5, 0.5];
   return HALLM;
 }
 /* ---------- Halles Martenot (the market halls of the Lices): open to walk in through their doors ---------- */
@@ -492,7 +500,7 @@ function hallInteriorMats() {
   const awn = [0xb8352a, 0x2f6a3a, 0x2a4f8a, 0xc98a1a, 0x7a2a5a].map(c => M({ color: c, roughness: 0.8, side: THREE.DoubleSide }));
   const prod = [0xd8402a, 0xe8a020, 0x6aa830, 0xf0e0b0, 0x8a3a8a, 0xc85a2a].map(c => M({ color: c, roughness: 0.7 }));
   HALLI = { awn, prod, wood: M({ ...MAT.groundTex.concrete, color: 0x8a6a48, roughness: 0.9 }), iron: M({ color: 0x2c3634, roughness: 0.5, metalness: 0.6 }),
-    ceil: M({ color: 0x46524f, roughness: 0.8, side: THREE.DoubleSide }), glass: M({ color: 0xbcd8e0, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false }), lantern: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#20282a'; g.fillRect(0, 0, 256, 128); for (let x = 0; x < 256; x += 32) for (let y = 0; y < 128; y += 64) { g.fillStyle = '#8fb0b8'; g.fillRect(x + 4, y + 6, 24, 52); } const tx = canvasTex(c, true); const m = M({ map: tx, emissive: 0xffd8a0, emissiveMap: tx, emissiveIntensity: 0, roughness: 0.15, metalness: 0.3 }); m.userData.sign = true; return m; })(), lamp: new THREE.MeshBasicMaterial({ color: 0xfff0c8 }), steel: M({ color: 0xb8bcc0, roughness: 0.35, metalness: 0.7 }) };
+    ceil: M({ color: 0x46524f, roughness: 0.8, side: THREE.DoubleSide }), glass: (() => { const m = M({ color: 0x9bb5bd, roughness: 0.22, metalness: 0.02, transparent: true, opacity: 0.24, depthWrite: false }); m.envMapIntensity = 0.3; m.userData.envCap = 0.3; return m; })(), lantern: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#20282a'; g.fillRect(0, 0, 256, 128); for (let x = 0; x < 256; x += 32) for (let y = 0; y < 128; y += 64) { g.fillStyle = '#8fb0b8'; g.fillRect(x + 4, y + 6, 24, 52); } const tx = canvasTex(c, true); const m = M({ map: tx, emissive: 0xffd8a0, emissiveMap: tx, emissiveIntensity: 0, roughness: 0.15, metalness: 0.3 }); m.userData.sign = true; return m; })(), lamp: new THREE.MeshBasicMaterial({ color: 0xfff0c8 }), steel: M({ color: 0xb8bcc0, roughness: 0.35, metalness: 0.7 }) };
   return HALLI;
 }
 function buildHall(gb, t, f0, h, hv = h) {
@@ -620,17 +628,101 @@ function addLodBuilding(gb, t, rec, R, force) {
       const ax = f[q * 2], ay = f[q * 2 + 1], bx = f[((q + 1) % n) * 2], by = f[((q + 1) % n) * 2 + 1];
       const L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue;
       let wallTop = 0;
+      const roofSamples = [];
       for (let vi = 0; vi < v.length; vi += 3) {
-        if (segNear(v[vi] / 10, v[vi + 1] / 10, ax, ay, bx, by, _q) <= 0.22)
-          wallTop = Math.max(wallTop, v[vi + 2] / 10);
+        const vx = v[vi] / 10, vy = v[vi + 1] / 10, vz = v[vi + 2] / 10;
+        if (segNear(vx, vy, ax, ay, bx, by, _q) <= 0.22) {
+          wallTop = Math.max(wallTop, vz);
+          const along = clamp((vx - ax) * ((bx - ax) / L) + (vy - ay) * ((by - ay) / L), 0, L);
+          roofSamples.push([along, vz]);
+        }
       }
-      if (wallTop < 2) wallTop = h;
-      fe.push([ax, ay, (bx - ax) / L, (by - ay) / L, L, acc, Math.min(h, wallTop), q]);
+      if (wallTop < 2) { wallTop = h; roofSamples.push([0, h], [L, h]); }
+      roofSamples.sort((a, b) => a[0] - b[0]);
+      const profile = [];
+      for (const sample of roofSamples) {
+        const last = profile[profile.length - 1];
+        if (last && Math.abs(last[0] - sample[0]) < 0.08) last[1] = Math.max(last[1], sample[1]);
+        else profile.push(sample.slice());
+      }
+      fe.push([ax, ay, (bx - ax) / L, (by - ay) / L, L, acc, Math.min(h, wallTop), q, profile]);
       acc += L;
     }
   }
+  const edgeHeightAt = (e, along) => {
+    const profile = e[8] || [];
+    if (!profile.length) return e[6] || h;
+    if (along <= profile[0][0]) return profile[0][1];
+    for (let q = 1; q < profile.length; q++) {
+      if (along <= profile[q][0]) {
+        const a = profile[q - 1], b = profile[q], span = b[0] - a[0];
+        return span > 1e-4 ? a[1] + (b[1] - a[1]) * ((along - a[0]) / span) : Math.max(a[1], b[1]);
+      }
+    }
+    return profile[profile.length - 1][1];
+  };
   const ccwF = polyArea(f) > 0;
   const _bb = polyBox(f), cx = (_bb[0] + _bb[2]) / 2, cy = (_bb[1] + _bb[3]) / 2, dc = Math.hypot(cx - CENTER.x, cy - CENTER.y); /* centre and distance to the city centre (used by the facade details, were undefined here) */
+  const wallPlanes = new Map();
+  for (const e of fe) {
+    const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
+    const N = [nx, 0, -ny], candidates = [], lowOffsets = [];
+    for (let vi = 0; vi < v.length; vi += 3) {
+      const vx = v[vi] / 10, vy = v[vi + 1] / 10, vz = v[vi + 2] / 10;
+      const along = (vx - e[0]) * e[2] + (vy - e[1]) * e[3];
+      if (along < -0.3 || along > e[4] + 0.3) continue;
+      const px = e[0] + e[2] * along, py = e[1] + e[3] * along;
+      if (vz <= 1.35) lowOffsets.push((vx - px) * nx + (vy - py) * ny);
+    }
+    lowOffsets.sort((a, b) => a - b);
+    const baseOffset = lowOffsets.length ? lowOffsets[(lowOffsets.length / 2) | 0] : 0;
+    for (let k = 0; k < idx.length; k += 3) {
+      if (kinds[k / 3] === '1') continue;
+      const a = P(idx[k]), b = P(idx[k + 1]), c = P(idx[k + 2]);
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+      const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+      let nx3 = uy * vz - uz * vy, ny3 = uz * vx - ux * vz, nz3 = ux * vy - uy * vx;
+      const nl = Math.hypot(nx3, ny3, nz3) || 1; nx3 /= nl; ny3 /= nl; nz3 /= nl;
+      const hl = Math.hypot(nx3, nz3) || 1, wnx = nx3 / hl, wny = -nz3 / hl;
+      // Seules les faces murales verticales peuvent porter des décors.
+      if (Math.abs(ny3) > 0.2 || wnx * nx + wny * ny < 0.62) continue;
+      const mx = (a[0] + b[0] + c[0]) / 3, my = -(a[2] + b[2] + c[2]) / 3;
+      const along = (mx - e[0]) * e[2] + (my - e[1]) * e[3];
+      if (along < -0.6 || along > e[4] + 0.6) continue;
+      const px = e[0] + e[2] * along, py = e[1] + e[3] * along;
+      const off = (mx - px) * nx + (my - py) * ny;
+      if (Math.abs(off - baseOffset) > 2.2) continue;
+      let normal = [nx3, ny3, nz3];
+      if (normal[0] * N[0] + normal[2] * N[2] < 0) normal = normal.map(z => -z);
+      const verticalized = Math.abs(ny3) > 0.075 && lowOffsets.length >= 2 &&
+        Math.abs(baseOffset) < 0.38 && Math.abs(off - baseOffset) > 0.22;
+      const alongs = [a, b, c].map(p => (p[0] - e[0]) * e[2] + (-p[2] - e[1]) * e[3]);
+      const ys = [a[1], b[1], c[1]];
+      candidates.push({
+        along, y: (a[1] + b[1] + c[1]) / 3,
+        alongMin: Math.min(...alongs), alongMax: Math.max(...alongs),
+        yMin: Math.min(...ys), yMax: Math.max(...ys),
+        point: verticalized
+          ? [px + nx * baseOffset, (a[1] + b[1] + c[1]) / 3, -(py + ny * baseOffset)]
+          : [mx, (a[1] + b[1] + c[1]) / 3, -my],
+        normal: verticalized ? N : normal, verticalized
+      });
+    }
+    wallPlanes.set(e[7], candidates);
+  }
+  // Couverture issue exclusivement des triangles muraux réellement rendus.
+  const wallSupport = (e, along, y) => {
+    const planes = wallPlanes.get(e[7]) || [];
+    return planes.some(p => along >= p.alongMin - 0.12 && along <= p.alongMax + 0.12 &&
+      y >= p.yMin - 0.12 && y <= p.yMax + 0.12);
+  };
+  const wallTopAt = (e, along) => {
+    const planes = wallPlanes.get(e[7]) || [];
+    let top = -Infinity;
+    for (const p of planes) if (along >= p.alongMin - 0.12 && along <= p.alongMax + 0.12)
+      top = Math.max(top, p.yMax);
+    return top;
+  };
   /* Relief architectural discret pour les façades historiques dessinées :
      des bandeaux de pierre très peu saillants matérialisent les planchers.
      Ils restent dans le groupe des façades dessinées (jamais sur les atlas photo),
@@ -640,11 +732,13 @@ function addLodBuilding(gb, t, rec, R, force) {
     // Rehausses discrètes des lignes de plancher : plinthe, bandeaux et corniche.
     // Géométrie regroupée dans le bucket de façade, jamais ajoutée aux bâtiments
     // hors du centre ni aux monuments / halles.
-    const floors = Math.min(9, Math.floor((h - 0.8) / FLOOR));
     const stoneMat = MAT.coping;
     for (const e of fe) {
       const edgeH = e[6] || h;
-      if (e[4] < 3.2 || edgeH < 5) continue;
+      const floors = Math.min(9, Math.floor((edgeH - 0.8) / FLOOR));
+      const profile = e[8] || [];
+      const roofSlope = profile.length > 1 ? Math.max(...profile.map(p => p[1])) - Math.min(...profile.map(p => p[1])) : 0;
+      if (e[4] < 3.2 || edgeH < 5 || !wallSupport(e, e[4] * 0.5, Math.min(edgeH - 0.5, h * 0.65))) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const ax = e[0], ay = e[1], bx = ax + e[2] * e[4], by = ay + e[3] * e[4];
       const N = [nx, 0, -ny], uv = e[4] / 2.4;
@@ -668,7 +762,7 @@ function addLodBuilding(gb, t, rec, R, force) {
         wallGB.quad(stoneMat, A, B, C, D, [0, 0], [uv, 0], [uv, 0.035], [0, 0.035], [0, 1, 0]);
       }
       // Corniche haute très fine : elle donne une vraie ligne d'ombre à la toiture.
-      if (edgeH > 11) {
+      if (edgeH > 11 && roofSlope < 0.28) {
         const y = edgeH - 0.32;
         face(y, y + 0.12, 0.14);
         const A = [ax + nx * 0.14, y + 0.12, -(ay + ny * 0.14)];
@@ -681,22 +775,37 @@ function addLodBuilding(gb, t, rec, R, force) {
   }
   // Encadrements de fenêtres en relief : uniquement sur un sous-ensemble
   // proche du joueur, afin de réserver le budget géométrique aux façades lisibles.
-  if (!hall && !rec.mo && dc < 720 && h >= 8 && h <= 28 &&
-      (style === 0 || style === 1 || style === 3) && MAT.stone && R() < 0.58) {
+  if (!hall && !rec.mo && dc < 1050 && h >= 8 && h <= 32 &&
+      (style === 0 || style === 1 || style === 3) && MAT.stone && MAT.glassBus) {
     const periodU = perU || 4 * BAY;
-    const rows = Math.min(8, Math.floor((h - 0.65) / FLOOR));
     const frameMat = MAT.stone;
     for (const e of fe) {
       const L = e[4], edgeH = e[6] || h;
-      if (L < 5.4 || edgeH < 8) continue;
+      const rows = Math.min(8, Math.floor((edgeH - 0.65) / FLOOR));
+      if (L < 5.4 || edgeH < 8 || rows < 1 || !wallSupport(e, L * 0.5, Math.min(edgeH - 0.5, h * 0.65))) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const sg = e[2] * ny - e[3] * nx > 0 ? 1 : -1;
       const dirX = e[2], dirY = e[3], N = [nx, 0, -ny];
-      const at = (along, y, depth = 0.085) => [
-        e[0] + dirX * along + nx * depth,
-        y,
-        -(e[1] + dirY * along + ny * depth)
-      ];
+      const planes = wallPlanes.get(e[7]) || [];
+      const at = (along, y, depth = 0.085) => {
+        const bx = e[0] + dirX * along, by = e[1] + dirY * along;
+        let plane = null, score = 1e9;
+        for (const candidate of planes) {
+          if (along < candidate.alongMin - 0.12 || along > candidate.alongMax + 0.12 ||
+              y < candidate.yMin - 0.12 || y > candidate.yMax + 0.12) continue;
+          const d = Math.abs(candidate.along - along) + Math.abs(candidate.y - y) * 0.08;
+          if (d < score) { score = d; plane = candidate; }
+        }
+        if (plane && wallSupport(e, along, y)) {
+          const n = plane.normal, p0 = plane.point, denom = n[0] * nx - n[2] * ny;
+          if (Math.abs(denom) > 0.28) {
+            const surfaceDepth = (n[0] * (p0[0] - bx) + n[1] * (p0[1] - y) + n[2] * (p0[2] + by)) / denom;
+            const d = surfaceDepth + depth;
+            return [bx + nx * d, y, -(by + ny * d)];
+          }
+        }
+        return [bx + nx * depth, y, -(by + ny * depth)];
+      };
       // La texture de façade utilise 4 travées de BAY mètres par période.
       for (const c0 of [0.5 * BAY, 1.5 * BAY, 2.5 * BAY, 3.5 * BAY]) {
         let kMin, kMax;
@@ -712,9 +821,34 @@ function addLodBuilding(gb, t, rec, R, force) {
           if (center < 0.95 || center > L - 0.95) continue;
           for (let fl = 0; fl < rows; fl++) {
             const y0 = fl * FLOOR + FLOOR * 0.2 - 0.16;
-            const y1 = y0 + 2.25;
-            if (y1 > edgeH - 0.22) continue;
             const half = 0.735, inner = 0.575, bar = 0.10;
+            // La limite haute vient de la face murale porteuse, pas de rec.h.
+            const wallTop = Math.min(wallTopAt(e, center - half),
+              wallTopAt(e, center), wallTopAt(e, center + half));
+            const y1 = Math.min(y0 + 2.25, wallTop - 0.18);
+            if (!Number.isFinite(wallTop) || y1 - y0 < 1.12) continue;
+            // Le mur doit exister sur toute la largeur et toute la hauteur du cadre.
+            let supported = true;
+            for (const u of [center - half, center - inner, center, center + inner, center + half])
+              for (const yy of [y0 + 0.08, (y0 + y1) * 0.5, y1 - 0.08])
+                if (!wallSupport(e, u, yy)) supported = false;
+            if (!supported) continue;
+            // Vitrage en retrait et tableaux latéraux : la baie ne se limite
+            // plus à un cadre posé sur la texture de façade.
+            const paneY0 = y0 + bar + 0.035, paneY1 = y1 - bar - 0.035;
+            const paneL = center - inner + 0.035, paneR = center + inner - 0.035;
+            wallGB.quad(MAT.glassBus,
+              at(paneL, paneY0, 0.052), at(paneR, paneY0, 0.052),
+              at(paneR, paneY1, 0.052), at(paneL, paneY1, 0.052),
+              [0, 0], [1, 0], [1, 1], [0, 1], N);
+            wallGB.quad(frameMat,
+              at(center - inner, paneY0, 0.025), at(paneL, paneY0, 0.025),
+              at(paneL, paneY1, 0.052), at(center - inner, paneY1, 0.052),
+              [0, 0], [0.04, 0], [0.04, 2], [0, 2], N);
+            wallGB.quad(frameMat,
+              at(paneR, paneY0, 0.025), at(center + inner, paneY0, 0.025),
+              at(center + inner, paneY1, 0.052), at(paneR, paneY1, 0.052),
+              [0, 0], [0.04, 0], [0.04, 2], [0, 2], N);
             const strip = (s0, s1, v0, v1) => wallGB.quad(
               frameMat,
               at(s0, v0), at(s1, v0), at(s1, v1), at(s0, v1),
@@ -843,7 +977,8 @@ function addLodBuilding(gb, t, rec, R, force) {
     const roofCenter = polyBox(f), bcx = (roofCenter[0] + roofCenter[2]) * 0.5, bcy = (roofCenter[1] + roofCenter[3]) * 0.5;
     for (const e of fe) {
       const edgeH = e[6] || h;
-      if (e[4] < 7 || edgeH < 5 || Math.abs(Math.sin(bcx * 7.13 + bcy * 19.71 + e[5] * 0.37)) > 0.22) continue;
+      if (e[4] < 7 || edgeH < 5 || !wallSupport(e, e[4] * 0.34, edgeH * 0.55) ||
+          Math.abs(Math.sin(bcx * 7.13 + bcy * 19.71 + e[5] * 0.37)) > 0.22) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const px = e[0] + e[2] * 0.34 + nx * 0.16;
       const py = e[1] + e[3] * 0.34 + ny * 0.16;
@@ -889,7 +1024,25 @@ function addLodBuilding(gb, t, rec, R, force) {
       let UVw;
       if (best && bs < 3) { const sg = best[2] * wny - best[3] * wnx > 0 ? 1 : -1, e = best; UVw = p => [(e[5] * sg + ((p[0] - e[0]) * e[2] + (-p[2] - e[1]) * e[3]) * sg) / perU, p[1] / perV]; }
       else { const an = Math.round(Math.atan2(wny, wnx) / 0.01) * 0.01, tx = Math.sin(an), ty = -Math.cos(an), o0 = f[0], o1 = f[1]; UVw = p => [((p[0] - o0) * tx + (-p[2] - o1) * ty) / perU, p[1] / perV]; }
-      wallGB.tri(mat, a, b, c, UVw(a), UVw(b), UVw(c), tint);
+      const planes = wallPlanes.get(best ? best[7] : -1) || [];
+      if (planes.length) {
+        const mx0 = (a[0] + b[0] + c[0]) / 3, my0 = -(a[2] + b[2] + c[2]) / 3;
+        const along0 = best ? (mx0 - best[0]) * best[2] + (my0 - best[1]) * best[3] : 0;
+        let plane = null, pd = 1e9;
+        for (const candidate of planes) {
+          const d = Math.abs(candidate.along - along0) + Math.abs(candidate.y - (a[1] + b[1] + c[1]) / 3) * 0.08;
+          if (d < pd) { pd = d; plane = candidate; }
+        }
+        if (plane && plane.verticalized) {
+          const n = plane.normal, p0 = plane.point, denom = n[0] * n[0] + n[2] * n[2];
+          const project = p => {
+            const d = (n[0] * (p0[0] - p[0]) + n[2] * (p0[2] - p[2])) / (denom || 1);
+            return [p[0] + n[0] * d, p[1], p[2] + n[2] * d];
+          };
+          const wa = project(a), wb = project(b), wc = project(c);
+          wallGB.tri(mat, wa, wb, wc, UVw(wa), UVw(wb), UVw(wc), tint);
+        } else wallGB.tri(mat, a, b, c, UVw(a), UVw(b), UVw(c), tint);
+      } else wallGB.tri(mat, a, b, c, UVw(a), UVw(b), UVw(c), tint);
     } else if (ny > 0.97) {
       rgb.tri(rtint ? fmat : flatM, a, b, c, [a[0] / 4, -a[2] / 4], [b[0] / 4, -b[2] / 4], [c[0] / 4, -c[2] / 4], rtint ? rtint.map(v => v * 0.85) : undefined);
     } else {
@@ -906,7 +1059,7 @@ function addLodBuilding(gb, t, rec, R, force) {
       if (n !== 1) continue;
       /* Les arêtes inclinées sont les rampants des pignons, pas des rives :
          ne pas leur appliquer de fascia évite les traits flottants sur les toits. */
-      if (!tr[3] && Math.abs(B[1] - A[1]) > 0.28) continue;
+      if (!tr[3] && (Math.abs(B[1] - A[1]) > 0.18 || Math.abs(B[1] - A[1]) / Math.max(0.01, Math.hypot(B[0] - A[0], B[2] - A[2])) > 0.025)) continue;
       const dx = B[0] - A[0], dz = B[2] - A[2], L = Math.hypot(dx, dz); if (L < 0.4) continue;
       let ox = -dz / L, oz = dx / L; const cx = (tr[0][0] + tr[1][0] + tr[2][0]) / 3, cz = (tr[0][2] + tr[1][2] + tr[2][2]) / 3;
       if ((cx - A[0]) * ox + (cz - A[2]) * oz > 0) { ox = -ox; oz = -oz; }
@@ -970,9 +1123,22 @@ function onCarriageway(t, x, y, m) {
   const e = Math.min(m, 1.2) - 0.6; if (e <= 0.05) return false;
   return inCW(x + e, y) || inCW(x - e, y) || inCW(x, y + e) || inCW(x, y - e);
 }
-function addRoad(gb0, t, r) {
+/* Cœurs de carrefour issus d'OSM (outils/streets.py, clé jc) : pas de marquage dedans. */
+function inJunction(t, x, y) {
+  const J = t.jc; if (!J) return false;
+  for (let i = 0; i < J.length; i++) { const dx = x - J[i][0], dy = y - J[i][1], rr = J[i][2] + 0.6; if (dx * dx + dy * dy < rr * rr) return true; }
+  return false;
+}
+/* Comme inJunction, les zébras OSM définissent des zones où aucun trait axial
+   ni séparateur de voie ne doit être dessiné. */
+function inCrossing(t, x, y) {
+  const C = t.xc; if (!C) return false;
+  for (let i = 0; i < C.length; i++) { const dx=x-C[i][0], dy=y-C[i][1], rr=C[i][2]+0.45; if (dx*dx+dy*dy < rr*rr) return true; }
+  return false;
+}
+function addRoad(gb0, t, r, markGb) {
   const w = r[0], kind = r[1], flags = r[2], p = r.slice(4), bridge = !!(flags & 2 && r.bh);
-  const gb = bridge ? new GB() : gb0;
+  const gb = bridge ? new GB() : gb0, mg = markGb || gb;
   if (kind === 2 && !(flags & 2) && !lcGrass((p[0] + p[p.length - 2]) / 2, (p[1] + p[p.length - 1]) / 2)) return;
   const [mat, y, s] = roadMat(r, p[0], p[1]);
   const hw = w / 2, low = isLowered(r) && t.hasRP && !(flags & 2);
@@ -994,13 +1160,36 @@ function addRoad(gb0, t, r) {
       const ox = -dy / l * o, oy = dx / l * o, rx = -dy / l * 0.04, ry = dx / l * 0.04;
       gb.quad(MAT.rail, [ax + ox - rx, SW + 0.15, -(ay + oy - ry)], [bx + ox - rx, SW + 0.15, -(by + oy - ry)], [bx + ox + rx, SW + 0.15, -(by + oy + ry)], [ax + ox + rx, SW + 0.15, -(ay + oy + ry)], [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
     }
-    if ((flags & 2) && kind !== 2 && kind !== 4) { // bridge parapets + deck side
+    if ((flags & 2) && kind !== 2 && kind !== 4) {
+      /* Bridge deck: thin soffit, visible edge fascia and pedestrian parapet.
+         (qx, qy) vaut déjà hw : on repasse par le vecteur unitaire (ux2, uy2). */
+      const ux2 = qx / hw, uy2 = qy / hw;
+      const inner = Math.max(0.18, Math.min(0.32, w * 0.035));
+      gb.quad(MAT.stone,
+        [ax + ux2 * (hw - inner), y - 0.48, -(ay + uy2 * (hw - inner))],
+        [bx + ux2 * (hw - inner), y - 0.48, -(by + uy2 * (hw - inner))],
+        [bx - ux2 * (hw - inner), y - 0.48, -(by - uy2 * (hw - inner))],
+        [ax - ux2 * (hw - inner), y - 0.48, -(ay - uy2 * (hw - inner))],
+        [0, 0], [l / 3, 0], [l / 3, w / 3], [0, w / 3], [0, 1, 0]);
       for (const sg of [1, -1]) {
-        const ex = ax + qx * sg, ey = ay + qy * sg, fx = bx + qx * sg, fy = by + qy * sg, N = [qx * sg, 0, -qy * sg];
-        gb.quad(MAT.stone, [ex, -1.0, -ey], [fx, -1.0, -fy], [fx, 1.0, -fy], [ex, 1.0, -ey], [0, 0], [l / 3, 0], [l / 3, 0.6], [0, 0.6], N);
-        const ix = ex - qx / hw * 0.3 * sg, iy = ey - qy / hw * 0.3 * sg, jx = fx - qx / hw * 0.3 * sg, jy = fy - qy / hw * 0.3 * sg;
-        gb.quad(MAT.stone, [ex, 1.0, -ey], [fx, 1.0, -fy], [jx, 1.0, -jy], [ix, 1.0, -iy], [0, 0], [l / 3, 0], [l / 3, 0.1], [0, 0.1], [0, 1, 0]);
-        gb.quad(MAT.stone, [ix, y, -iy], [jx, y, -jy], [jx, 1.0, -jy], [ix, 1.0, -iy], [0, 0], [l / 3, 0], [l / 3, 0.3], [0, 0.3], [-N[0], 0, -N[2]]);
+        const ex = ax + ux2 * sg * hw, ey = ay + uy2 * sg * hw;
+        const fx = bx + ux2 * sg * hw, fy = by + uy2 * sg * hw;
+        const ix = ax + ux2 * sg * (hw - inner), iy = ay + uy2 * sg * (hw - inner);
+        const jx = bx + ux2 * sg * (hw - inner), jy = by + uy2 * sg * (hw - inner);
+        const N = [qx * sg, 0, -qy * sg];
+        gb.quad(MAT.stone,
+          [ex, y - 0.48, -ey], [fx, y - 0.48, -fy],
+          [fx, y, -fy], [ex, y, -ey],
+          [0, 0], [l / 3, 0], [l / 3, 0.24], [0, 0.24], N);
+        gb.quad(MAT.stone,
+          [ex, y, -ey], [fx, y, -fy],
+          [fx, y + 1.05, -fy], [ex, y + 1.05, -ey],
+          [0, 0], [l / 3, 0], [l / 3, 0.35], [0, 0.35], N);
+        const ox = ux2 * sg * 0.08, oy = uy2 * sg * 0.08;
+        gb.quad(MAT.stone,
+          [ex + ox, y + 1.05, -(ey + oy)], [fx + ox, y + 1.05, -(fy + oy)],
+          [fx - ox, y + 1.05, -(fy - oy)], [ex - ox, y + 1.05, -(ey - oy)],
+          [0, 0], [l / 3, 0], [l / 3, 0.12], [0, 0.12], [0, 1, 0]);
       }
     }
   }
@@ -1016,7 +1205,7 @@ function addRoad(gb0, t, r) {
   /* Reprises d'enrobé irrégulières : petites plaques de réparation intégrées
      à la chaussée. Le placement est hashé sur les coordonnées, indépendant du
      RNG global et stable entre deux reconstructions de tuiles. */
-  if (kind === 0 && w >= 5.2 && !bridge && MAT.asphaltRepair) {
+  if ((kind === 0 || kind === 1) && w >= 5.2 && !(flags & 8) && !bridge && MAT.asphaltRepair) {
     let accPatch = 0;
     for (let i = 0; i < p.length - 2; i += 2) {
       const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3];
@@ -1026,11 +1215,11 @@ function addRoad(gb0, t, r) {
       for (let q = 0; q < count; q++) {
         const seed = Math.sin((ax + bx) * 12.9898 + (ay + by) * 78.233 + (q + accPatch) * 37.719) * 43758.5453;
         const rnd = seed - Math.floor(seed);
-        if (rnd > 0.36) continue;
+        if (rnd > 0.46) continue;
         const along = 4.5 + (q + rnd) * 15, lateral = (Math.sin(seed * 4.17) * 0.5) * Math.max(0, hw - 1.1);
         if (along > len - 1.8) continue;
         const cx = ax + ux * along + nx * lateral, cy = ay + uy * along + ny * lateral;
-        if (Math.hypot(cx - CENTER.x, cy - CENTER.y) > 850) continue;
+        if (Math.hypot(cx - CENTER.x, cy - CENTER.y) > 1200 || inJunction(t, cx, cy) || inCrossing(t, cx, cy)) continue;
         const plen = 0.75 + rnd * 1.25, pw = 0.45 + (1 - rnd) * 0.5;
         const skew = Math.sin(seed * 2.3) * 0.18;
         const A = [cx - ux * plen - nx * (pw + skew), y + 0.018, -(cy - uy * plen - ny * (pw + skew))];
@@ -1042,26 +1231,43 @@ function addRoad(gb0, t, r) {
       accPatch += count;
     }
   }
-  /* markings */
+  /* Markings routiers : lignes axiales, séparateurs de voies et rives.
+     Les tirets conservent leur phase d'un segment au suivant. */
   const ped = flags & 8;
-  if ((kind === 0 && w >= 6 && !ped) || kind === 3) {
-    const oneway = flags & 1;
-    const lines = [];
-    if (kind === 3) { lines.push([hw - 0.45, 0, 0.18]); lines.push([-(hw - 0.45), 0, 0.18]); if (w >= 6.5) lines.push([0, 10, 0.15]); }
-    else if (!oneway) lines.push([0, w >= 9 ? 3 : 4, 0.13]);
-    else if (w >= 8) lines.push([0, 10, 0.13]);
+  if ((kind === 0 && w >= 5.5 && !ped) || kind === 3) {
+    const oneway = !!(flags & 1), lines = [];
+    if (kind === 3) {
+      lines.push([-(hw - 0.42), 0, 0.16], [hw - 0.42, 0, 0.16]);
+      if (w >= 7) lines.push([0, 3, 0.13]);
+    } else {
+      if (oneway) { if (w >= 7.2) lines.push([0, 3, 0.12]); }
+      else lines.push([0, 3, 0.13]);
+      if (w >= 8.2) lines.push([-(hw - 0.38), 0, 0.10], [hw - 0.38, 0, 0.10]);
+      if (w >= 10.2) { const laneOffset = w / 6; lines.push([-laneOffset, 3, 0.10], [laneOffset, 3, 0.10]); }
+    }
     for (const [off, gap, lw] of lines) {
       let acc = 0;
       for (let i = 0; i < p.length - 2; i += 2) {
-        const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, qx = -uy, qy = ux;
-        const dash = 3, per = gap ? dash + gap : 1e9;
+        const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3];
+        const dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1;
+        const ux = dx / l, uy = dy / l, qx = -uy, qy = ux;
+        const dash = gap ? 3 : l, per = gap ? dash + gap : l + 1;
         let s0 = 0;
-        while (s0 < l) {
-          const ph = (acc + s0) % per; let s1;
+        while (s0 < l - 0.001) {
+          const ph = gap ? (acc + s0) % per : 0;
           if (gap && ph >= dash) { s0 += per - ph; continue; }
-          s1 = gap ? Math.min(l, s0 + dash - ph) : Math.min(l, s0 + 4);
-          const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off, x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
-          gb.quad(MAT.mark, [x0 + qx * lw, y + 0.012, -(y0 + qy * lw)], [x1 + qx * lw, y + 0.012, -(y1 + qy * lw)], [x1 - qx * lw, y + 0.012, -(y1 - qy * lw)], [x0 - qx * lw, y + 0.012, -(y0 - qy * lw)], [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
+          let s1 = gap ? Math.min(l, s0 + dash - ph) : l;
+          if (!gap && s1 - s0 > 1.5) s1 = Math.min(s1, s0 + 1.5); // traits continus découpés pour s'arrêter aux carrefours
+          const mx = ax + ux * (s0 + s1) / 2 + qx * off, my = ay + uy * (s0 + s1) / 2 + qy * off;
+          if (inJunction(t, mx, my) || inCrossing(t, mx, my)) { s0 = s1 + 0.001; continue; }
+          const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off;
+          const x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
+          mg.quad(MAT.mark,
+            [x0 + qx * lw, y + 0.014, -(y0 + qy * lw)],
+            [x1 + qx * lw, y + 0.014, -(y1 + qy * lw)],
+            [x1 - qx * lw, y + 0.014, -(y1 - qy * lw)],
+            [x0 - qx * lw, y + 0.014, -(y0 - qy * lw)],
+            [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
           s0 = s1 + 0.001;
         }
         acc += l;
@@ -1270,7 +1476,18 @@ function buildBarriers(gb, t, list) {
     for (let i = 0; i < p.length - 2; i += 2) {
       const ax = p[i], ay = p[i + 1], bx = p[i + 2], by = p[i + 3], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy); if (l < 0.2) continue;
       const nx = -dy / l, ny = dx / l, sv = (x, y) => SW;
-      if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
+      if (k === 5) { /* quai OSM : mur de maçonnerie, sans garde-corps inventé */
+        const hpA=th(ax+nx*1.6,ay+ny*1.6), hnA=th(ax-nx*1.6,ay-ny*1.6), hpB=th(bx+nx*1.6,by+ny*1.6), hnB=th(bx-nx*1.6,by-ny*1.6);
+        const topA=Math.max(hpA,hnA,th(ax,ay))+0.12, topB=Math.max(hpB,hnB,th(bx,by))+0.12;
+        const botA=Math.min(hpA,hnA,th(ax,ay))-Math.max(1.4,H||2.0), botB=Math.min(hpB,hnB,th(bx,by))-Math.max(1.4,H||2.0);
+        const rel=(z,x,y)=>z-th(x,y)+SW, half=0.28;
+        const A=[ax+nx*half,ay+ny*half],B=[bx+nx*half,by+ny*half],C=[bx-nx*half,by-ny*half],D=[ax-nx*half,ay-ny*half];
+        gb.quad(MAT.stone,[A[0],rel(botA,...A),-A[1]],[B[0],rel(botB,...B),-B[1]],[B[0],rel(topB,...B),-B[1]],[A[0],rel(topA,...A),-A[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[nx,0,-ny]);
+        gb.quad(MAT.stone,[C[0],rel(botA,...C),-C[1]],[D[0],rel(botB,...D),-D[1]],[D[0],rel(topB,...D),-D[1]],[C[0],rel(topA,...C),-C[1]],[0,0],[l/2,0],[l/2,Math.max(1,topB-botB)],[0,Math.max(1,topA-botA)],[-nx,0,ny]);
+        gb.quad(MAT.stone,[A[0],rel(topA,...A),-A[1]],[B[0],rel(topB,...B),-B[1]],[C[0],rel(topB,...C),-C[1]],[D[0],rel(topA,...D),-D[1]],[0,0],[l/2,0],[l/2,0.25],[0,0.25],[0,1,0]);
+        const bb=[Math.min(...[A,B,C,D].map(v=>v[0])),Math.min(...[A,B,C,D].map(v=>v[1])),Math.max(...[A,B,C,D].map(v=>v[0])),Math.max(...[A,B,C,D].map(v=>v[1]))];
+        t.obs.add(bb[0],bb[1],bb[2],bb[3],{p:[...A,...B,...C,...D],b:bb,h:Math.max(topA,topB)-Math.min(botA,botB),low:true});
+      } else if (k === 3) { /* retaining wall: from the low ground up to the high ground, railing on top */
         /* wide enough to cover the metre on each side where the 2 m relief model still ramps between the two levels */
         if (!f._rw) { /* once per wall: which side is high, and mitred offsets at the joints */
           let dsum = 0; const m = p.length / 2, sn = [];
@@ -1302,7 +1519,7 @@ function buildBarriers(gb, t, list) {
         for (const [e0, e1, sg] of [[c[0], c[1], 1], [c[2], c[3], -1]]) gb.quad(m, [e0[0], SW - 0.3, -e0[1]], [e1[0], SW - 0.3, -e1[1]], [e1[0], SW + H, -e1[1]], [e0[0], SW + H, -e0[1]], [0, 0], [l / 2, 0], [l / 2, H / 2], [0, H / 2], [nx * sg, 0, -ny * sg]);
         gb.quad(m, ...c.map(v => [v[0], SW + H, -v[1]]), [0, 0], [l / 2, 0], [l / 2, 0.2], [0, 0.2], [0, 1, 0]);
         t.obs.add(Math.min(ax, bx) - hw, Math.min(ay, by) - hw, Math.max(ax, bx) + hw, Math.max(ay, by) + hw, { p: c.flat(), b: [Math.min(...c.map(v => v[0])), Math.min(...c.map(v => v[1])), Math.max(...c.map(v => v[0])), Math.max(...c.map(v => v[1]))], h: H, low: true });
-      } else { /* fence / railing: top rail, bottom rail, bars */
+      } else if (k !== 5) { /* fence / railing: top rail, bottom rail, bars */
         for (const z of k === 1 ? [0.12, H] : [0.1, H - 0.05]) gb.quad(MAT.fence, [ax, SW + z - 0.03, -ay], [bx, SW + z - 0.03, -by], [bx, SW + z + 0.03, -by], [ax, SW + z + 0.03, -ay], [0, 0], [1, 0], [1, 1], [0, 1], [nx, 0, -ny]);
         const nb = Math.max(1, Math.round(l / (Math.hypot(ax - CENTER.x, ay - CENTER.y) > 1500 ? 0.6 : k === 1 ? 0.14 : 0.2)));
         for (let q = 0; q <= nb; q += 1) { const x = ax + dx * q / nb, y = ay + dy * q / nb, ex = dx / l * 0.012, ey = dy / l * 0.012; gb.quad(MAT.fence, [x - ex, SW, -(y - ey)], [x + ex, SW, -(y + ey)], [x + ex, SW + H, -(y + ey)], [x - ex, SW + H, -(y - ey)], [0, 0], [1, 0], [1, 1], [0, 1], [nx, 0, -ny]); }
@@ -1331,8 +1548,10 @@ function addKerb(gb, t, c, boll, bollGrid) {
   for (let i = 0; i < n - 1; i++) {
     const ax = c[i * 2], ay = c[i * 2 + 1], bx = c[i * 2 + 2], by = c[i * 2 + 3], na = nv[i], nb = nv[i + 1], s1 = s + seg[i][2];
     const N = [-seg[i][1], 0, -seg[i][0]];
-    gb.quad(MAT.curb, [ax, -0.02, -ay], [bx, -0.02, -by], [bx, TOP, -by], [ax, TOP, -ay], [s / 1.2, 0], [s1 / 1.2, 0], [s1 / 1.2, 0.15], [s / 1.2, 0.15], N);
-    gb.quad(MAT.curb, [ax, TOP, -ay], [bx, TOP, -by], [bx - nb[0] * KW, TOP, -(by - nb[1] * KW)], [ax - na[0] * KW, TOP, -(ay - na[1] * KW)], [s / 1.2, 0.2], [s1 / 1.2, 0.2], [s1 / 1.2, 0.45], [s / 1.2, 0.45], [0, 1, 0]);
+    gb.quad(MAT.curb, [ax, -0.02, -ay], [bx, -0.02, -by], [bx, TOP - 0.035, -by], [ax, TOP - 0.035, -ay], [s / 1.2, 0], [s1 / 1.2, 0], [s1 / 1.2, 0.15], [s / 1.2, 0.15], N);
+    // Arête supérieure chanfreinée : le granit accroche la lumière au lieu de former une lame plate.
+    gb.quad(MAT.curb, [ax, TOP - 0.035, -ay], [bx, TOP - 0.035, -by], [bx - nb[0] * 0.055, TOP, -(by - nb[1] * 0.055)], [ax - na[0] * 0.055, TOP, -(ay - na[1] * 0.055)], [s / 1.2, 0.15], [s1 / 1.2, 0.15], [s1 / 1.2, 0.205], [s / 1.2, 0.205], [N[0], 0.7, N[2]]);
+    gb.quad(MAT.curb, [ax - na[0] * 0.055, TOP, -(ay - na[1] * 0.055)], [bx - nb[0] * 0.055, TOP, -(by - nb[1] * 0.055)], [bx - nb[0] * KW, TOP, -(by - nb[1] * KW)], [ax - na[0] * KW, TOP, -(ay - na[1] * KW)], [s / 1.2, 0.205], [s1 / 1.2, 0.205], [s1 / 1.2, 0.45], [s / 1.2, 0.45], [0, 1, 0]);
     /* Joints de pose du granit : fines coupes verticales dans la face du
        bordure, visibles seulement dans le centre dense. Elles suivent la
        longueur cumulée du fil OSM et restent hors du dessus de bordure. */
@@ -1542,6 +1761,9 @@ function buildProps() {
   PROPS.lampPole = mergeGeos([
     { geo: new THREE.CylinderGeometry(0.055, 0.12, 4.2, 12), m: MX(0, 2.1, 0) },
     { geo: new THREE.CylinderGeometry(0.17, 0.17, 0.24, 12), m: MX(0, 0.12, 0) },
+    { geo: new THREE.TorusGeometry(0.145, 0.025, 6, 16), m: MX(0, 0.34, 0, Math.PI / 2) },
+    ...Array.from({ length: 6 }, (_, k) => ({ geo: new THREE.CylinderGeometry(0.012, 0.016, 2.35, 5), m: MX(Math.cos(k * Math.PI / 3) * 0.087, 2.65, Math.sin(k * Math.PI / 3) * 0.087) })),
+    { geo: new THREE.TorusGeometry(0.105, 0.022, 6, 16), m: MX(0, 4.18, 0, Math.PI / 2) },
     { geo: new THREE.CylinderGeometry(0.09, 0.19, 0.22, 10), m: MX(0, 4.91, 0) },
     { geo: new THREE.CylinderGeometry(0.22, 0.12, 0.12, 10), m: MX(0, 4.3, 0) },
     { geo: new THREE.TorusGeometry(0.105, 0.018, 6, 12), m: MX(0, 4.72, 0, Math.PI/2) },
@@ -1561,6 +1783,14 @@ function buildProps() {
     { geo: new THREE.CylinderGeometry(0.09, 0.09, 0.045, 12), m: MX(0, 0.79, 0) },
     { geo: new THREE.CylinderGeometry(0.079, 0.079, 0.055, 12), m: MX(0, 0.66, 0) },
     { geo: new THREE.CylinderGeometry(0.078, 0.078, 0.055, 12), m: MX(0, 0.76, 0) }
+  ]);
+  /* Fontaine publique en pierre : bassin, vasque et jet central. */
+  PROPS.fountain = mergeGeos([
+    { geo: new THREE.CylinderGeometry(1.05, 1.15, 0.22, 20), m: MX(0, 0.18, 0) },
+    { geo: new THREE.CylinderGeometry(0.92, 1.0, 0.16, 20, 1, true), m: MX(0, 0.36, 0) },
+    { geo: new THREE.CylinderGeometry(0.16, 0.24, 0.55, 12), m: MX(0, 0.56, 0) },
+    { geo: new THREE.CylinderGeometry(0.07, 0.12, 0.62, 10), m: MX(0, 0.92, 0) },
+    { geo: new THREE.SphereGeometry(0.12, 10, 8), m: MX(0, 1.25, 0) }
   ]);
   PROPS.bin = mergeGeos([
     { geo: new THREE.CylinderGeometry(0.25, 0.22, 0.8, 16, 2, true), m: MX(0, 0.75, 0) },
@@ -1583,6 +1813,8 @@ function buildProps() {
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.BoxGeometry(0.05, 0.5, 0.05), m: MX(x, 0.7, 0.26) })),
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.CylinderGeometry(0.025, 0.025, 0.48, 8), m: MX(x, 0.73, 0.02, Math.PI / 2, 0, 0) })),
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.CylinderGeometry(0.025, 0.025, 0.48, 8), m: MX(x, 0.48, -0.18, 0, 0, Math.PI / 2) })),
+    ...[-0.75, 0.75].flatMap(x => [-0.08, 0.08].map(z => ({ geo: new THREE.CylinderGeometry(0.018, 0.024, 0.34, 6), m: MX(x, 0.67, z) }))),
+    ...[-0.75, 0.75].map(x => ({ geo: new THREE.TorusGeometry(0.11, 0.022, 6, 12, Math.PI), m: MX(x, 0.83, 0.05, Math.PI / 2) })),
     ...[-0.75, 0.75].map(x => ({ geo: new THREE.BoxGeometry(0.12, 0.045, 0.58), m: MX(x, 0.045, 0) }))
   ]);
   PROPS.shelterFrame = mergeGeos([
@@ -1897,8 +2129,10 @@ function* buildTile(t, data) {
   const R = srand(t.i * 7919 + t.j * 104729);
   let group = new THREE.Group(); group.matrixAutoUpdate = false;
   t.group = group; t.obs = new Grid(20); t.seg = new Grid(16); t.lights = []; t.walk = []; t.parkSpots = []; t.trees = []; t.shops = []; t.seats = [];
-  const gbB = new GB(), gbR = new GB();
+  const gbB = new GB(), gbR = new GB(), gbM = new GB();
   /* road segments index first (needed for shops & curbs) */
+  t.jc = data.jc || [];
+  t.xc = data.xc || [];
   data.r.forEach((r, ri) => { if (data.bh && data.bh[ri]) r.bh = data.bh[ri]; });
   for (const r of data.r) {
     const p = r.slice(4);
@@ -1947,14 +2181,42 @@ function* buildTile(t, data) {
   for (const [f, h] of t.churchQ || []) parvis(gbR, t, f, h); t.churchQ = null;
 
   for (const c of data.cb || []) { addKerb(gbR, t, c, kerbBoll, bollGrid); if (++k % 60 === 0) yield; }
-  for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
+  /* Zébras OSM marqués uniquement ; polygones découpés aux limites des tuiles. */
+  for (const c of data.xw || []) gbR.poly(MAT.mark, c, 0.018, 1);
+  /* Bateaux : rampe entre chaussée et trottoir au droit du passage marqué. */
+  for (const c of data.dr || []) {
+    gbR.quad(MAT.curb,
+      [c[0], 0.025, -c[1]], [c[2], 0.025, -c[3]],
+      [c[4], SW + 0.025, -c[5]], [c[6], SW + 0.025, -c[7]],
+      [0,0], [1,0], [1,1], [0,1], [0,1,0]);
+  }
+  /* Terre-pleins et îlots de circulation explicitement cartographiés dans OSM. */
+  for (const c of data.md || []) gbR.poly(MAT.square, c, SW + 0.014, 3); // îlots minéraux
+  for (const c of data.bk || []) gbR.poly(MAT.grass, c, SW + 0.016, 4); // berges engazonnées OSM
+  for (const c of data.bs || []) if (c.length >= 8) {
+    gbR.quad(MAT.grass,
+      [c[0], -1.34, -c[1]], [c[2], -1.34, -c[3]],
+      [c[4], SW + 0.018, -c[5]], [c[6], SW + 0.018, -c[7]],
+      [0, 0], [1, 0], [1, 1], [0, 1], [0, 1, 0]);
+  } // faces en pente des berges OSM
+
+  for (const c of data.mg || []) gbR.poly(MAT.grass, c, SW + 0.014, 4); // îlots engazonnés
+  // Places et espaces piétons fermés dans OSM : dalles, pavés ou asphalte selon surface.
+  for (const a of data.pa || []) gbR.poly(a[0] === 1 ? MAT.cobble : a[0] === 2 ? MAT.asphalt : MAT.square, a.slice(1), SW + 0.012, a[0] === 1 ? 2.2 : a[0] === 2 ? 7 : 3);
+  for (const c of data.ar || []) gbM.poly(MAT.mark, c, 0.024, 1); // flèches de direction OSM
+  for (const r of data.r) { addRoad(gbR, t, r, gbM); if (++k % 80 === 0) yield; }
   for (const a of data.a) if (a[0] === 1) addPitchLines(gbR, a[1]); // parks, squares, car parks & gardens are painted on the ground (landcover)
-  for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbR, t, f[1], f[2]);
+  // Anciens passages piétons (points OSM, f[0] === 6) : remplacés par les zèbres xw quand la tuile en a, sinon on les doublerait.
+  if (!(data.xw && data.xw.length)) for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbM, t, f[1], f[2]);
   gbR.meshes(group, { cast: false });
+  const markGroup = new THREE.Group(); markGroup.matrixAutoUpdate = false;
+  gbM.meshes(markGroup, { cast: false }); group.add(markGroup); t.markGroup = markGroup;
+  markGroup.visible = t.d < 150;
   yield;
   /* sidewalks walk paths + parking spots + generated lamps & trees */
-  const grates = [], manholes = [], lampTall = [], lampStd = [], headsTall = [], headsStd = [], pools = [], trees = [], bollards = [], bins = [], benchW = [], benchM = [], shelters = [], tls = [], racks = [];
+  const grates = [], manholes = [], lampTall = [], lampStd = [], headsTall = [], headsStd = [], pools = [], trees = [], bollards = [], bins = [], benchW = [], benchM = [], shelters = [], tls = [], racks = [], fountains = [];
   const lampGrid = new Grid(10), treeGrid = new Grid(6);
+  const osmTreeGrid = new Grid(6); for (let i = 0; i < (data.t || []).length; i += 2) osmTreeGrid.add(data.t[i], data.t[i + 1], data.t[i], data.t[i + 1], 1);
   const okSpot = (x, y, r) => !insideBuilding(x, y) && !roadAtTile(t, x, y) && !inWaterQuick(x, y) && (r === undefined || true);
   const addLamp = (x, y, ang, tall) => {
     const near = new Set(); lampGrid.query(x - 9, y - 9, x + 9, y + 9, near); if (near.size) return;
@@ -1990,7 +2252,7 @@ function* buildTile(t, data) {
       /* boulevard trees (in metal tree grates) */
       if (kind === 0 && w >= 9 && !ped) for (let s = R() * 10; s < l; s += 11) for (const sg of [1, -1]) {
         const x = ax + ux * s + qx * sg * (w / 2 + 2.2), y = ay + uy * s + qy * sg * (w / 2 + 2.2);
-        const nb = new Set(); treeGrid.query(x - 5, y - 5, x + 5, y + 5, nb);
+        const nb = new Set(); treeGrid.query(x - 5, y - 5, x + 5, y + 5, nb); osmTreeGrid.query(x - 5, y - 5, x + 5, y + 5, nb);
         if (!nb.size && okSpot(x, y)) { treeGrid.add(x, y, x, y, 1); trees.push([x, y]); grates.push(MX(x, 0.004, -y, 0, Math.atan2(ux, uy), 0)); }
       }
       /* manhole covers */
@@ -2031,6 +2293,14 @@ function* buildTile(t, data) {
   t.trees = trees;
   t.parkSpots = t.parkSpots.filter(([x, y]) => { const nb = new Set(); lampGrid.query(x - 3, y - 3, x + 3, y + 3, nb); treeGrid.query(x - 3, y - 3, x + 3, y + 3, nb); return !nb.size && !insideBuilding(x, y); });
   /* furniture from OSM */
+  for (const f of data.fo || []) {
+    const [x, y] = f;
+    if (!insideBuilding(x, y) && !roadAtTile(t, x, y) && !inWaterQuick(x, y)) {
+      fountains.push(MX(x, 0, -y));
+      t.obs.add(x - 1.1, y - 1.1, x + 1.1, y + 1.1,
+        { p: [x-1,y-1,x+1,y-1,x+1,y+1,x-1,y+1], b: [x-1,y-1,x+1,y+1], h: 1.45, low: true });
+    }
+  }
   const signs = [];
   for (const f of data.f) {
     const [ty, x, y] = f;
@@ -2092,6 +2362,20 @@ function* buildTile(t, data) {
         chairs.push(MX(cx, 0, -cy, 0, Math.PI - h, 0)); t.seats.push({ x: cx, y: cy, h, taken: null, bar: sg.fam === 'bar', tile: t });
       }
       t.obs.add(x - 0.4, y - 0.4, x + 0.4, y + 0.4, { p: [x - 0.35, y - 0.35, x + 0.35, y - 0.35, x + 0.35, y + 0.35, x - 0.35, y + 0.35], b: [x - 0.35, y - 0.35, x + 0.35, y + 0.35], h: 1 });
+    }
+  }
+  /* Terrasses dont l'emprise est explicitement dessinée dans OSM. */
+  for (const poly of data.os || []) {
+    const b = polyBox(poly), step = 4.2;
+    let placed = 0;
+    for (let y = b[1] + step * 0.5; y < b[3] && placed < 24; y += step) {
+      for (let x = b[0] + step * 0.5; x < b[2] && placed < 24; x += step) {
+        if (!inPoly(poly, x, y) || insideBuilding(x, y) || onCarriageway(t, x, y, 1.8) || inWaterQuick(x, y)) continue;
+        tables.push(MX(x, 0, -y));
+        for (const sd of [-1, 1]) chairs.push(MX(x + sd * 0.68, 0, -y, 0, sd < 0 ? Math.PI/2 : -Math.PI/2, 0));
+        if (placed % 2 === 0) (placed % 4 === 0 ? parasolsA : parasolsB).push(MX(x, 0, -y));
+        placed++;
+      }
     }
   }
   const gbS = new GB();
@@ -2172,7 +2456,7 @@ function* buildTile(t, data) {
   const props = new THREE.Group(); props.position.y = SW; props.matrixAutoUpdate = false; props.updateMatrix(); group.add(props); t.props = props;
   const G0 = group; group = props;
   instanced(group, PROPS.lampTallPole, MAT.metal, lampTall, true); instanced(group, PROPS.lampTallHead, MAT.lampHead, headsTall);
-  instanced(group, PROPS.lampPole, MAT.metal, lampStd, true); instanced(group, PROPS.lampHead, MAT.lampHead, headsStd);
+  instanced(group, PROPS.lampPole, MAT.castIron || MAT.metal, lampStd, true); instanced(group, PROPS.lampHead, MAT.lampHead, headsStd);
   t.pools = instanced(group, POOLGEO, poolMat, pools); eachInst(t.pools, im => im.receiveShadow = false);
   instanced(group, PROPS.trunk, MAT.trunk, trunks, true);
   const crownGeometries = [PROPS.crownA, PROPS.crownB, PROPS.crownC, PROPS.crownD, PROPS.crownE, PROPS.crownF];
@@ -2180,16 +2464,30 @@ function* buildTile(t, data) {
     const h = instanced(group, crownGeometries[i], MAT.leaves, crownSets[i], true);
     eachInst(h, im => im.customDepthMaterial = MAT.leafDepth);
   }
-  instanced(group, PROPS.bollard, MAT.bollard, bollards.concat(kerbBoll)); instanced(group, PROPS.grate, MAT.grate, grates); instanced(group, PROPS.bin, MAT.binGreen, bins);
+  instanced(group, PROPS.bollard, MAT.castIron || MAT.bollard, bollards.concat(kerbBoll)); instanced(group, PROPS.grate, MAT.grate, grates); instanced(group, PROPS.bin, MAT.binGreen, bins);
+  instanced(group, PROPS.fountain, MAT.stone, fountains, true);
   instanced(group, PROPS.bistroTable, MAT.metal, tables, true); instanced(group, PROPS.chair, MAT.rattan, chairs, true);
   instanced(group, PROPS.parasol, MAT.parasolA, parasolsA, true); instanced(group, PROPS.parasol, MAT.parasolB, parasolsB, true); instanced(group, PROPS.parasolPole, MAT.metalLight, parasolsA.concat(parasolsB));
-  instanced(group, PROPS.benchWood, MAT.wood, benchW); instanced(group, PROPS.benchMetal, MAT.metal, benchM); instanced(group, PROPS.bikeRack, MAT.metalLight, racks);
+  instanced(group, PROPS.benchWood, MAT.wood, benchW); instanced(group, PROPS.benchMetal, MAT.castIron || MAT.metal, benchM); instanced(group, PROPS.bikeRack, MAT.metalLight, racks);
   instanced(group, PROPS.shelterFrame, MAT.metalLight, shelters, true); instanced(group, PROPS.shelterGlass, MAT.glassBus, shelters); instanced(group, PROPS.busSign, MAT.busSign, shelters);
   const tlm = tls.map(o => o.m); instanced(group, PROPS.tlPole, MAT.metal, tlm, true);
   t.tl = [0, 1].map(ph => { const ms = tls.filter(o => o.ph === ph).map(o => o.m); return { r: instanced(group, PROPS.tlRed, MAT.tl.r, ms), a: instanced(group, PROPS.tlAmb, MAT.tl.a, ms), g: instanced(group, PROPS.tlGrn, MAT.tl.g, ms) }; });
   group = G0;
   group.updateMatrixWorld(true);
   scene.add(group);
+  const tileStats = { triangles: 0, drawCalls: 0, markingTriangles: 0, markingDrawCalls: 0 };
+  const countMeshes = (root, triKey, callKey) => root.traverse(o => {
+    if (!o.isMesh || !o.geometry) return;
+    const g = o.geometry, pos = g.getAttribute && g.getAttribute('position');
+    if (!pos) return;
+    const tri = Math.floor((g.index ? g.index.count : pos.count) / 3) * (o.isInstancedMesh ? o.count : 1);
+    tileStats[triKey] += tri;
+    tileStats[callKey] += Math.max(1, g.groups && g.groups.length ? g.groups.length : 1);
+  });
+  countMeshes(group, 'triangles', 'drawCalls');
+  countMeshes(markGroup, 'markingTriangles', 'markingDrawCalls');
+  t.metrics = tileStats;
+  if (window.__GTR_TILE_METRICS__) console.info('[GTR tile metrics]', t.i, t.j, tileStats);
   t.built = true;
 }
 function inWaterQuick(x, y) { const s = new Set(); waterGrid.query(x, y, x, y, s); for (const w of s) if (inPoly(w.p, x, y)) return true; return false; }
@@ -2209,7 +2507,7 @@ function updateTiles(px, py) {
       tiles.set(key, nt);
       fetch(`tiles/t${i}_${j}.json`).then(r => r.json()).then(data => { nt.data = data; buildQueue.push(nt); }).catch(() => { });
     } else if (t && d > UNLOAD_R && t.built) unloadTile(t);
-    if (t) { t.d = d; if (t.group) t.group.visible = d < FAR_R; if (t.props) { t.props.visible = d < 300; t.props.traverse(o => { if (o.userData.bs) { const dd = Math.hypot(o.userData.bs.center.x - px, -o.userData.bs.center.z - py) - o.userData.bs.radius; o.visible = dd < (o.userData.cast ? 260 : 110); o.castShadow = o.userData.cast && dd < 70; } }); } }
+    if (t) { t.d = d; if (t.group) t.group.visible = d < FAR_R; if (t.markGroup) t.markGroup.visible = d < 150; if (t.props) { t.props.visible = d < 300; t.props.traverse(o => { if (o.userData.bs) { const dd = Math.hypot(o.userData.bs.center.x - px, -o.userData.bs.center.z - py) - o.userData.bs.radius; o.visible = dd < (o.userData.cast ? 260 : 110); o.castShadow = o.userData.cast && dd < 70; } }); } }
   }
 }
 function unloadTile(t) {
@@ -2301,11 +2599,16 @@ void main() {`).replace('tWP.y += terrainH(tWP.xz);', 'tWP.y += terrainH(tWP.xz)
     const p0 = ccw(w), p = [];
     for (let i = 0, n = p0.length / 2; i < n; i++) { const ax = p0[i * 2], ay = p0[i * 2 + 1], bx = p0[((i + 1) % n) * 2], by = p0[((i + 1) % n) * 2 + 1], k = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 12)); for (let q = 0; q < k; q++) p.push(ax + (bx - ax) * q / k, ay + (by - ay) * q / k); }
     gb.poly(MAT.water, p, -1.4, 1);
-    const n = p.length / 2;
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n, ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L, ny = (bx - ax) / L;
-      gb.quad(MAT.quay, [ax, -1.6, -ay], [bx, -1.6, -by], [bx, SW, -by], [ax, SW, -ay], [0, 0], [L / 3, 0], [L / 3, 0.55], [0, 0.55], [nx, 0, -ny]);
+    // Ligne d'humidité au contact du quai : ruban fin dans l'eau, regroupé dans le bucket global.
+    for (let i = 0, n = p.length / 2; i < n; i++) {
+      const j = (i + 1) % n, ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, band = 0.18;
+      gb.quad(MAT.waterEdge || MAT.water,
+        [ax, -1.382, -ay], [bx, -1.382, -by],
+        [bx + nx * band, -1.382, -(by + ny * band)], [ax + nx * band, -1.382, -(ay + ny * band)],
+        [0, 0], [len, 0], [len, band], [0, band], [0, 1, 0]);
     }
+    // Pas de mur automatique : les ouvrages verticaux viennent des barrières OSM explicites.
   }
   const grp = new THREE.Group(); gb.meshes(grp, {}); scene.add(grp);
 }

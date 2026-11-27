@@ -699,8 +699,8 @@ async function startSide(s) {
 }
 function sideReward(n, txt) { setMoney(money + n); banner('BOULOT TERMINÉ', n ? `+${n} € · ${txt}` : txt, 4); }
 function farPoint(x, y, rmin, rmax, mask) {
-  for (let k = 0; k < 40; k++) { const a = Math.random() * 6.283, r = rnd(rmin, rmax), i = nearestNode(x + Math.cos(a) * r, y + Math.sin(a) * r, mask || 1), d = Math.hypot(nx(i) - x, ny(i) - y); if (d > rmin * 0.8 && d < rmax * 1.2) return { x: nx(i), y: ny(i) }; }
-  const i = nearestNode(x + rmin, y, mask || 1); return { x: nx(i), y: ny(i) };
+  for (let k = 0; k < 40; k++) { const a = Math.random() * 6.283, r = rnd(rmin, rmax), i = nearestNode(x + Math.cos(a) * r, y + Math.sin(a) * r, mask || 1); if (i < 0) continue; const d = Math.hypot(nx(i) - x, ny(i) - y); if (d > rmin * 0.8 && d < rmax * 1.2) return { x: nx(i), y: ny(i) }; }
+  const i = nearestNode(x + rmin, y, mask || 1); return i >= 0 ? { x: nx(i), y: ny(i) } : { x: x + rmin, y };
 }
 async function sideTaxi() {
   const taxi = parkAt(player.x + 6, player.y, { kind: 'taxi', color: 0xe8e8e8, type: 'sedan' }); taxi.isCar = true; actors.push(taxi);
@@ -768,7 +768,7 @@ async function sideRace() {
   await say([['Starter', 'Dix points de passage à travers la ville. Le chrono part quand tu démarres.']]);
   goal(sc.x, sc.y); objective('Monte sur le scooter (E)');
   await wait(() => player.car === sc);
-  const s0 = nearestNode(sc.x, sc.y, 1), g0 = nearestNode(sc.x + 900, sc.y + 700, 1), path = astar(s0, g0, 1) || [s0];
+  const s0 = nearestNode(sc.x, sc.y, 1), g0 = nearestNode(sc.x + 900, sc.y + 700, 1); if (s0 < 0 || g0 < 0) { toast('Réseau routier indisponible pour cette course.', 3); return; } const path = astar(s0, g0, 1) || [s0];
   const cps = []; let acc = 0;
   for (let k = 1; k < path.length; k++) { acc += Math.hypot(nx(path[k]) - nx(path[k - 1]), ny(path[k]) - ny(path[k - 1])); if (acc > 110 || k === path.length - 1) { cps.push({ x: nx(path[k]), y: ny(path[k]) }); acc = 0; if (cps.length >= 10) break; } }
   let len = 0; for (let k = 1; k < cps.length; k++) len += Math.hypot(cps[k].x - cps[k - 1].x, cps[k].y - cps[k - 1].y);
@@ -816,13 +816,15 @@ async function m8() {
   const yann = spawnActor('yann8', YANN); face(yann, player); yann.mesh.userData.talk = true; kaosFor(yann);
   await say([['Yann', 'Le Baron l\'a mauvaise. Il gare sa berline noire place du Colombier, le coffre plein de liquide.'], ['Yann', 'Pique-la, et emmène-la au garage de Momo à Cleunay. Momo ouvre pas s\'il y a des gyrophares derrière toi.']]);
   const ci = nearestNode(...P.baronCar, 1), e = outEdges(ci, 1), b = e.length ? GNB[e[0]] : ci;
-  const car = addCar(nx(ci), ny(ci), Math.atan2(nx(b) - nx(ci), ny(b) - ny(ci)), { ai: null, driver: false, keep: true, type: 'sedan', color: 0x0a0a0c }); car.isCar = true; actors.push(car);
+  const cx = ci >= 0 ? nx(ci) : P.baronCar[0], cy = ci >= 0 ? ny(ci) : P.baronCar[1];
+  const ch = ci >= 0 && b >= 0 ? Math.atan2(nx(b) - cx, ny(b) - cy) : 0;
+  const car = addCar(cx, cy, ch, { ai: null, driver: false, keep: true, type: 'sedan', color: 0x0a0a0c }); car.isCar = true; actors.push(car);
   const g1 = addPed(car.x + 3, car.y + 2, { keep: true, look: THUG() }); g1.tough = true; g1.dmg = [7, 11]; g1.state = 'idle'; g1.still = true; actors.push(g1);
   g1.onHit = p => { p.state = 'fight'; };
   goal(car.x, car.y); objective('Vole la berline noire du Baron');
   await wait(() => player.car === car);
   setWanted(2); banner('ALARME !', 'La berline est signalée. Sème les flics.', 3);
-  const gi = nearestNode(...P.garage, 1), gar = { x: nx(gi), y: ny(gi) };
+  const gi = nearestNode(...P.garage, 1), gar = gi >= 0 ? { x: nx(gi), y: ny(gi) } : { x: P.garage[0], y: P.garage[1] };
   goal(gar.x, gar.y); objective('Amène la berline au garage de Momo, à Cleunay, sans les flics');
   let warned = false;
   await wait(() => { if (dist(car, gar) < 12) { if (wanted === 0 && player.car === car) return true; if (!warned) { warned = true; toast('Momo n\'ouvre pas : t\'es suivi !', 2.5); } } else warned = false; return false; }, () => car.removed ? 'La berline est perdue.' : false);
@@ -963,6 +965,15 @@ Object.defineProperties(window.__game, { hp: { get: () => player.hp }, side: { g
 
 /* ---------- métro: entrances in the street, fast travel between real stations, line b viaducts with trains ---------- */
 const METRO = { data: null, ent: [], trains: [] };
+
+function metroPointBlocked(x, y) {
+  if (insideBuilding(x, y) || inCW(x, y)) return true;
+  let blocked = false;
+  tilesIn(x - 0.2, y - 0.2, x + 0.2, y + 0.2, t => {
+    if (onCarriageway(t, x, y, 1.2) || inCrossing(t, x, y)) blocked = true;
+  });
+  return blocked;
+}
 async function initMetro() {
   try { METRO.data = await (await fetch('metro.json')).json(); } catch (e) { return; }
   const D = METRO.data, sc = document.createElement('canvas'); sc.width = 256; sc.height = 256; const g = sc.getContext('2d');
@@ -978,42 +989,146 @@ async function initMetro() {
   const glassM = M({ color: 0x9fc0c8, roughness: 0.05, metalness: 0.4, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide });
   const holeMark = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
   const parts = new Map(); const put = (mat, geo, m) => { let a = parts.get(mat); if (!a) parts.set(mat, a = []); a.push({ geo, m }); };
-  const L = 7.2, Wd = 2.5, RISE = 0.17, RUN = 0.3, N = 22, DEEP = N * RISE, COR = 4.5;
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d), pl = (w, h) => new THREE.PlaneGeometry(w, h);
-  for (const [x, y, st] of D.entrances) {
-    /* lay the stairs along the street: direction of the nearest road */
-    const ni = nearestNode(x, y, 1), e = ni >= 0 ? outEdges(ni, 1) : [];
-    let a = Math.random() * 6.28; if (e.length) { const b = GNB[e[0]]; a = Math.atan2(ny(b) - ny(ni), nx(b) - nx(ni)); }
-    const ca = Math.cos(a), sa = Math.sin(a), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a, 0));
-    const F = (lx, ly, lz, ry) => { const m = new THREE.Matrix4(), qq = q.clone(); if (ry) qq.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0))); m.compose(new THREE.Vector3(x + ca * lx + sa * lz, SW + ly, -(y + sa * lx - ca * lz)), qq, new THREE.Vector3(1, 1, 1)); return m; };
-    const F2 = (lx, ly, lz, eu) => { const m = new THREE.Matrix4(); m.compose(new THREE.Vector3(x + ca * lx + sa * lz, SW + ly, -(y + sa * lx - ca * lz)), q.clone().multiply(new THREE.Quaternion().setFromEuler(eu)), new THREE.Vector3(1, 1, 1)); return m; };
-    const x0 = -L / 2;
-    /* steps down, then a covered landing that leads into the station */
-    for (let k = 0; k < N; k++) { const top = -(k + 1) * RISE, h = DEEP + 0.4 + top; put(stepM, box(RUN, h, Wd), F(x0 + (k + 0.5) * RUN, top - h / 2, 0)); put(nosM, box(0.05, 0.02, Wd), F(x0 + k * RUN + 0.03, top + 0.005, 0)); }
-    const xl = x0 + N * RUN; put(stepM, box(L / 2 + COR - xl + 0.2, 0.4, Wd), F((xl + L / 2 + COR) / 2, -DEEP - 0.2, 0));
-    for (const s of [1, -1]) {
-      put(wallM, pl(L + COR, DEEP + 0.3), F2(COR / 2, -DEEP / 2 - 0.15, s * Wd / 2, new THREE.Euler(0, s > 0 ? Math.PI : 0, 0)));
-      put(MAT.metalLight, box(N * RUN * 1.16, 0.05, 0.05), F2(x0 + N * RUN / 2, -DEEP / 2 + 0.9, s * (Wd / 2 - 0.08), new THREE.Euler(0, 0, -Math.atan2(RISE, RUN))));
-      put(lightM, box(L + COR - 1, 0.04, 0.03), F(COR / 2, -DEEP + 0.25, s * (Wd / 2 - 0.02)));
+  const entranceRecords = (D.entrances || []).map(v => Array.isArray(v)
+    ? { x: v[0], y: v[1], st: v[2], station: v[2], line: 'a', kind: 'stairs', angle: null, length: 0, width: 2.2, safe: true }
+    : v);
+  METRO.ent = [];
+  const blockedAt = metroPointBlocked;
+  const footprintClear = (x, y, a, length, width, fromEntrance) => {
+    const ca = Math.cos(a), sa = Math.sin(a), nx = Math.max(2, Math.ceil(length / 0.8)), nz = Math.max(2, Math.ceil(width / 0.8));
+    for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) {
+      const lx = fromEntrance ? length * i / nx : -length / 2 + length * i / nx, lz = -width / 2 + width * j / nz;
+      if (blockedAt(x + ca * lx + sa * lz, y + sa * lx - ca * lz)) return false;
     }
-    put(wallM, pl(Wd, DEEP + 0.3), F2(L / 2 + COR, -DEEP / 2 - 0.15, 0, new THREE.Euler(0, -Math.PI / 2, 0)));
-    put(signM, pl(1.2, 1.2), F2(L / 2 + COR - 0.02, -DEEP + 1.7, 0, new THREE.Euler(0, -Math.PI / 2, 0)));
-    put(ceilM, pl(COR + 0.2, Wd), F2(L / 2 + COR / 2, -0.35, 0, new THREE.Euler(Math.PI / 2, 0, 0)));
-    put(lightM, box(COR - 0.6, 0.03, 0.2), F(L / 2 + COR / 2, -0.37, 0));
-    put(wallM, pl(Wd, 0.6), F2(x0, -0.3, 0, new THREE.Euler(0, Math.PI / 2, 0)));
-    /* coping and glass balustrades on three sides, the street end stays open */
-    for (const s of [1, -1]) { put(copeM, box(L + 0.3, 0.12, 0.28), F(0.15, 0.06, s * (Wd / 2 + 0.14))); put(glassM, pl(L, 0.95), F2(0.15, 0.62, s * (Wd / 2 + 0.14), new THREE.Euler(0, 0, 0))); put(MAT.metalLight, box(L + 0.1, 0.05, 0.07), F(0.15, 1.12, s * (Wd / 2 + 0.14))); for (let px = x0 + 0.1; px <= L / 2 + 0.31; px += 1.8) put(MAT.metalLight, box(0.05, 1.0, 0.05), F(Math.min(px, L / 2 + 0.28), 0.6, s * (Wd / 2 + 0.14))); }
-    put(copeM, box(0.28, 0.12, Wd + 0.56), F(L / 2 + 0.14, 0.06, 0)); put(glassM, pl(Wd + 0.28, 0.95), F2(L / 2 + 0.14, 0.62, 0, new THREE.Euler(0, Math.PI / 2, 0))); put(MAT.metalLight, box(0.07, 0.05, Wd + 0.4), F(L / 2 + 0.14, 1.12, 0));
-    /* totem with the m sign */
-    put(MAT.metal, new THREE.CylinderGeometry(0.07, 0.07, 3.3, 8), F(x0 - 0.7, 1.65, Wd / 2 + 0.6));
-    put(signM, pl(0.75, 0.75), F(x0 - 0.7, 3.25, Wd / 2 + 0.6 + 0.03)); put(signM, pl(0.75, 0.75), F2(x0 - 0.7, 3.25, Wd / 2 + 0.6 - 0.03, new THREE.Euler(0, Math.PI, 0)));
-    put(holeMark, pl(L, Wd), F2(0, 0.004, 0, new THREE.Euler(-Math.PI / 2, 0, 0)));
-    /* collisions: the well and its balustrade; the way in is at the street end */
-    const hx = L / 2 + 0.3, hz = Wd / 2 + 0.3, pts = [];
-    for (const [u, v] of [[x0 + 0.5, -hz], [hx, -hz], [hx, hz], [x0 + 0.5, hz]]) pts.push(x + ca * u + sa * v, y + sa * u - ca * v);
-    const bx = [Math.min(pts[0], pts[2], pts[4], pts[6]), Math.min(pts[1], pts[3], pts[5], pts[7]), Math.max(pts[0], pts[2], pts[4], pts[6]), Math.max(pts[1], pts[3], pts[5], pts[7])];
-    XOBS.add(bx[0], bx[1], bx[2], bx[3], { p: pts, b: bx, h: 1.1 });
-    METRO.ent.push({ x: x + ca * (x0 - 0.6), y: y + sa * (x0 - 0.6), st, a, cx: x, cy: y });
+    return true;
+  };
+  const addTotem = (F, x0, width) => {
+    const z = width / 2 + 0.62;
+    put(MAT.castIron || MAT.metal, new THREE.CylinderGeometry(0.065, 0.085, 2.75, 8), F(x0, 1.38, z));
+    put(signM, pl(0.68, 0.68), F(x0, 2.78, z + 0.035));
+    put(signM, pl(0.68, 0.68), F(x0, 2.78, z - 0.035, Math.PI));
+  };
+  for (const e of entranceRecords) {
+    const x = Number(e.x), y = Number(e.y), st = e.st || e.station;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !st || e.safe === false) continue;
+    const kind = e.kind || 'stairs', line = e.line === 'b' ? 'b' : 'a';
+    const integrated = !!e.integrated;
+    const L = clamp(Number(e.length) || (kind === 'elevator' ? 2.4 : 5.2), 2.5, 14);
+    const Wd = clamp(Number(e.width) || (kind === 'elevator' ? 2.2 : 2.0), 1.35, 8.0);
+    const a = Number.isFinite(Number(e.angle)) ? Number(e.angle) : 0;
+    const fx = integrated && Number.isFinite(Number(e.facade_x)) ? Number(e.facade_x) : x;
+    const fy = integrated && Number.isFinite(Number(e.facade_y)) ? Number(e.facade_y) : y;
+    const fa = integrated && Number.isFinite(Number(e.facade_angle)) ? Number(e.facade_angle) : a;
+    const COR = line === 'b' ? 2.0 : 0.8;
+    const checkL = integrated ? 1.8 : (kind === 'elevator' ? 2.5 : (e.angle == null ? 1.5 : L + COR));
+    const checkW = integrated ? 1.5 : (kind === 'elevator' ? 2.5 : Wd + 0.6);
+    if (e.safe === false || !footprintClear(fx, fy, integrated ? fa : a, checkL, checkW, !integrated && kind === 'stairs' && e.angle != null)) continue;
+    const ca = Math.cos(integrated ? fa : a), sa = Math.sin(integrated ? fa : a);
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, integrated ? fa : a, 0));
+    const F = (lx, ly, lz, ry) => {
+      const qq = q.clone(); if (ry) qq.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)));
+      const m = new THREE.Matrix4();
+      m.compose(new THREE.Vector3(fx + ca * lx + sa * lz, SW + ly, -(fy + sa * lx - ca * lz)), qq, new THREE.Vector3(1, 1, 1));
+      return m;
+    };
+    const F2 = (lx, ly, lz, eu) => {
+      const m = new THREE.Matrix4();
+      m.compose(new THREE.Vector3(fx + ca * lx + sa * lz, SW + ly, -(fy + sa * lx - ca * lz)), q.clone().multiply(new THREE.Quaternion().setFromEuler(eu)), new THREE.Vector3(1, 1, 1));
+      return m;
+    };
+    const totemLX = integrated ? -1.25 : (kind === 'elevator' ? -1.55 : -0.78);
+    const totemW = integrated ? 0.9 : (kind === 'elevator' ? 1.0 : Wd);
+    const totemZ = totemW / 2 + 0.62;
+    if (blockedAt(fx + ca * totemLX + sa * totemZ, fy + sa * totemLX - ca * totemZ)) continue;
+    if (integrated) {
+      /* Entrée dans un immeuble : cadre appliqué à la façade, jamais de trémie. */
+      const frame = MAT.castIron || MAT.metal, fw = 1.45, fh = 2.45;
+      for (const side of [-1, 1]) put(frame, box(0.09, fh, 0.09), F(side * fw / 2, fh / 2, 0));
+      put(frame, box(fw + 0.09, 0.09, 0.09), F(0, fh, 0));
+      put(frame, box(0.06, 0.06, 0.18), F(0, fh + 0.22, 0));
+      put(signM, pl(0.72, 0.72), F2(0, fh + 0.62, 0.06, new THREE.Euler(0, 0, 0)));
+      addTotem(F, -1.25, 0.9);
+      METRO.ent.push({ x: fx, y: fy, st, a: fa, cx: fx, cy: fy, kind, wheelchair: e.wheelchair });
+      continue;
+    }
+    if (kind === 'elevator') {
+      /* Kiosque d'ascenseur vitré, avec porte et couronnement métallique. */
+      const ew = 2.15, ed = 2.15, eh = 3.05;
+      for (const side of [-1, 1]) {
+        put(glassM, pl(eh, ew), F2(0, eh / 2, side * ed / 2, new THREE.Euler(0, side > 0 ? Math.PI : 0, 0)));
+        put(MAT.castIron || MAT.metal, box(eh, 0.055, 0.07), F(0, 0.08, side * ed / 2));
+        put(MAT.castIron || MAT.metal, box(eh, 0.055, 0.07), F(0, eh - 0.08, side * ed / 2));
+      }
+      put(glassM, pl(ed, eh), F2(ed / 2, eh / 2, 0, new THREE.Euler(0, Math.PI / 2, 0)));
+      put(MAT.castIron || MAT.metal, box(0.12, eh, 0.12), F(-ed / 2, eh / 2, 0));
+      put(MAT.castIron || MAT.metal, box(0.12, eh, 0.12), F(ed / 2, eh / 2, 0));
+      put(MAT.castIron || MAT.metal, box(ew, 0.16, ed), F(0, eh + 0.06, 0));
+      put(signM, pl(0.62, 0.62), F2(0, eh + 0.48, ed / 2 + 0.05, new THREE.Euler(0, 0, 0)));
+      addTotem(F, -1.55, 1.0);
+      const pts = [];
+      for (const [u, v] of [[-1.3,-1.3],[1.3,-1.3],[1.3,1.3],[-1.3,1.3]]) pts.push(fx + ca*u + sa*v, fy + sa*u - ca*v);
+      const eb = [Math.min(pts[0],pts[2],pts[4],pts[6]),Math.min(pts[1],pts[3],pts[5],pts[7]),Math.max(pts[0],pts[2],pts[4],pts[6]),Math.max(pts[1],pts[3],pts[5],pts[7])];
+      XOBS.add(eb[0],eb[1],eb[2],eb[3],{p:pts,b:eb,h:eh});
+      METRO.ent.push({ x, y, st, a, cx: x, cy: y, kind, wheelchair: e.wheelchair });
+      continue;
+    }
+    if (e.angle == null) {
+      /* Nœud sans way d'escalier : signalétique seule, aucune orientation inventée. */
+      addTotem(F, -1.2, 1.0);
+      METRO.ent.push({ x, y, st, a, cx: x, cy: y, kind, wheelchair: e.wheelchair });
+      continue;
+    }
+    const x0 = 0, RISE = 0.155, RUN = L / Math.max(8, Math.min(42, Math.ceil(L / 0.29)));
+    const N = Math.max(8, Math.min(42, Math.ceil(L / 0.29))), DEEP = N * RISE;
+    const graniteM = M({ color: 0x777a79, roughness: 0.88 });
+    const railM = MAT.castIron || MAT.metal;
+    /* Marches calées sur la longueur de la way OSM. */
+    if (e.conveying === 'yes' || e.conveying === 'forward' || e.conveying === 'backward') {
+      put(MAT.metal, box(L * 0.96, 0.16, Wd * 0.62), F(L / 2, -DEEP * 0.48, 0));
+      for (let k = 0; k < N; k++) {
+        const top = -(k + 1) * RISE;
+        put(MAT.metalLight, box(Math.max(0.08, RUN * 0.72), 0.035, Wd * 0.58), F(x0 + (k + 0.5) * RUN, top, 0));
+      }
+      for (const side of [-1, 1]) put(railM, box(L, 0.08, 0.07), F(L / 2, 0.55, side * (Wd * 0.39)));
+    } else {
+      for (let k = 0; k < N; k++) {
+        const top = -(k + 1) * RISE, h = DEEP + 0.36 + top;
+        put(stepM, box(RUN + 0.015, h, Wd), F(x0 + (k + 0.5) * RUN, top - h / 2, 0));
+        put(nosM, box(0.045, 0.018, Wd * 0.96), F(x0 + k * RUN + 0.025, top + 0.008, 0));
+      }
+    }
+    put(stepM, box(COR + 0.3, 0.34, Wd), F(L + COR / 2, -DEEP - 0.18, 0));
+    if (line === 'a') {
+      /* Trémie ouverte : murets de granit, couronnement et garde-corps en fonte. */
+      for (const side of [-1, 1]) {
+        put(graniteM, box(L + COR, 0.72, 0.24), F((L + COR) / 2, 0.34, side * (Wd / 2 + 0.12)));
+        put(graniteM, box(L + COR, 0.14, 0.34), F((L + COR) / 2, 0.74, side * (Wd / 2 + 0.12)));
+        put(railM, box(L + COR, 0.055, 0.055), F((L + COR) / 2, 1.16, side * (Wd / 2 + 0.14)));
+        for (let px = x0 + 0.15; px < L + COR; px += 1.35)
+          put(railM, box(0.045, 0.46, 0.045), F(px, 0.94, side * (Wd / 2 + 0.14)));
+      }
+      put(graniteM, box(0.24, 0.72, Wd + 0.4), F(L + COR, 0.34, 0));
+      if (e.covered || e.indoor) put(glassM, box(L * 0.72, 0.06, Wd + 0.25), F(L * 0.5, 2.35, 0));
+    } else {
+      /* Ligne b : édicule vitré couvert, montants et toiture légère. */
+      for (const side of [-1, 1]) {
+        put(glassM, pl(L + COR, 2.35), F2((L + COR) / 2, 1.18, side * (Wd / 2 + 0.13), new THREE.Euler(0, side > 0 ? Math.PI : 0, 0)));
+        put(railM, box(L + COR, 0.07, 0.08), F((L + COR) / 2, 2.38, side * (Wd / 2 + 0.13)));
+        for (let px = x0; px <= L + COR; px += 1.8) put(railM, box(0.055, 2.4, 0.055), F(px, 1.2, side * (Wd / 2 + 0.13)));
+      }
+      put(glassM, pl(Wd + 0.26, 2.35), F2(L + COR, 1.18, 0, new THREE.Euler(0, Math.PI / 2, 0)));
+      put(ceilM, box(L + COR + 0.2, 0.13, Wd + 0.55), F((L + COR) / 2, 2.43, 0));
+      put(lightM, box(L * 0.7, 0.035, 0.08), F(L * 0.5, 2.34, 0));
+    }
+    addTotem(F, x0 - 0.78, Wd);
+    put(holeMark, pl(L, Wd), F2(L / 2, 0.004, 0, new THREE.Euler(-Math.PI / 2, 0, 0)));
+    /* Collision du garde-corps, en laissant l'extrémité d'accès libre. */
+    const hx = L + COR + 0.2, hz = Wd / 2 + 0.3, pts = [];
+    for (const [u, v] of [[x0 + 0.42,-hz],[hx,-hz],[hx,hz],[x0 + 0.42,hz]]) pts.push(x + Math.cos(a)*u + Math.sin(a)*v, y + Math.sin(a)*u - Math.cos(a)*v);
+    const bb = [Math.min(pts[0],pts[2],pts[4],pts[6]),Math.min(pts[1],pts[3],pts[5],pts[7]),Math.max(pts[0],pts[2],pts[4],pts[6]),Math.max(pts[1],pts[3],pts[5],pts[7])];
+    XOBS.add(bb[0],bb[1],bb[2],bb[3],{p:pts,b:bb,h:1.2});
+    METRO.ent.push({ x: x - Math.cos(a)*0.55, y: y - Math.sin(a)*0.55, st, a, cx:x, cy:y, kind, wheelchair:e.wheelchair });
   }
   const grp = new THREE.Group(); scene.add(grp);
   for (const [mat, list] of parts) {

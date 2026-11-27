@@ -1,8 +1,8 @@
 # Cut gaps in fences, railings, low walls and hedges wherever a street, path or footway crosses them
 # (OSM draws the park fence continuous across its gates; the game must stay walkable).
-import json, glob, math
+import json, glob, math, os
 from collections import defaultdict
-T = sorted(glob.glob('/home/claude/g2/tiles/t*.json'))
+T = sorted(glob.glob(os.environ.get('GTR_ROOT', '/home/claude/g2') + '/tiles/t*.json'))
 D = {f: json.load(open(f)) for f in T}
 C = 20.0; grid = defaultdict(list); segs = []
 for f, d in D.items():

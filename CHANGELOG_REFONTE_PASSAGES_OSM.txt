@@ -1,0 +1,118 @@
+REFONTE URBAINE — PASSAGES PIÉTONS OSM
+========================================
+
+- Extraction des nœuds OSM highway=crossing et de leurs tags crossing=* et
+  crossing:markings=* ; seuls les passages explicitement marqués (zebra,
+  marked ou marquage yes/zebra/marked) produisent un zébra.
+- Rattachement du nœud à la chaussée circulée la plus proche, calcul de
+  l'orientation et de la largeur du passage.
+- Filtrage des emprises qui se chevauchent pour éviter les zébras superposés,
+  notamment lorsque deux passages sont proches et obliques.
+- Interruption des bordures au droit des passages et génération de rampes
+  entre chaussée et trottoir.
+- Prise en compte des largeurs de trottoirs explicitement renseignées dans OSM.
+- Extraction des îlots/terre-pleins explicitement cartographiés (area:highway,
+  traffic_island, traffic_calming=island et bandes engazonnées étroites).
+- Les empreintes de carrefour restent calculées depuis les bords des chaussées.
+  IMPORTANT : d['r'] et son ordre ne sont jamais modifiés ; d['bh'] conserve
+  ainsi son indexation et t.seg reste continu pour la conduite et l'IA.
+
+Point de contrôle connu :
+- Place de Bretagne : X=-598.8, Y=-303.5 (coordonnées métriques du jeu).
+
+Régénération requise :
+1. Relancer outils/street_osm.py avec l'extrait OSM complet pour produire le
+   pickle contenant crossings et medians.
+2. Relancer outils/streets.py pour réexporter les tuiles (jc, xw, dr, md, cb).
+3. Vérifier en jeu les passages, les bateaux et les terre-pleins, notamment
+   les deux passages proches place de Bretagne.
+
+Données cartographiques : © contributeurs OpenStreetMap (ODbL).
+
+
+REFONTE — CORRECTIONS PASSAGES ET MARQUAGES DE VOIE (27/11/2026)
+=================================================================
+
+- Export des centres et rayons des passages marqués dans d['xc']; les lignes
+  axiales, séparateurs et rives cessent leur tracé dans ces emprises, comme
+  dans les cœurs de carrefour d['jc'].
+- Classification des îlots OSM par surface/landuse : seuls surface=grass ou
+  landuse=grass utilisent MAT.grass. Les îlots sans tag végétal restent en
+  matériau minéral MAT.square.
+- Extraction OSM de lanes, turn:lanes, turn:lanes:forward et
+  turn:lanes:backward. Flèches pleines générées sur les approches des
+  carrefours à partir de deux voies ou plus par sens, et orientées selon les
+  indications left/through/right disponibles.
+- d['r'] et son ordre restent intacts. Les géométries supplémentaires sont
+  exportées dans xc, ar, md et mg.
+
+Régénérer dans l'ordre : street_osm.py, streets.py, gates.py, dem_detail3.py.
+Vérifier les flèches aux grands carrefours, l'absence de traits dans les zébras,
+et la nature minérale/végétale des terre-pleins, notamment place de Bretagne.
+Données © contributeurs OpenStreetMap (ODbL).
+
+- Première passe des places : extraction des polygones OSM fermés (area:highway=pedestrian,
+  highway=pedestrian + area=yes, place=square, landuse/leisure=plaza,
+  amenity=marketplace). Le matériau suit surface : pavés, asphalte ou dalles ;
+  les surfaces végétales sont exclues de cette couche minérale.
+
+
+ÉTAPE 3 — VILAINE, QUAIS ET PONTS (27/11/2026)
+================================================
+
+- Flèches : calcul sur chaque nœud OSM qui rejoint un cœur jc, y compris au
+  milieu d'une way ; une flèche par voie, tout droit par défaut si turn:lanes
+  manque.
+- Extraction des surfaces OSM natural=water / waterway=riverbank et des axes
+  river/canal/stream ; les surfaces d'eau complètent le masque de découpe des
+  chaussées et bordures.
+- Extraction man_made=quay et embankment comme murs de quai en pierre, avec
+  couronnement et sans garde-corps automatique. Les garde-corps OSM explicites
+  restent traités séparément.
+- Les marches highway=steps et murs retaining_wall déjà extraits sont
+  conservés ; les tabliers de pont utilisent les altitudes bh par segment.
+
+Régénérer : street_osm.py, streets.py, gates.py, dem_detail3.py. Contrôler les
+ponts de la Vilaine, les quais rive nord/sud et les escaliers descendant vers
+l'eau. Données © contributeurs OpenStreetMap (ODbL).
+
+
+ÉTAPE 4 — MOBILIER, TERRASSES ET BERGES OSM (27/11/2026)
+========================================================
+- Extraction des arbres natural=tree, bancs amenity=bench, fontaines
+  amenity=fountain, potelets barrier=bollard et lampadaires highway=street_lamp.
+- Dédoublonnage par type à 2 m avec les positions historiques des tableaux
+  de tuiles t (arbres) et f (mobilier) ; les objets existants sont conservés.
+- Modèle instancié de fontaine et emprises fermées outdoor_seating=yes rendues
+  avec tables/chaises ; surfaces de berges natural=bank / landuse=grass proches
+  de l'eau, avec faces en pente entre la cote d'eau et le haut de berge.
+- Suppression du mur vertical automatique sur le périmètre de GD.water :
+  les murs de quai et garde-corps sont rendus depuis les barrières OSM explicites.
+  Les surfaces d'eau restent inchangées.
+- Audit des ponts : comptage des enregistrements bridge et des entrées bh
+  correspondantes ; aucune modification de d['r'] ni de son indexation.
+- Compteurs : objets extraits/dédoublonnés/exportés par type, terrasses,
+  berges, faces de berge et ponts avec/sans bh.
+- Test synthétique ajouté au job geospatial : python tests/test_osm_urban_features.py.
+- Régénération : street_osm.py, streets.py, gates.py, dem_detail3.py.
+Données © contributeurs OpenStreetMap (ODbL).
+
+
+ÉTAPE 5 — ACCÈS AU MÉTRO DEPUIS OSM (27/11/2026)
+=================================================
+- Reconstruction de metro.json depuis l'extrait défini par GTR_OSM_FILE :
+  railway=subway_entrance, highway=elevator et ways highway=steps/footway.
+- Chaque accès conserve son nœud OSM, sa station, sa ligne, wheelchair,
+  covered/indoor, sa largeur, sa longueur et son sens de descente. incline=up/down
+  est interprété dans le sens de la way ; sans incline, le vecteur part du nœud
+  d'entrée vers l'autre extrémité.
+- Les ascenseurs sont ajoutés dans un rayon de 60 m d'une station. Les stations,
+  viaducs et ordre des lignes du fichier existant sont conservés.
+- Deux modèles d'accès : trémie ouverte en granit pour la ligne A, édicule vitré
+  couvert pour la ligne B, escalier mécanique lorsque conveying=yes ; kiosque
+  vitré pour les ascenseurs.
+- Les accès intégrés à un bâtiment n'ont pas de trémie : cadre de porte et totem
+  au point de façade. Les emprises signalées comme chaussée, passage piéton ou
+  bâtiment sont exclues. Les contrôles runtime complètent les masques OSM.
+- Test synthétique : python tests/test_metro_osm.py. Régénération par
+  GTR_OSM_FILE=/chemin/extrait GTR_ROOT=/chemin/jeu python outils/metro_osm.py.

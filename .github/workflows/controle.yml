@@ -8,16 +8,40 @@ on:
     branches: [main]
     paths-ignore:
       - 'controle/**'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: controle
+  group: controle-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  geospatial:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer Shapely pour les tests de géométrie
+        run: pip install shapely
+      - name: Tester les profils routiers OSM
+        run: python tests/test_street_profiles.py
+      - name: Tester la fusion polygonale des carrefours
+        run: python tests/test_street_geometry.py
+      - name: Tester l'extraction des restrictions OSM
+        run: python tests/test_osm_restrictions.py
+      - name: Tester le complément OSM sans réseau
+        run: python tests/test_complete_osm_extract.py
+      - name: Tester les objets urbains OSM et le dédoublonnage
+        run: python tests/test_osm_urban_features.py
+      - name: Tester le graphe OSM avec provenance
+        run: python tests/test_build_osm_graph.py
+
   partie:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -46,7 +70,7 @@ jobs:
           if-no-files-found: warn
 
   rapport:
-    needs: partie
+    needs: [partie, geospatial]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -63,6 +87,7 @@ jobs:
         continue-on-error: true
         run: python tests/ci.py --merge parties
       - name: Publier le rapport dans le dépôt
+        if: github.event_name == 'push'
         run: |
           git config user.name "controle-automatique"
           git config user.email "controle-automatique@users.noreply.github.com"

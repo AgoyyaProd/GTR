@@ -53,7 +53,7 @@ function updateGPS(dt) {
   if (routeT <= 0 || !routeNodes || routeDest !== dest.x + ',' + dest.y) {
     routeT = 2.5; routeDest = dest.x + ',' + dest.y;
     const s = nearestNode(pl.x, pl.y, 2), g = nearestNode(dest.x, dest.y, 2);
-    routeNodes = astar(s, g, 2, 40000);
+    routeNodes = s >= 0 && g >= 0 ? astar(s, g, 2, 40000) : null;
   }
   if (gps && Math.hypot(gps.x - pl.x, gps.y - pl.y) < 15) { gps = null; toast('Vous êtes arrivé', 2); }
 }
@@ -231,7 +231,7 @@ function nextEdge(c, mask, away) {
   c.a = B; c.b = GNB[best]; c.hw = !!(GFL[best] & 4); return true;
 }
 function followGraph(c, dt, mask, speed, away) {
-  if (c.a < 0) { c.a = nearestNode(c.x, c.y, mask); const e = outEdges(c.a, mask); if (!e.length) return; c.b = GNB[e[0]]; }
+  if (c.a < 0) { c.a = nearestNode(c.x, c.y, mask); if (c.a < 0) return; const e = outEdges(c.a, mask); if (!e.length) { c.a = -1; return; } c.b = GNB[e[0]]; }
   const [tx, ty] = laneTarget(c);
   if (Math.hypot(tx - c.x, ty - c.y) < (c.hw ? 9 : 5)) { if (!nextEdge(c, mask, away)) return; }
   const want = Math.atan2(tx - c.x, ty - c.y), da = angWrap(want - c.h);
@@ -250,7 +250,7 @@ function chaseAI(c, dt) {
   let tx = tgt.x, ty = tgt.y;
   c.repath -= dt;
   if (d > 40) {
-    if (c.repath <= 0 || !c.path) { c.repath = 1.5; c.path = astar(nearestNode(c.x, c.y, 2), nearestNode(tgt.x, tgt.y, 2), 2, 15000); c.pi = 0; }
+    if (c.repath <= 0 || !c.path) { c.repath = 1.5; const s = nearestNode(c.x, c.y, 2), g = nearestNode(tgt.x, tgt.y, 2); c.path = s >= 0 && g >= 0 ? astar(s, g, 2, 15000) : null; c.pi = 0; }
     if (c.path) {
       const fx = Math.sin(c.h), fy = Math.cos(c.h);
       while (c.pi < c.path.length - 1) { const n = c.path[c.pi], dx = nx(n) - c.x, dy = ny(n) - c.y; if (Math.hypot(dx, dy) < 9 || (c.pi === 0 && dx * fx + dy * fy < 0 && Math.abs(c.v) > 3)) c.pi++; else break; }
@@ -406,7 +406,7 @@ function spawnActor(k, look, opt) { const p = addPed(P[k][0], P[k][1], Object.as
 function face(p, t) { p.h = Math.atan2(t.x - p.x, t.y - p.y); }
 const YANN = { top: '#151515', pants: '#3a1414', mohawk: '#ff3d8b', skin: '#f1c9a5', shoes: '#141414', hair: '#1b1208', bald: true, jacket: '#151515' };
 function kaosFor(owner) { const d = makeDog('#3a2a1a'); const k = { mesh: d, isMesh: true, x: owner.x + 1.2, y: owner.y - 0.7 }; d.position.copy(W3(k.x, k.y, groundH(k.x, k.y))); d.rotation.y = Math.PI - owner.h; actors.push(k); return k; }
-function parkAt(x, y, opt) { const i = nearestNode(x, y, 1), e = outEdges(i, 1), b = e.length ? GNB[e[0]] : i; const h = Math.atan2(nx(b) - nx(i), ny(b) - ny(i)); const l = Math.hypot(nx(b) - nx(i), ny(b) - ny(i)) || 1; const c = addCar(nx(i) + (nx(b) - nx(i)) / l * 4, ny(i) + (ny(b) - ny(i)) / l * 4, h, Object.assign({ ai: null, driver: false, keep: true }, opt || {})); return c; }
+function parkAt(x, y, opt) { const i = nearestNode(x, y, 1); if (i < 0) return addCar(x, y, 0, Object.assign({ ai: null, driver: false, keep: true }, opt || {})); const e = outEdges(i, 1), b = e.length ? GNB[e[0]] : i; const h = Math.atan2(nx(b) - nx(i), ny(b) - ny(i)); const l = Math.hypot(nx(b) - nx(i), ny(b) - ny(i)) || 1; return addCar(nx(i) + (nx(b) - nx(i)) / l * 4, ny(i) + (ny(b) - ny(i)) / l * 4, h, Object.assign({ ai: null, driver: false, keep: true }, opt || {})); }
 
 async function m1() {
   const yann = spawnActor('yann', YANN); face(yann, player); yann.mesh.userData.talk = true;
@@ -451,9 +451,24 @@ async function m3() {
   await say([['Momo', 'Mauvaise nouvelle : la BAC prépare une descente. Ils sont là dans une minute.'], ['Momo', 'Y a trois sacs planqués dans le coin. Récupère-les avant eux, prends une caisse et file au Thabor.']]);
   actors.push(Object.assign(parkAt(-320, 380), { isCar: true }));
   const bags = [];
+  const startX = player.x, startY = player.y;
   for (let k = 0; k < 3; k++) {
-    let s = null; for (let q = 0; q < 40; q++) { const c = randomWalkPoint(-327, 392, 35, 110); if (c && bags.every(b => Math.hypot(b.x - c[0], b.y - c[1]) > 30) && freeSpot(c[0], c[1], 0.8) && reachable(player.x, player.y, c[0], c[1], 2.2)) { s = c; break; } }
-    if (!s) { const c = fp(-327 + rnd(-40, 40), 392 + rnd(-40, 40)); s = [c.x, c.y]; } /* fallback stays on a free walkable spot */
+    let s = null;
+    for (let q = 0; q < 60; q++) {
+      const c = randomWalkPoint(-327, 392, 35, 110);
+      if (c && bags.every(b => Math.hypot(b.x - c[0], b.y - c[1]) > 30) &&
+          freeSpot(c[0], c[1], 0.8) && reachable(startX, startY, c[0], c[1], 2.2)) {
+        s = c; break;
+      }
+    }
+    // Ne jamais placer un sac de secours hors du réseau piéton accessible.
+    // Si aucun segment distant n'est joignable, on cherche près du départ,
+    // puis on utilise le point de départ lui-même (toujours atteignable).
+    if (!s) {
+      const c = fp(startX, startY);
+      if (freeSpot(c.x, c.y, 0.8) && reachable(startX, startY, c.x, c.y, 2.2)) s = [c.x, c.y];
+    }
+    if (!s) s = [startX, startY];
     const b = beam(0x39ff6a); b.scale.set(0.5, 0.12, 0.5); b.position.copy(W3(s[0], s[1])); b.visible = true;
     const bag = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 })); bag.position.copy(W3(s[0], s[1], 0.2)); scene.add(bag);
     bags.push({ x: s[0], y: s[1], b, bag, got: false });
@@ -483,7 +498,9 @@ async function m4() {
   objective('Monte dans une voiture');
   await wait(() => !!player.car);
   const s = nearestNode(player.car.x + 60, player.car.y, 2), e = outEdges(s, 2), b = e.length ? GNB[e[0]] : s;
-  const sc = addCar(nx(s), ny(s), Math.atan2(nx(b) - nx(s), ny(b) - ny(s)), { ai: 'flee', kind: 'scooter', keep: true, color: 0xd02040 }); sc.a = s; sc.b = b; sc.isCar = true; actors.push(sc);
+  const sx = s >= 0 ? nx(s) : player.car.x + 20, sy = s >= 0 ? ny(s) : player.car.y;
+  const sh = s >= 0 && b >= 0 ? Math.atan2(nx(b) - sx, ny(b) - sy) : 0;
+  const sc = addCar(sx, sy, sh, { ai: 'flee', kind: 'scooter', keep: true, color: 0xd02040 }); sc.a = s; sc.b = b; sc.isCar = true; actors.push(sc);
   objective('Colle le scooter de Villejean jusqu\'à ce qu\'il abandonne');
   extraMarkers = () => markers.push({ x: sc.x, y: sc.y, c: '#ff3d8b' });
   let press = 0;
