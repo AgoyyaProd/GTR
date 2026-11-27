@@ -684,7 +684,8 @@ function addLodBuilding(gb, t, rec, R, force) {
       let nx3 = uy * vz - uz * vy, ny3 = uz * vx - ux * vz, nz3 = ux * vy - uy * vx;
       const nl = Math.hypot(nx3, ny3, nz3) || 1; nx3 /= nl; ny3 /= nl; nz3 /= nl;
       const hl = Math.hypot(nx3, nz3) || 1, wnx = nx3 / hl, wny = -nz3 / hl;
-      if (wnx * nx + wny * ny < 0.62) continue;
+      // Seules les faces murales verticales peuvent porter des décors.
+      if (Math.abs(ny3) > 0.2 || wnx * nx + wny * ny < 0.62) continue;
       const mx = (a[0] + b[0] + c[0]) / 3, my = -(a[2] + b[2] + c[2]) / 3;
       const along = (mx - e[0]) * e[2] + (my - e[1]) * e[3];
       if (along < -0.6 || along > e[4] + 0.6) continue;
@@ -695,8 +696,12 @@ function addLodBuilding(gb, t, rec, R, force) {
       if (normal[0] * N[0] + normal[2] * N[2] < 0) normal = normal.map(z => -z);
       const verticalized = Math.abs(ny3) > 0.075 && lowOffsets.length >= 2 &&
         Math.abs(baseOffset) < 0.38 && Math.abs(off - baseOffset) > 0.22;
+      const alongs = [a, b, c].map(p => (p[0] - e[0]) * e[2] + (-p[2] - e[1]) * e[3]);
+      const ys = [a[1], b[1], c[1]];
       candidates.push({
         along, y: (a[1] + b[1] + c[1]) / 3,
+        alongMin: Math.min(...alongs), alongMax: Math.max(...alongs),
+        yMin: Math.min(...ys), yMax: Math.max(...ys),
         point: verticalized
           ? [px + nx * baseOffset, (a[1] + b[1] + c[1]) / 3, -(py + ny * baseOffset)]
           : [mx, (a[1] + b[1] + c[1]) / 3, -my],
@@ -705,6 +710,19 @@ function addLodBuilding(gb, t, rec, R, force) {
     }
     wallPlanes.set(e[7], candidates);
   }
+  // Couverture issue exclusivement des triangles muraux réellement rendus.
+  const wallSupport = (e, along, y) => {
+    const planes = wallPlanes.get(e[7]) || [];
+    return planes.some(p => along >= p.alongMin - 0.12 && along <= p.alongMax + 0.12 &&
+      y >= p.yMin - 0.12 && y <= p.yMax + 0.12);
+  };
+  const wallTopAt = (e, along) => {
+    const planes = wallPlanes.get(e[7]) || [];
+    let top = -Infinity;
+    for (const p of planes) if (along >= p.alongMin - 0.12 && along <= p.alongMax + 0.12)
+      top = Math.max(top, p.yMax);
+    return top;
+  };
   /* Relief architectural discret pour les façades historiques dessinées :
      des bandeaux de pierre très peu saillants matérialisent les planchers.
      Ils restent dans le groupe des façades dessinées (jamais sur les atlas photo),
@@ -720,7 +738,7 @@ function addLodBuilding(gb, t, rec, R, force) {
       const floors = Math.min(9, Math.floor((edgeH - 0.8) / FLOOR));
       const profile = e[8] || [];
       const roofSlope = profile.length > 1 ? Math.max(...profile.map(p => p[1])) - Math.min(...profile.map(p => p[1])) : 0;
-      if (e[4] < 3.2 || edgeH < 5) continue;
+      if (e[4] < 3.2 || edgeH < 5 || !wallSupport(e, e[4] * 0.5, Math.min(edgeH - 0.5, h * 0.65))) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const ax = e[0], ay = e[1], bx = ax + e[2] * e[4], by = ay + e[3] * e[4];
       const N = [nx, 0, -ny], uv = e[4] / 2.4;
@@ -764,7 +782,7 @@ function addLodBuilding(gb, t, rec, R, force) {
     for (const e of fe) {
       const L = e[4], edgeH = e[6] || h;
       const rows = Math.min(8, Math.floor((edgeH - 0.65) / FLOOR));
-      if (L < 5.4 || edgeH < 8 || rows < 1) continue;
+      if (L < 5.4 || edgeH < 8 || rows < 1 || !wallSupport(e, L * 0.5, Math.min(edgeH - 0.5, h * 0.65))) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const sg = e[2] * ny - e[3] * nx > 0 ? 1 : -1;
       const dirX = e[2], dirY = e[3], N = [nx, 0, -ny];
@@ -773,10 +791,12 @@ function addLodBuilding(gb, t, rec, R, force) {
         const bx = e[0] + dirX * along, by = e[1] + dirY * along;
         let plane = null, score = 1e9;
         for (const candidate of planes) {
+          if (along < candidate.alongMin - 0.12 || along > candidate.alongMax + 0.12 ||
+              y < candidate.yMin - 0.12 || y > candidate.yMax + 0.12) continue;
           const d = Math.abs(candidate.along - along) + Math.abs(candidate.y - y) * 0.08;
           if (d < score) { score = d; plane = candidate; }
         }
-        if (plane) {
+        if (plane && wallSupport(e, along, y)) {
           const n = plane.normal, p0 = plane.point, denom = n[0] * nx - n[2] * ny;
           if (Math.abs(denom) > 0.28) {
             const surfaceDepth = (n[0] * (p0[0] - bx) + n[1] * (p0[1] - y) + n[2] * (p0[2] + by)) / denom;
@@ -802,13 +822,17 @@ function addLodBuilding(gb, t, rec, R, force) {
           for (let fl = 0; fl < rows; fl++) {
             const y0 = fl * FLOOR + FLOOR * 0.2 - 0.16;
             const half = 0.735, inner = 0.575, bar = 0.10;
-            const roofLimit = Math.min(
-              edgeHeightAt(e, center - half),
-              edgeHeightAt(e, center),
-              edgeHeightAt(e, center + half)
-            ) - 0.22;
-            const y1 = Math.min(y0 + 2.25, roofLimit);
-            if (y1 - y0 < 1.12) continue;
+            // La limite haute vient de la face murale porteuse, pas de rec.h.
+            const wallTop = Math.min(wallTopAt(e, center - half),
+              wallTopAt(e, center), wallTopAt(e, center + half));
+            const y1 = Math.min(y0 + 2.25, wallTop - 0.18);
+            if (!Number.isFinite(wallTop) || y1 - y0 < 1.12) continue;
+            // Le mur doit exister sur toute la largeur et toute la hauteur du cadre.
+            let supported = true;
+            for (const u of [center - half, center - inner, center, center + inner, center + half])
+              for (const yy of [y0 + 0.08, (y0 + y1) * 0.5, y1 - 0.08])
+                if (!wallSupport(e, u, yy)) supported = false;
+            if (!supported) continue;
             // Vitrage en retrait et tableaux latéraux : la baie ne se limite
             // plus à un cadre posé sur la texture de façade.
             const paneY0 = y0 + bar + 0.035, paneY1 = y1 - bar - 0.035;
@@ -953,7 +977,8 @@ function addLodBuilding(gb, t, rec, R, force) {
     const roofCenter = polyBox(f), bcx = (roofCenter[0] + roofCenter[2]) * 0.5, bcy = (roofCenter[1] + roofCenter[3]) * 0.5;
     for (const e of fe) {
       const edgeH = e[6] || h;
-      if (e[4] < 7 || edgeH < 5 || Math.abs(Math.sin(bcx * 7.13 + bcy * 19.71 + e[5] * 0.37)) > 0.22) continue;
+      if (e[4] < 7 || edgeH < 5 || !wallSupport(e, e[4] * 0.34, edgeH * 0.55) ||
+          Math.abs(Math.sin(bcx * 7.13 + bcy * 19.71 + e[5] * 0.37)) > 0.22) continue;
       const nx = ccwF ? e[3] : -e[3], ny = ccwF ? -e[2] : e[2];
       const px = e[0] + e[2] * 0.34 + nx * 0.16;
       const py = e[1] + e[3] * 0.34 + ny * 0.16;
