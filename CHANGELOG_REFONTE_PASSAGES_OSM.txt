@@ -50,3 +50,8 @@ Régénérer dans l'ordre : street_osm.py, streets.py, gates.py, dem_detail3.py.
 Vérifier les flèches aux grands carrefours, l'absence de traits dans les zébras,
 et la nature minérale/végétale des terre-pleins, notamment place de Bretagne.
 Données © contributeurs OpenStreetMap (ODbL).
+
+- Première passe des places : extraction des polygones OSM fermés (area:highway=pedestrian,
+  highway=pedestrian + area=yes, place=square, landuse/leisure=plaza,
+  amenity=marketplace). Le matériau suit surface : pavés, asphalte ou dalles ;
+  les surfaces végétales sont exclues de cette couche minérale.
