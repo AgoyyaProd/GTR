@@ -31,6 +31,8 @@ jobs:
         run: python tests/test_osm_restrictions.py
       - name: Tester le complément OSM sans réseau
         run: python tests/test_complete_osm_extract.py
+      - name: Tester le graphe OSM avec provenance
+        run: python tests/test_build_osm_graph.py
 
   partie:
     runs-on: ubuntu-latest
