@@ -84,6 +84,10 @@ for road in S.get('roads', []):
     pts = road.get('pts', [])
     if len(pts) < 2 or road.get('bridge') not in (None, '', 'no') or road.get('tunnel') not in (None, '', 'no'):
         continue
+    # Seules les voies circulées forment des carrefours : un chemin ou un trottoir qui
+    # rejoint une rue ne doit pas poser un disque d'asphalte dans un parc ou sur une place.
+    if road.get('highway') in ('footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track', 'bridleway', 'corridor', 'platform', None):
+        continue
     width = road_width(road)
     for k, (x, y) in enumerate(pts):
         arms = []
@@ -98,6 +102,7 @@ for road in S.get('roads', []):
         if arms:
             node_arms.setdefault((round(x, 2), round(y, 2)), []).extend((a, b, width, road) for a, b in arms)
 junction_polys = []
+junction_cores = []
 crossing_records = {key: [] for key in tiles}
 for (x, y), arms in node_arms.items():
     # Merge near-identical bearings; opposite directions remain separate arms.
@@ -136,30 +141,16 @@ for (x, y), arms in node_arms.items():
     footprint = unary_union(approach).intersection(core).buffer(0)
     if not footprint.is_empty and footprint.area > 5:
         junction_polys.append(footprint)
+        junction_cores.append((round(x, 2), round(y, 2), round(radius, 2)))
 junction_union = unary_union(junction_polys) if junction_polys else Polygon()
 print('OSM junctions', len(junction_polys), 'zebra bars', sum(map(len, crossing_records.values())), flush=True)
 
-# Clip ordinary road centre-lines at the junction edge. This also terminates
-# centre lines and lane markings because both are generated from the same records.
-if not junction_union.is_empty:
-    for d in tiles.values():
-        clipped = []
-        for r in d['r']:
-            if r[2] & 2 or r[1] not in (0, 3):
-                clipped.append(r); continue
-            pts = list(zip(r[4::2], r[5::2]))
-            if len(pts) < 2:
-                continue
-            line = LineString(pts)
-            if not line.intersects(junction_union):
-                clipped.append(r); continue
-            parts = line.difference(junction_union.buffer(0.08))
-            geoms = list(parts.geoms) if hasattr(parts, 'geoms') else [parts]
-            for part in geoms:
-                if part.geom_type == 'LineString' and part.length >= 1.2:
-                    rec = list(r[:4]) + [round(c, 2) for xy in part.coords for c in xy]
-                    clipped.append(rec)
-        d['r'] = clipped
+# Les tracés de route (d['r']) ne sont PAS découpés : ils servent au jeu (index t.seg pour
+# la conduite et l'IA, hauteurs de pont d['bh'] indexées par numéro de route). On exporte
+# plutôt les cœurs de carrefour (d['jc'] = [x, y, rayon]) : world.js n'y dessine pas de marquage.
+for tk, d in tiles.items():
+    ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
+    d['jc'] = [[x, y, r] for x, y, r in junction_cores if ox0 - r <= x <= ox0 + T + r and oy0 - r <= y <= oy0 + T + r]
 for tk, d in tiles.items():
     d['xw'] = []
     for poly in crossing_records.get(tk, []):

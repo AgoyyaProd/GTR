@@ -994,6 +994,12 @@ function onCarriageway(t, x, y, m) {
   const e = Math.min(m, 1.2) - 0.6; if (e <= 0.05) return false;
   return inCW(x + e, y) || inCW(x - e, y) || inCW(x, y + e) || inCW(x, y - e);
 }
+/* Cœurs de carrefour issus d'OSM (outils/streets.py, clé jc) : pas de marquage dedans. */
+function inJunction(t, x, y) {
+  const J = t.jc; if (!J) return false;
+  for (let i = 0; i < J.length; i++) { const dx = x - J[i][0], dy = y - J[i][1], rr = J[i][2] + 0.6; if (dx * dx + dy * dy < rr * rr) return true; }
+  return false;
+}
 function addRoad(gb0, t, r) {
   const w = r[0], kind = r[1], flags = r[2], p = r.slice(4), bridge = !!(flags & 2 && r.bh);
   const gb = bridge ? new GB() : gb0;
@@ -1114,7 +1120,9 @@ function addRoad(gb0, t, r) {
         while (s0 < l - 0.001) {
           const ph = gap ? (acc + s0) % per : 0;
           if (gap && ph >= dash) { s0 += per - ph; continue; }
-          const s1 = gap ? Math.min(l, s0 + dash - ph) : l;
+          let s1 = gap ? Math.min(l, s0 + dash - ph) : l;
+          if (!gap && s1 - s0 > 1.5) s1 = Math.min(s1, s0 + 1.5); // traits continus découpés pour s'arrêter aux carrefours
+          if (inJunction(t, ax + ux * (s0 + s1) / 2, ay + uy * (s0 + s1) / 2)) { s0 = s1 + 0.001; continue; }
           const x0 = ax + ux * s0 + qx * off, y0 = ay + uy * s0 + qy * off;
           const x1 = ax + ux * s1 + qx * off, y1 = ay + uy * s1 + qy * off;
           gb.quad(MAT.mark,
@@ -1960,6 +1968,7 @@ function* buildTile(t, data) {
   t.group = group; t.obs = new Grid(20); t.seg = new Grid(16); t.lights = []; t.walk = []; t.parkSpots = []; t.trees = []; t.shops = []; t.seats = [];
   const gbB = new GB(), gbR = new GB();
   /* road segments index first (needed for shops & curbs) */
+  t.jc = data.jc || [];
   data.r.forEach((r, ri) => { if (data.bh && data.bh[ri]) r.bh = data.bh[ri]; });
   for (const r of data.r) {
     const p = r.slice(4);
@@ -2011,7 +2020,7 @@ function* buildTile(t, data) {
   /* OSM zebra crossings generated at shared 3+ arm nodes; clipped per tile. */
   for (const c of data.xw || []) {
     const P = [];
-    for (let q = 0; q < 8; q += 2) P.push([c[q], SW + 0.025, -c[q+1]]);
+    for (let q = 0; q < 8; q += 2) P.push([c[q], 0.018 /* niveau de la chaussée (y = 0), pas du trottoir */, -c[q+1]]);
     gbR.quad(MAT.mark, P[0], P[1], P[2], P[3], [0,0], [1,0], [1,1], [0,1], [0,1,0]);
   }
   for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
