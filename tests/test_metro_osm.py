@@ -74,7 +74,7 @@ def main():
         "o1": (0.0, 0.0, {"railway":"subway_entrance","station":"République"}),
         "o1b": (14.0, 0.0, {}),
         "o2": (11.0, 0.0, {"railway":"subway_entrance","station":"République"}),
-        "o2b": (25.0, 4.0, {}),
+        "o2b": (25.0, 10.0, {}),
     }
     overlap_ways = [
         {"id":"ow1","refs":["o1","o1b"],"tags":{"highway":"steps","incline":"down"}},
