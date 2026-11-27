@@ -18,6 +18,8 @@ way_ids = set()
 turn_restrictions = []
 steps = []
 roads = []  # complete OSM highway ways for visible street profiles
+crossings = []  # OSM marked crossing nodes
+medians = []  # explicitly mapped traffic islands
 bollards = []
 barriers = []
 kerbs = []
@@ -41,6 +43,10 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
             bollards.append((round(x, 2), round(y, 2)))
         if t.get("barrier") == "kerb" or t.get("kerb"):
             kerbs.append((x, y, t.get("kerb")))
+        if t.get("highway") == "crossing":
+            crossings.append({"id": node_id, "x": x, "y": y, "crossing": t.get("crossing"), "markings": t.get("crossing:markings"), "kerb": t.get("kerb"), "lowered": t.get("kerb:lowered")})
+        if t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island":
+            medians.append({"pts": [(x, y)], "kind": "node"})
         el.clear()
 
     elif el.tag == "way":
@@ -51,13 +57,17 @@ for _, el in ET.iterparse(OSM_FILE, events=("end",)):
         refs = [c.get("ref") for c in el if c.tag == "nd"]
         pts = [nodes[r] for r in refs if r in nodes]
         if len(pts) >= 2 and len(pts) == len(refs):
+            if refs[0] == refs[-1] and (t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island" or t.get("landuse") == "grass"):
+                medians.append({"pts": pts, "kind": "area", "tagged": t.get("area:highway") == "traffic_island" or t.get("highway") == "traffic_island" or t.get("traffic_calming") == "island"})
             hw = t.get("highway")
             if hw and hw != "steps":
                 roads.append({
                     "id": el.get("id"), "name": t.get("name"), "highway": hw,
                     "width": t.get("width"), "est_width": t.get("est_width"), "lanes": t.get("lanes"),
                     "sidewalk": t.get("sidewalk"), "sidewalk_left": t.get("sidewalk:left"),
-                    "sidewalk_right": t.get("sidewalk:right"), "surface": t.get("surface"),
+                    "sidewalk_right": t.get("sidewalk:right"),
+                    "sidewalk_left_width": t.get("sidewalk:left:width"), "sidewalk_right_width": t.get("sidewalk:right:width"),
+                    "surface": t.get("surface"),
                     "oneway": t.get("oneway"), "layer": t.get("layer"),
                     "bridge": t.get("bridge"), "tunnel": t.get("tunnel"), "pts": pts,
                 })
@@ -132,7 +142,8 @@ print(len(turn_restrictions), "turn restrictions;", sum(not r["complete"] for r 
 os.makedirs(os.path.dirname(OUT_FILE) or '.', exist_ok=True)
 with open(OUT_FILE, "wb") as f:
     pickle.dump({"steps": steps, "bollards": bollards, "barriers": barriers,
-                 "sidewalks": sidewalks, "roads": roads, "turn_restrictions": turn_restrictions},
+                 "sidewalks": sidewalks, "roads": roads, "crossings": crossings, "medians": medians,
+                 "turn_restrictions": turn_restrictions},
                 f, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Sidecar JSON lisible : le graphe runtime devra encore conserver les way IDs

@@ -1,0 +1,30 @@
+REFONTE URBAINE — PASSAGES PIÉTONS OSM
+========================================
+
+- Extraction des nœuds OSM highway=crossing et de leurs tags crossing=* et
+  crossing:markings=* ; seuls les passages explicitement marqués (zebra,
+  marked ou marquage yes/zebra/marked) produisent un zébra.
+- Rattachement du nœud à la chaussée circulée la plus proche, calcul de
+  l'orientation et de la largeur du passage.
+- Filtrage des emprises qui se chevauchent pour éviter les zébras superposés,
+  notamment lorsque deux passages sont proches et obliques.
+- Interruption des bordures au droit des passages et génération de rampes
+  entre chaussée et trottoir.
+- Prise en compte des largeurs de trottoirs explicitement renseignées dans OSM.
+- Extraction des îlots/terre-pleins explicitement cartographiés (area:highway,
+  traffic_island, traffic_calming=island et bandes engazonnées étroites).
+- Les empreintes de carrefour restent calculées depuis les bords des chaussées.
+  IMPORTANT : d['r'] et son ordre ne sont jamais modifiés ; d['bh'] conserve
+  ainsi son indexation et t.seg reste continu pour la conduite et l'IA.
+
+Point de contrôle connu :
+- Place de Bretagne : X=-598.8, Y=-303.5 (coordonnées métriques du jeu).
+
+Régénération requise :
+1. Relancer outils/street_osm.py avec l'extrait OSM complet pour produire le
+   pickle contenant crossings et medians.
+2. Relancer outils/streets.py pour réexporter les tuiles (jc, xw, dr, md, cb).
+3. Vérifier en jeu les passages, les bateaux et les terre-pleins, notamment
+   les deux passages proches place de Bretagne.
+
+Données cartographiques : © contributeurs OpenStreetMap (ODbL).

@@ -2017,12 +2017,17 @@ function* buildTile(t, data) {
   for (const [f, h] of t.churchQ || []) parvis(gbR, t, f, h); t.churchQ = null;
 
   for (const c of data.cb || []) { addKerb(gbR, t, c, kerbBoll, bollGrid); if (++k % 60 === 0) yield; }
-  /* OSM zebra crossings generated at shared 3+ arm nodes; clipped per tile. */
-  for (const c of data.xw || []) {
-    const P = [];
-    for (let q = 0; q < 8; q += 2) P.push([c[q], 0.018 /* niveau de la chaussée (y = 0), pas du trottoir */, -c[q+1]]);
-    gbR.quad(MAT.mark, P[0], P[1], P[2], P[3], [0,0], [1,0], [1,1], [0,1], [0,1,0]);
+  /* Zébras OSM marqués uniquement ; polygones découpés aux limites des tuiles. */
+  for (const c of data.xw || []) gbR.poly(MAT.mark, c, 0.018, 1);
+  /* Bateaux : rampe entre chaussée et trottoir au droit du passage marqué. */
+  for (const c of data.dr || []) {
+    gbR.quad(MAT.curb,
+      [c[0], 0.025, -c[1]], [c[2], 0.025, -c[3]],
+      [c[4], SW + 0.025, -c[5]], [c[6], SW + 0.025, -c[7]],
+      [0,0], [1,0], [1,1], [0,1], [0,1,0]);
   }
+  /* Terre-pleins et îlots de circulation explicitement cartographiés dans OSM. */
+  for (const c of data.md || []) gbR.poly(MAT.grass, c, SW + 0.014, 4);
   for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
   for (const a of data.a) if (a[0] === 1) addPitchLines(gbR, a[1]); // parks, squares, car parks & gardens are painted on the ground (landcover)
   for (const f of data.f) if (f[0] === 6 && inCW(f[1], f[2])) addCrosswalk(gbR, t, f[1], f[2]);

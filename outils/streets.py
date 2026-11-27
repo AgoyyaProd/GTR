@@ -86,6 +86,30 @@ for road in S.get('roads', []):
         continue
     # Seules les voies circulées forment des carrefours : un chemin ou un trottoir qui
     # rejoint une rue ne doit pas poser un disque d'asphalte dans un parc ou sur une place.
+    if road.get('highway') in ('footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track', 'bridleway', 'corridor', 'platform', 'traffic_island', None):
+        continue
+    width = road_width(road)
+    for k, (x, y) in enumerate(pts):
+        arms = []
+        if k > 0:
+            dx, dy = x - pts[k-1][0], y - pts[k-1][1]
+            ll = math.hypot(dx, dy)
+            if ll > 1: arms.append((dx/ll, dy/ll))
+        if k + 1 < len(pts):
+            dx, dy = pts[k+1][0] - x, pts[k+1][1] - y
+            ll = math.hypot(dx, dy)
+            if ll > 1: arms.append((dx/ll, dy/ll))
+        if arms:
+            node_arms.setdefault((round(x, 2), round(y, 2)), []).extend((a, b, width, road) for a, b in arms)
+def tile_of(x, y): return (int((x - BX0) // T), int((y - BY0) // T))
+
+junction_polys = []
+junction_cores = []
+node_arms = {}
+for road in S.get('roads', []):
+    pts = road.get('pts', [])
+    if len(pts) < 2 or road.get('bridge') not in (None, '', 'no') or road.get('tunnel') not in (None, '', 'no'):
+        continue
     if road.get('highway') in ('footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track', 'bridleway', 'corridor', 'platform', None):
         continue
     width = road_width(road)
@@ -101,11 +125,7 @@ for road in S.get('roads', []):
             if ll > 1: arms.append((dx/ll, dy/ll))
         if arms:
             node_arms.setdefault((round(x, 2), round(y, 2)), []).extend((a, b, width, road) for a, b in arms)
-junction_polys = []
-junction_cores = []
-crossing_records = {key: [] for key in tiles}
 for (x, y), arms in node_arms.items():
-    # Merge near-identical bearings; opposite directions remain separate arms.
     dirs = []
     for ax, ay, width, road in arms:
         if not any(ax*bx + ay*by > math.cos(math.radians(24)) for bx, by, _, _ in dirs):
@@ -119,46 +139,151 @@ for (x, y), arms in node_arms.items():
         arm_len = radius + max(width, 4.0) * 0.8
         centreline = LineString([(x, y), (x + ax*arm_len, y + ay*arm_len)])
         approach.append(centreline.buffer(width/2 + 0.12, cap_style=2, join_style=2))
-        # Zebra crossing on each approach, outside the conflict area.
-        if road.get('highway') not in ('footway', 'path', 'cycleway', 'steps') and width >= 4.2:
-            cx, cy = x + ax*(radius + 1.25), y + ay*(radius + 1.25)
-            nx, ny = -ay, ax
-            half_w = min(width/2 - 0.25, 5.0)
-            if half_w >= 1.8:
-                # Seven 0.42 m bars with 0.34 m gaps, perpendicular to traffic.
-                for band in range(7):
-                    off = (band - 3) * 0.76
-                    bx, by = cx + ax*off, cy + ay*off
-                    poly = Polygon([
-                        (bx-ax*0.21-nx*half_w, by-ay*0.21-ny*half_w),
-                        (bx+ax*0.21-nx*half_w, by+ay*0.21-ny*half_w),
-                        (bx+ax*0.21+nx*half_w, by+ay*0.21+ny*half_w),
-                        (bx-ax*0.21+nx*half_w, by-ay*0.21+ny*half_w)])
-                    tk = tile_of(bx, by) if 'tile_of' in globals() else (int((bx-BX0)//T), int((by-BY0)//T))
-                    if tk in crossing_records:
-                        crossing_records[tk].append(poly)
-    # Union the actual carriageway edges, clipped to a compact node core.
     footprint = unary_union(approach).intersection(core).buffer(0)
     if not footprint.is_empty and footprint.area > 5:
         junction_polys.append(footprint)
         junction_cores.append((round(x, 2), round(y, 2), round(radius, 2)))
 junction_union = unary_union(junction_polys) if junction_polys else Polygon()
-print('OSM junctions', len(junction_polys), 'zebra bars', sum(map(len, crossing_records.values())), flush=True)
+print('OSM junctions', len(junction_cores), flush=True)
 
-# Les tracés de route (d['r']) ne sont PAS découpés : ils servent au jeu (index t.seg pour
-# la conduite et l'IA, hauteurs de pont d['bh'] indexées par numéro de route). On exporte
-# plutôt les cœurs de carrefour (d['jc'] = [x, y, rayon]) : world.js n'y dessine pas de marquage.
+# Zébras : uniquement les nœuds OSM explicitement marqués. Rattachement à la
+# chaussée la plus proche et rejet des emprises qui se chevauchent.
+crossing_records = {key: [] for key in tiles}
+crossing_ramps = {key: [] for key in tiles}
+crossing_gaps = []
+marked_nodes = []
+for c in S.get('crossings', []):
+    crossing = (c.get('crossing') or '').lower()
+    markings = (c.get('markings') or '').lower()
+    if not (crossing in ('zebra', 'marked') or markings in ('yes', 'zebra', 'marked')):
+        continue
+    marked_nodes.append(c)
+accepted_footprints = []
+accepted_centres = []
+accepted_count = 0
+for c in sorted(marked_nodes, key=lambda q: str(q.get('id', ''))):
+    point = Point(c['x'], c['y'])
+    candidates = osm_road_tree.query(point.buffer(24)) if osm_road_tree is not None else []
+    best = None
+    best_dist = float('inf')
+    for ci in candidates:
+        source = osm_road_records[int(ci)]
+        if source.get('highway') in ('footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track', 'bridleway', 'corridor', 'platform'):
+            continue
+        if source.get('bridge') not in (None, '', 'no') or source.get('tunnel') not in (None, '', 'no'):
+            continue
+        line = osm_road_lines[int(ci)]
+        dist = line.distance(point)
+        limit = max(8.0, road_width(source) * 0.5 + 5.0)
+        if dist <= limit and dist < best_dist:
+            best, best_dist = (source, line), dist
+    if best is None:
+        continue
+    road, line = best
+    measure = line.project(point)
+    centre = line.interpolate(measure)
+    eps = min(1.0, max(0.25, line.length * 0.002))
+    a = line.interpolate(max(0.0, measure - eps))
+    b = line.interpolate(min(line.length, measure + eps))
+    dx, dy = b.x - a.x, b.y - a.y
+    ll = math.hypot(dx, dy)
+    if ll < 0.1:
+        continue
+    ux, uy = dx/ll, dy/ll
+    nx, ny = -uy, ux
+    width = max(3.6, min(road_width(road), 18.0))
+    half = width/2 - 0.18
+    if half < 1.5:
+        continue
+    footprint = Polygon([
+        (centre.x-ux*2.7-nx*(half+0.15), centre.y-uy*2.7-ny*(half+0.15)),
+        (centre.x+ux*2.7-nx*(half+0.15), centre.y+uy*2.7-ny*(half+0.15)),
+        (centre.x+ux*2.7+nx*(half+0.15), centre.y+uy*2.7+ny*(half+0.15)),
+        (centre.x-ux*2.7+nx*(half+0.15), centre.y-uy*2.7+ny*(half+0.15))])
+    overlap = False
+    for old, (ox, oy) in zip(accepted_footprints, accepted_centres):
+        ratio = footprint.intersection(old).area / max(0.1, min(footprint.area, old.area))
+        if ratio > 0.10 or math.hypot(centre.x-ox, centre.y-oy) < 2.4:
+            overlap = True
+            break
+    if overlap:
+        continue
+    accepted_footprints.append(footprint)
+    accepted_centres.append((centre.x, centre.y))
+    accepted_count += 1
+    for band in range(7):
+        off = (band - 3) * 0.76
+        bx, by = centre.x + ux*off, centre.y + uy*off
+        poly = Polygon([
+            (bx-ux*0.21-nx*half, by-uy*0.21-ny*half),
+            (bx+ux*0.21-nx*half, by+uy*0.21-ny*half),
+            (bx+ux*0.21+nx*half, by+uy*0.21+ny*half),
+            (bx-ux*0.21+nx*half, by-uy*0.21+ny*half)])
+        minx, miny, maxx, maxy = poly.bounds
+        ix0, iy0 = tile_of(minx, miny)
+        ix1, iy1 = tile_of(maxx, maxy)
+        for ti in range(ix0, ix1 + 1):
+            for tj in range(iy0, iy1 + 1):
+                if (ti, tj) in crossing_records:
+                    crossing_records[(ti, tj)].append(poly)
+    # La bordure est interrompue sur 2,3 m et une rampe relie chaussée/trottoir.
+    gap = Polygon([
+        (centre.x-ux*1.15-nx*(width/2+5.0), centre.y-uy*1.15-ny*(width/2+5.0)),
+        (centre.x+ux*1.15-nx*(width/2+5.0), centre.y+uy*1.15-ny*(width/2+5.0)),
+        (centre.x+ux*1.15+nx*(width/2+5.0), centre.y+uy*1.15+ny*(width/2+5.0)),
+        (centre.x-ux*1.15+nx*(width/2+5.0), centre.y-uy*1.15+ny*(width/2+5.0))])
+    crossing_gaps.append(gap)
+    tk = tile_of(centre.x, centre.y)
+    if tk in crossing_ramps:
+        for side in (-1, 1):
+            d0 = side * (width/2 + 0.12)
+            d1 = side * (width/2 + 1.45)
+            crossing_ramps[tk].append([
+                round(centre.x-ux*0.95+nx*d0,2), round(centre.y-uy*0.95+ny*d0,2),
+                round(centre.x+ux*0.95+nx*d0,2), round(centre.y+uy*0.95+ny*d0,2),
+                round(centre.x+ux*0.95+nx*d1,2), round(centre.y+uy*0.95+ny*d1,2),
+                round(centre.x-ux*0.95+nx*d1,2), round(centre.y-uy*0.95+ny*d1,2)])
+print('OSM marked crossings', accepted_count, 'zebra bars', sum(map(len, crossing_records.values())), flush=True)
+
+# Ne jamais toucher à d['r'] : les indices sont partagés avec bh, t.seg,
+# la conduite et l'IA. Les métadonnées topologiques sont exportées séparément.
 for tk, d in tiles.items():
     ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
-    d['jc'] = [[x, y, r] for x, y, r in junction_cores if ox0 - r <= x <= ox0 + T + r and oy0 - r <= y <= oy0 + T + r]
-for tk, d in tiles.items():
+    d['jc'] = [[x, y, r] for x, y, r in junction_cores if ox0-r <= x <= ox0+T+r and oy0-r <= y <= oy0+T+r]
+    tilebox = box(ox0, oy0, ox0+T, oy0+T)
     d['xw'] = []
     for poly in crossing_records.get(tk, []):
-        # Keep the original four-corner stripe: clipping it at a tile edge can
-        # create a 5+ vertex polygon which cannot be represented by GB.quad.
-        coords = list(poly.exterior.coords)[:4]
-        if len(coords) == 4 and poly.area > 0.05:
-            d['xw'].append([round(c, 2) for xy in coords for c in xy])
+        part = poly.intersection(tilebox)
+        parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
+        for pg in parts:
+            if pg.geom_type == 'Polygon' and pg.area > 0.03:
+                d['xw'].append([round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
+    d['dr'] = crossing_ramps.get(tk, [])
+
+# Îlots explicitement cartographiés : aucune médiane inventée entre deux voies.
+median_union_parts = []
+for m in S.get('medians', []):
+    pts = m.get('pts', [])
+    if m.get('kind') == 'node' and pts:
+        median_union_parts.append(Point(pts[0]).buffer(1.15, quad_segs=6))
+    elif len(pts) >= 4 and pts[0] == pts[-1]:
+        pg = Polygon(pts).buffer(0)
+        if pg.area >= 1.0 and pg.area <= 1800:
+            rect = pg.minimum_rotated_rectangle
+            sides = [math.hypot(rect.exterior.coords[i+1][0]-rect.exterior.coords[i][0], rect.exterior.coords[i+1][1]-rect.exterior.coords[i][1]) for i in range(4)]
+            short_side, long_side = min(sides), max(sides)
+            tagged_island = bool(m.get('tagged'))
+            if tagged_island or (long_side >= 5.0 and short_side <= 8.0 and long_side >= short_side * 2.5):
+                median_union_parts.append(pg)
+median_union = unary_union(median_union_parts) if median_union_parts else Polygon()
+for tk, d in tiles.items():
+    ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
+    part = median_union.intersection(box(ox0, oy0, ox0+T, oy0+T))
+    d['md'] = []
+    parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
+    for pg in parts:
+        if pg.geom_type == 'Polygon' and pg.area > 0.5:
+            d['md'].append([round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
 
 def living(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 5.5) < 0.01
 def pedestrian(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 7) < 0.01 and not r[2] & 2
@@ -201,8 +326,9 @@ for road in S.get('roads', []):
     except ValueError:
         lanes = 0
     half = width / 2 if width > 0 else (lanes * 1.4 if lanes > 0 else 2.5)
-    offset = half + 1.5
-    for side, value in zip(('left', 'right'), sides):
+    for side, value, swidth in zip(('left', 'right'), sides, (road.get('sidewalk_left_width'), road.get('sidewalk_right_width'))):
+        try: offset = half + max(0.6, float((swidth or '').replace('m', '').strip() or 3.0) / 2)
+        except ValueError: offset = half + 1.5
         if value in (None, 'no', 'none', 'separate'):
             continue
         try:
@@ -311,7 +437,7 @@ for d in tiles.values():
             p = r[4:]; pts = list(zip(p[::2], p[1::2]))
             if len(pts) >= 2: bridges.append(LineString(pts).buffer(r[0] / 2 + 0.6, cap_style=2))
 cut = unary_union([water] + bridges)
-kerbs = shapely.segmentize(MultiLineString(rings_of(U)).difference(cut), 4.0)
+kerbs = shapely.segmentize(MultiLineString(rings_of(U)).difference(cut).difference(unary_union(crossing_gaps) if crossing_gaps else Polygon()), 4.0)
 
 def tri(poly, ox, oy):
     v, idx = [], []
