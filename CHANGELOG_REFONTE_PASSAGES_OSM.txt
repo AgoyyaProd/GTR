@@ -28,3 +28,25 @@ Régénération requise :
    les deux passages proches place de Bretagne.
 
 Données cartographiques : © contributeurs OpenStreetMap (ODbL).
+
+
+REFONTE — CORRECTIONS PASSAGES ET MARQUAGES DE VOIE (27/11/2026)
+=================================================================
+
+- Export des centres et rayons des passages marqués dans d['xc']; les lignes
+  axiales, séparateurs et rives cessent leur tracé dans ces emprises, comme
+  dans les cœurs de carrefour d['jc'].
+- Classification des îlots OSM par surface/landuse : seuls surface=grass ou
+  landuse=grass utilisent MAT.grass. Les îlots sans tag végétal restent en
+  matériau minéral MAT.square.
+- Extraction OSM de lanes, turn:lanes, turn:lanes:forward et
+  turn:lanes:backward. Flèches pleines générées sur les approches des
+  carrefours à partir de deux voies ou plus par sens, et orientées selon les
+  indications left/through/right disponibles.
+- d['r'] et son ordre restent intacts. Les géométries supplémentaires sont
+  exportées dans xc, ar, md et mg.
+
+Régénérer dans l'ordre : street_osm.py, streets.py, gates.py, dem_detail3.py.
+Vérifier les flèches aux grands carrefours, l'absence de traits dans les zébras,
+et la nature minérale/végétale des terre-pleins, notamment place de Bretagne.
+Données © contributeurs OpenStreetMap (ODbL).
