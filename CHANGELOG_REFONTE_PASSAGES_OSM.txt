@@ -96,3 +96,23 @@ l'eau. Données © contributeurs OpenStreetMap (ODbL).
 - Test synthétique ajouté au job geospatial : python tests/test_osm_urban_features.py.
 - Régénération : street_osm.py, streets.py, gates.py, dem_detail3.py.
 Données © contributeurs OpenStreetMap (ODbL).
+
+
+ÉTAPE 5 — ACCÈS AU MÉTRO DEPUIS OSM (27/11/2026)
+=================================================
+- Reconstruction de metro.json depuis l'extrait défini par GTR_OSM_FILE :
+  railway=subway_entrance, highway=elevator et ways highway=steps/footway.
+- Chaque accès conserve son nœud OSM, sa station, sa ligne, wheelchair,
+  covered/indoor, sa largeur, sa longueur et son sens de descente. incline=up/down
+  est interprété dans le sens de la way ; sans incline, le vecteur part du nœud
+  d'entrée vers l'autre extrémité.
+- Les ascenseurs sont ajoutés dans un rayon de 60 m d'une station. Les stations,
+  viaducs et ordre des lignes du fichier existant sont conservés.
+- Deux modèles d'accès : trémie ouverte en granit pour la ligne A, édicule vitré
+  couvert pour la ligne B, escalier mécanique lorsque conveying=yes ; kiosque
+  vitré pour les ascenseurs.
+- Les accès intégrés à un bâtiment n'ont pas de trémie : cadre de porte et totem
+  au point de façade. Les emprises signalées comme chaussée, passage piéton ou
+  bâtiment sont exclues. Les contrôles runtime complètent les masques OSM.
+- Test synthétique : python tests/test_metro_osm.py. Régénération par
+  GTR_OSM_FILE=/chemin/extrait GTR_ROOT=/chemin/jeu python outils/metro_osm.py.
