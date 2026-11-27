@@ -140,3 +140,32 @@ Ces corrections ont été relues depuis GitHub. Elles doivent encore passer la s
 ## Limites restantes
 
 Le fichier OSM joint a été parcouru intégralement et les audits de quartiers et restrictions ont été exécutés localement. Les tests synthétiques de l'extraction et du complément OSM passent dans la CI. Le complément Overpass réel, le mode strict sur l'extrait complété, la génération des tuiles et l'intégration des frontières au runtime restent à faire. La provenance des ways n'est pas conservée dans `global.json` ; les restrictions ne sont donc pas encore appliquées par A*. La PR reste en brouillon jusqu'à validation réelle.
+
+
+## Générateur candidat du graphe OSM (27 novembre 2026)
+
+Un premier générateur indépendant du runtime a été ajouté : `outils/build_osm_graph.py`.
+Il ne remplace pas `global.json` et n'est pas encore chargé par le navigateur.
+Son rôle est de produire un graphe vérifiable avec la provenance OSM nécessaire à la suite.
+
+Commande :
+```bash
+python outils/build_osm_graph.py --input map-complete.osm --output controle/routing-osm.json
+```
+
+Format `gtr-osm-routing-graph-v1` :
+- nœuds : identifiant OSM, niveau, coordonnées métriques ;
+- arêtes dirigées CSR : offsets, destination, masque de modes, longueur et identifiant OSM de la way ;
+- métadonnées : classe highway, nom, bridge, tunnel et layer ;
+- relations de restriction conservées avec membres from/via/to, variantes par mode et liste des références absentes.
+
+Masques actuels : piéton (1), voiture (2), vélo (4). Le générateur applique les sens uniques OSM, les exceptions vélo explicites et les règles d'accès de base. Les ways sans accès compatible sont écartées. Les nœuds partagés à des niveaux différents sont séparés ; bridge=yes et tunnel=yes donnent un niveau par défaut si `layer` n'est pas fourni.
+
+Limites connues à ce stade :
+- ce générateur est une première base de reconstruction, pas encore un moteur de routage certifié ;
+- les restrictions sont exportées, mais pas encore compilées en automate de transitions ni appliquées par A* ;
+- les accès conditionnels, horaires, exceptions complexes et toutes les subtilités de hiérarchie des tags OSM ne sont pas encore résolus ;
+- les raccordements de rampes aux extrémités de ponts/tunnels nécessitent une validation topologique dédiée ;
+- la sortie n'a pas encore été exécutée sur l'extrait rennais complété : les ways manquantes doivent d'abord être récupérées et l'audit strict doit réussir.
+
+Le test synthétique `tests/test_build_osm_graph.py` vérifie le CSR, la conservation des identifiants OSM, les sens uniques, les accès et la séparation des niveaux. Il est ajouté au job géospatial CI.
