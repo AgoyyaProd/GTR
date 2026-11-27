@@ -382,6 +382,31 @@ for area in S.get('pedestrian_areas', []):
     except Exception:
         continue
 print('OSM pedestrian plazas', sum(map(len, pedestrian_area_geoms.values())), flush=True)
+
+# ---- découpe des surfaces au sol en cellules qui suivent le relief ----
+_LO, _LU = (-471.8, 93.8), (0.8417, 0.5399)   # repère des Lices (js/world.js, LICES)
+def _lices_w(sv, tv): return (_LO[0] + _LU[0]*sv - _LU[1]*tv, _LO[1] + _LU[1]*sv + _LU[0]*tv)
+LICES_ZONE = Polygon([_lices_w(-1.5, -10.0), _lices_w(9.5, -10.0), _lices_w(9.5, 9.0), _lices_w(-1.5, 9.0)])  # escaliers et terrasse faits main
+def ground_cells(geom, size=4.0):
+    """Polygones simples (sans trou) de taille <= size, couvrant geom."""
+    out = []
+    if geom.is_empty: return out
+    x0, y0, x1, y1 = geom.bounds
+    gx = math.floor(x0 / size) * size
+    while gx < x1:
+        gy = math.floor(y0 / size) * size
+        while gy < y1:
+            piece = geom.intersection(box(gx, gy, gx + size, gy + size))
+            for pg in (list(piece.geoms) if hasattr(piece, 'geoms') else [piece]):
+                if pg.geom_type != 'Polygon' or pg.area < 0.05: continue
+                if pg.interiors:   # trou dans la cellule (arbre, fontaine, bâtiment) : on recoupe en 4
+                    out += ground_cells(pg, size / 2) if size > 0.6 else []
+                else:
+                    out.append(pg)
+            gy += size
+        gx += size
+    return out
+
 for tk, d in tiles.items():
     ox0, oy0 = BX0 + tk[0] * T, BY0 + tk[1] * T
     tilebox = box(ox0, oy0, ox0+T, oy0+T)
@@ -390,17 +415,14 @@ for tk, d in tiles.items():
     d['pa'] = []  # polygones de places piétonnes OSM : [matériau, coordonnées]
     for code, geoms in pedestrian_area_geoms.items():
         for geom in geoms:
-            part = geom.intersection(tilebox)
-            parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
-            for pg in parts:
-                if pg.geom_type == 'Polygon' and pg.area > 1.0:
-                    d['pa'].append([code] + [round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
+            # Découpe en cellules de 4 m : GB.poly pose des triangles plats dont seuls les
+            # sommets suivent le relief ; un grand polygone recouvrait donc les escaliers
+            # et les différences de niveau (aux Lices, la place passait 1,5 m au-dessus du joueur).
+            for pg in ground_cells(geom.intersection(tilebox).difference(LICES_ZONE)):
+                d['pa'].append([code] + [round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
     for geom, key in ((median_paved, 'md'), (median_grass, 'mg')):
-        part = geom.intersection(tilebox)
-        parts = list(part.geoms) if hasattr(part, 'geoms') else [part]
-        for pg in parts:
-            if pg.geom_type == 'Polygon' and pg.area > 0.5:
-                d[key].append([round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
+        for pg in ground_cells(geom.intersection(tilebox).difference(LICES_ZONE)):
+            d[key].append([round(v,2) for xy in list(pg.exterior.coords)[:-1] for v in xy])
 
 def living(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 5.5) < 0.01
 def pedestrian(r): return r[1] == 1 and (r[2] & 8) and abs(r[0] - 7) < 0.01 and not r[2] & 2
