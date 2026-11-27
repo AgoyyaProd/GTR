@@ -2037,6 +2037,8 @@ function* buildTile(t, data) {
   /* Terre-pleins et îlots de circulation explicitement cartographiés dans OSM. */
   for (const c of data.md || []) gbR.poly(MAT.square, c, SW + 0.014, 3); // îlots minéraux
   for (const c of data.mg || []) gbR.poly(MAT.grass, c, SW + 0.014, 4); // îlots engazonnés
+  // Places et espaces piétons fermés dans OSM : dalles, pavés ou asphalte selon surface.
+  for (const a of data.pa || []) gbR.poly(a[0] === 1 ? MAT.cobble : a[0] === 2 ? MAT.asphalt : MAT.square, a.slice(1), SW + 0.012, a[0] === 1 ? 2.2 : a[0] === 2 ? 7 : 3);
   for (const c of data.ar || []) gbR.poly(MAT.mark, c, 0.024, 1); // flèches de direction OSM
   for (const r of data.r) { addRoad(gbR, t, r); if (++k % 80 === 0) yield; }
   for (const a of data.a) if (a[0] === 1) addPitchLines(gbR, a[1]); // parks, squares, car parks & gardens are painted on the ground (landcover)
